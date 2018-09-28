@@ -1,0 +1,5 @@
+name: mie451-lab2
+dependencies:
+  - python=3.6
+  - nb_conda
+  - ipywidgets=7.4.1
