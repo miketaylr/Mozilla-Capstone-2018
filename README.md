@@ -1,14 +1,13 @@
 # Mozilla-Capstone-2018
 
-
 Create the environment (**probably need to update the environment.yml file eventually):
 
-conda env create --force -f environment.yml
+    conda env create --force -f environment.yml
 
-    Activate the environment:
+Activate the environment:
 
-activate mie451-lab3
+    activate mie451-lab3
 
-    Run Jupyter notebook:
+Run Jupyter notebook:
 
-jupyter notebook
+    jupyter notebook
