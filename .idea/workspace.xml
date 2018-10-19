@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="722da363-42df-4a9e-9214-ed9e70164ebd" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -12,7 +11,7 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$pipeline.coverage" NAME="pipeline Coverage Results" MODIFIED="1539916678739" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$pipeline.coverage" NAME="pipeline Coverage Results" MODIFIED="1539929738749" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$Mozilla_Capstone_2018.coverage" NAME="Mozilla-Capstone-2018 Coverage Results" MODIFIED="1539900837143" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
   </component>
   <component name="FUSProjectUsageTrigger">
@@ -40,13 +39,13 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="gitignore" value="2" />
-          <entry key="py" value="2848" />
+          <entry key="py" value="3077" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Python" value="2848" />
+          <entry key="Python" value="3077" />
         </counts>
       </usages-collector>
     </session>
@@ -65,13 +64,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/pipeline.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="272">
-              <caret line="116" lean-forward="true" selection-start-line="116" selection-end-line="116" />
+            <state relative-caret-position="281">
+              <caret line="90" selection-start-line="90" selection-end-line="90" />
               <folding>
                 <element signature="e#61#80#0" expanded="true" />
-                <marker date="1539921585462" expanded="true" signature="715:720" ph="..." />
-                <marker date="1539921585462" expanded="true" signature="715:6442" ph="..." />
-                <marker date="1539921585462" expanded="true" signature="1646:1668" ph="..." />
+                <marker date="1539929719022" expanded="true" signature="715:720" ph="..." />
+                <marker date="1539929719022" expanded="true" signature="715:6443" ph="..." />
               </folding>
             </state>
           </provider>
@@ -90,7 +88,7 @@
         <entry file="file://$PROJECT_DIR$/.gitignore">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="51">
-              <caret line="3" column="11" lean-forward="true" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
+              <caret line="3" column="11" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
             </state>
           </provider>
         </entry>
@@ -244,7 +242,7 @@
       <window_info anchor="bottom" id="Event Log" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.45330012" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.31506848" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39601496" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -273,7 +271,7 @@
     <entry file="file://$PROJECT_DIR$/.gitignore">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="51">
-          <caret line="3" column="11" lean-forward="true" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
+          <caret line="3" column="11" selection-start-line="3" selection-start-column="11" selection-end-line="3" selection-end-column="11" />
         </state>
       </provider>
     </entry>
@@ -300,13 +298,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/pipeline.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="272">
-          <caret line="116" lean-forward="true" selection-start-line="116" selection-end-line="116" />
+        <state relative-caret-position="281">
+          <caret line="90" selection-start-line="90" selection-end-line="90" />
           <folding>
             <element signature="e#61#80#0" expanded="true" />
-            <marker date="1539921585462" expanded="true" signature="715:720" ph="..." />
-            <marker date="1539921585462" expanded="true" signature="715:6442" ph="..." />
-            <marker date="1539921585462" expanded="true" signature="1646:1668" ph="..." />
+            <marker date="1539929719022" expanded="true" signature="715:720" ph="..." />
+            <marker date="1539929719022" expanded="true" signature="715:6443" ph="..." />
           </folding>
         </state>
       </provider>
