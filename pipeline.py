@@ -35,30 +35,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     stmLwrFilter = RegexTokenizer() | StemFilter() | LowercaseFilter()
     #lwrFilter = LowercaseFilter()
 
-    def apply_nlp(series):
-        combined = series['Positive Feedback'] + series['Negative Feedback']
-        filtered = [token.text for token in stmLwrFilter(combined)]
-        return list(set(filtered))  # turn to set temporarily to get unique values
-
-    # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
-    def mentionedSite(series):
-        combined = series['Relevant Site'] + series['Positive Feedback'] + series['Negative Feedback']
-        sites = [site.lower() for site in siteList if site.lower() in combined.lower()]
-        return sites
-
-        # Find a mentioned issue based on our issues dictionary
-
-    def mentionedIssue(series): #here the values in the dict are already lowered from before
-        combined = series['Positive Feedback'] + series['Negative Feedback']
-        issues = [k for k, v in WORDS_TO_ISSUE.items() if any(map(lambda term: term in combined.lower(), v))]
-        return issues
-
-    def mentionedComponent(series):
-        combined = series['Positive Feedback'] + series['Negative Feedback']
-        issues = [k for k, v in WORDS_TO_COMPONENT.items() if any(map(lambda term: term in combined.lower(), v))]
-        return issues
-
-
     #read in raw survey data from CSV files. Only want certain columns
     survey_cols = ["Response ID","Time Started","Date Submitted","Status","Language","Referer","Extended Referer","User Agent","Extended User Agent","Longitude","Latitude","Country","City","State/Region","Postal","How does Firefox make you feel?","OS","To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.","To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.","If your feedback is related to a website, you can include it here:"]
     df = pd.read_csv(raw_data_location, encoding ="ISO-8859-1", nrows=num_records, usecols=survey_cols)
@@ -96,16 +72,40 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
         results.append(pol_score)
 
     df2 = pd.DataFrame.from_records(results)
-
-
     df = pd.merge(df, df2, left_index=True, right_index=True)
-    #print('after sentiment', df.shape)
-    # Derive 4 new columns
-    # df['Processed Feedback'] = df.apply(apply_nlp, axis=1) #nlp using our filter from above
-    # df['Sites'] = df.apply(mentionedSite, axis=1) #see if a site is mentioned in the comment
-    # df['Issues'] = df.apply(mentionedIssue, axis=1) #check for exact issue keyword matches
-    # df['Components'] = df.apply(mentionedComponent, axis=1) #check for exact component keyword matches
 
+    def apply_nlp(row):
+        print("in here", (row))
+
+        combined = row['Positive Feedback'] + row['Negative Feedback']
+        filtered = [token.text for token in stmLwrFilter(combined)]
+        return list(set(filtered))  # turn to set temporarily to get unique values
+
+    # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
+    def mentioned_site(row):
+        combined = row['Relevant Site'] + row['Positive Feedback'] + row['Negative Feedback']
+        sites = [site.lower() for site in siteList if site.lower() in combined.lower()]
+        return sites
+
+        # Find a mentioned issue based on our issues dictionary
+
+    def mentioned_issue(row): #here the values in the dict are already lowered from before
+        combined = row['Positive Feedback'] + row['Negative Feedback']
+        issues = [k for k, v in WORDS_TO_ISSUE.items() if any(map(lambda term: term in combined.lower(), v))]
+        return issues
+
+    def mentioned_component(row):
+        combined = row['Positive Feedback'] + row['Negative Feedback']
+        issues = [k for k, v in WORDS_TO_COMPONENT.items() if any(map(lambda term: term in combined.lower(), v))]
+        return issues
+
+    # Initialize and derive 4 new columns
+   # df['Processed Feedback'] = df.apply(apply_nlp, axis=1)
+    df['Sites'] = df.apply(mentioned_site, axis=1)
+    df['Issues'] = df.apply(mentioned_issue, axis=1)
+    df['Components'] = df.apply(mentioned_component, axis=1)
+#scrfew it store as string
+    print('after deriving cols for sentiment and more', df.shape)
     #finally output the cleaned data to a CSV
     df.to_csv('output.csv', encoding='ISO-8859-1')
     print("Outputted cleaned data to output.csv")
