@@ -83,26 +83,22 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     else:
         print('Not empty!', df.shape)
 
-    # start with basic sentiment analysis
-    # from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
-    #
-    # analyzer = SIA()
-    # results = []
-    #
-    # # just append & analyze the -ve/+ve feedback for now if user gave both
-    # # df[['Neg', 'Neu', 'Pos', 'Compound']] = df['Text'].apply(lambda Text: pd.Series(TextBlob(Text).sentiment))
-    # for index, row in df.iterrows():
-    #     pol_score = analyzer.polarity_scores(row['Positive Feedback'] + row['Negative Feedback'])
-    #     results.append(pol_score)
-    #
-    # df2 = pd.DataFrame.from_records(results)
-    # print(df2.shape)
-    # print(results)
-    # print(df2.tail(5))
-    # print(df2.dtypes)
-    # df['Neg'], df['Neu'], df['Pos'], 'Compound']] = results
+    #start with basic sentiment analysis
+    from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
 
- #   df = pd.merge(df, df2, left_index=True, right_index=True)
+    analyzer = SIA()
+    results = []
+
+    # just append & analyze the -ve/+ve feedback for now if user gave both
+    # df[['Neg', 'Neu', 'Pos', 'Compound']] = df['Text'].apply(lambda Text: pd.Series(TextBlob(Text).sentiment))
+    for index, row in df.iterrows():
+        pol_score = analyzer.polarity_scores(row['Positive Feedback'] + row['Negative Feedback'])
+        results.append(pol_score)
+
+    df2 = pd.DataFrame.from_records(results)
+
+
+    df = pd.merge(df, df2, left_index=True, right_index=True)
     #print('after sentiment', df.shape)
     # Derive 4 new columns
     # df['Processed Feedback'] = df.apply(apply_nlp, axis=1) #nlp using our filter from above
