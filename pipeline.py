@@ -35,20 +35,22 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     stmLwrFilter = RegexTokenizer() | StemFilter() | LowercaseFilter()
     #lwrFilter = LowercaseFilter()
 
-    #read in raw survey data from CSV files. Only want certain columns
+    #read in raw survey data from CSV files. Only want certain columns, eventally read these cols directly from CSV
     survey_cols = ["Response ID","Time Started","Date Submitted","Status","Language","Referer","Extended Referer","User Agent","Extended User Agent","Longitude","Latitude","Country","City","State/Region","Postal","How does Firefox make you feel?","OS","To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.","To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.","If your feedback is related to a website, you can include it here:"]
     df = pd.read_csv(raw_data_location, encoding ="ISO-8859-1", nrows=num_records, usecols=survey_cols)
     #some data cleaning and selection
     print("Loading %d feedback records from %s " % (num_records, raw_data_location))
+
     #rename some long column names
     df.rename(columns={ survey_cols[15]: 'Binary Sentiment', survey_cols[17]: 'Positive Feedback', survey_cols[18]: 'Negative Feedback', survey_cols[19]: 'Relevant Site'}, inplace=True)
     df = df.fillna(''); #repalce NaNs with blanks
-    df = df.loc[df['Status'] == 'Complete'] #Only want completed surveys
-    df = df.loc[df['Language'] == 'English'] #Only want english rows
+    df = df.loc[(df['Status'] == 'Complete') & (df['Language'] == 'English')] #Only want completed surveys & english rows
     print("After filtering for English, only %d records remain" % len(df.index))
+
     #really basic spam filtering.  We can look at these separately and make spam more robust
     df = df.loc[(df['Positive Feedback']+df['Negative Feedback']).str.len() > 20] #If the length of the feedback is over 1k characters OR is less than 20 characters then it is spam.
     print("After basic spam filtering only %d records remain" % len(df.index))
+
     #Convert to df friendly date-times
     df["Date Submitted"] = pd.to_datetime(df["Date Submitted"])
     df["Time Started"] = pd.to_datetime(df["Time Started"]) #probably don't need this anymore
