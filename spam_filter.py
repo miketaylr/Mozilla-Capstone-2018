@@ -3,7 +3,11 @@ import os
 import pandas as pd
 from scipy import stats
 from whoosh.analysis import *
-import nltk
+import numpy as np
+import random
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 from nltk.stem import *
 from collections import Counter
 
@@ -72,7 +76,7 @@ def get_qrel(df):
 
 #3 Train the Classifier
 def train_spam_filter(X, y, num_tests = 10):
-    k_train_results, k_test_results, classifier = k_cross_validate(X, y, num_tests)
+    train_results, test_results, classifier = k_cross_validate(X, y, num_tests)
     # calculate the train mean and the 95% confidence interval for the list of results
     train_mean = np.mean(train_results)
     train_ci_low, train_ci_high = stats.t.interval(0.95, len(train_results) - 1, loc=train_mean,scale=stats.sem(train_results))
