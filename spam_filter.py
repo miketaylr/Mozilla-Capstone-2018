@@ -57,7 +57,11 @@ def get_top_words(df):
     for index, row in df.iterrows():
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         count.update(wordList)
-    finalWordList = [word for (word, freq) in count.most_common(2500)]
+    totalNumWords = sum(count.values())
+    finalWordList = [word for (word, freq) in count.most_common(round(totalNumWords/10))]
+    # TODO:
+    #       Discuss whether it is a good idea to take top words (might it actually
+    #       be better to take least common?) Just an idea...
     return finalWordList
 
 
