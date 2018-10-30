@@ -19,17 +19,18 @@ OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "outputSpamLabelled.csv")
 
 # 1 Text Preparation
 def text_preparation ():
-    num_records = 0
+    num_records = 5000
     survey_cols = ["Response ID", "Time Started", "Date Submitted",
                    "Status", "Language", "Referer", "Extended Referer", "User Agent",
                    "Extended User Agent", "Longitude", "Latitude",
-                   "Country", "City", "State / Region", "Postal",
+                   "Country", "City", "State/Region", "Postal",
                    "Binary Sentiment", "OS", "Positive Feedback",
                    "Negative Feedback", "Relevant Site", "compound", "neg",
                    "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback",
                    "IsSpam"]
     df = pd.read_csv(OUTPUT_SPAM_LABELLED, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
-    print("Number of records to begin with: " + num_records)
+    df = df.fillna('');
+    print("Number of records to begin with: %d", num_records)
     if df.empty: # need to handle empty case later
         print('DataFrame is empty!')
     else:
@@ -40,13 +41,15 @@ def text_preparation ():
     return df
 
 
-def clean_feedback(df):
-    feedbackCleaner = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() \
-                      | StopFilter() | StemFilter() | WordNetLemmatizer()
-    for index, row in df.iterrows():
-        combined = row['Positive Feedback'] + row['Negative Feedback']
-        reprocessed = [token.text for token in feedbackCleaner(combined)]
-    return ' '.join(set(reprocessed))
+def clean_feedback(row):
+    tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter() | StemFilter()
+    lemm = WordNetLemmatizer()
+    combined = row['Positive Feedback'] + row['Negative Feedback']
+    tokenWords = [token.text for token in tokenizer(combined)]
+    lemmList = [lemm.lemmatize(word) for word in tokenWords]
+    final = tokenWords + lemmList
+    print(final)
+    return ','.join(set(final))
 
 
 def get_top_words(df):
