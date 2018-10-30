@@ -1,20 +1,19 @@
-#IMPORTS
+# IMPORTS
 import os
 import pandas as pd
 from scipy import stats
 from whoosh.analysis import *
-import nltk
 from nltk.stem import *
 from collections import Counter
 
-#SETTINGS
+
+# SETTINGS
 DIRECTORY = ""
 OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "outputSpamLabelled.csv")
 
-#1 Text Preparation
+
+# 1 Text Preparation
 def text_preparation ():
-    feedbackCleaner = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() \
-                      | StopFilter() | StemFilter() | WordNetLemmatizer()
     num_records = 0
     survey_cols = ["Response", "ID", "Time", "Started", "Date Submitted",
                    "Status", "Language", "Referer", "Extended", "Referer", "User",
@@ -26,7 +25,7 @@ def text_preparation ():
                    "IsSpam"]
     df = pd.read_csv(OUTPUT_SPAM_LABELLED, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
     print("Number of records to begin with: " + num_records)
-    if df.empty: #need to handle empty case later
+    if df.empty: # need to handle empty case later
         print('DataFrame is empty!')
     else:
         print('Not empty!', df.shape)
@@ -35,6 +34,7 @@ def text_preparation ():
     df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
 
+
 def clean_feedback(df):
     feedbackCleaner = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() \
                       | StopFilter() | StemFilter() | WordNetLemmatizer()
@@ -42,6 +42,7 @@ def clean_feedback(df):
         combined = row['Positive Feedback'] + row['Negative Feedback']
         reprocessed = [token.text for token in feedbackCleaner(combined)]
     return ' '.join(set(reprocessed))
+
 
 def get_top_words(df):
     tokenizer = RegexTokenizer()
@@ -52,7 +53,8 @@ def get_top_words(df):
     finalWordList = [word for (word, freq) in count.most_common(2500)]
     return finalWordList
 
-#2 Feature Extraction
+
+# 2 Feature Extraction
 def feature_extraction(df):
     tokenizer = RegexTokenizer()
     binary_appearance_df = []
@@ -63,6 +65,7 @@ def feature_extraction(df):
     X = pd.DataFrame(binary_appearance_df, columns=featureWords)
     return X
 
+
 def get_qrel(df):
     qrel = []
     for index, row in df.iterrows():
@@ -70,7 +73,8 @@ def get_qrel(df):
     y = pd.Dataframe(qrel)
     return y
 
-#3 Train the Classifier
+
+# 3 Train the Classifier
 def train_spam_filter(X, y, num_tests = 10):
     k_train_results, k_test_results, classifier = k_cross_validate(X, y, num_tests)
     # calculate the train mean and the 95% confidence interval for the list of results
@@ -80,6 +84,7 @@ def train_spam_filter(X, y, num_tests = 10):
     test_mean = np.mean(test_results)
     test_ci_low, test_ci_high = stats.t.interval(0.95, len(test_results) - 1, loc=test_mean, scale=stats.sem(test_results))
     return train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high
+
 
 def k_cross_validate(X, y, num_tests):
     train_results = []
@@ -102,3 +107,4 @@ X = feature_extraction(df)
 y = get_qrel(df)
 train_spam_filter(X, y)
 
+print('We done.')
