@@ -18,7 +18,7 @@ OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "outputSpamLabelled.csv")
 
 
 # 1 Text Preparation
-def text_preparation ():
+def text_preparation():
     num_records = 5000
     survey_cols = ["Response ID", "Time Started", "Date Submitted",
                    "Status", "Language", "Referer", "Extended Referer", "User Agent",
@@ -29,14 +29,13 @@ def text_preparation ():
                    "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback",
                    "IsSpam"]
     df = pd.read_csv(OUTPUT_SPAM_LABELLED, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
-    df = df.fillna('');
-    print("Number of records to begin with: %d", num_records)
-    if df.empty: # need to handle empty case later
+    df = df.fillna('')
+    if df.empty:
         print('DataFrame is empty!')
     else:
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
-    df['Output from spam_filter cleaning'] = df.apply(clean_feedback, axis=1)
+    df['sf_output'] = df.apply(clean_feedback, axis=1)
     df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
 
@@ -48,15 +47,15 @@ def clean_feedback(row):
     tokenWords = [token.text for token in tokenizer(combined)]
     lemmList = [lemm.lemmatize(word) for word in tokenWords]
     final = tokenWords + lemmList
-    print(final)
-    return ','.join(set(final))
+    # Join by space so it is easy for RegexTokenizer to manage
+    return ' '.join(set(final))
 
 
 def get_top_words(df):
     tokenizer = RegexTokenizer()
     count = Counter()
     for index, row in df.iterrows():
-        wordList = tokenizer.tokenize(row['Output from spam_filter cleaning'])
+        wordList = [token.text for token in tokenizer(row['sf_output'])]
         count.update(wordList)
     finalWordList = [word for (word, freq) in count.most_common(2500)]
     return finalWordList
@@ -68,9 +67,10 @@ def feature_extraction(df):
     binary_appearance_df = []
     featureWords = get_top_words(df)
     for index, row in df.iterrows():
-        wordList = tokenizer.tokenize(row['Output from spam_filter'])
+        wordList = [token.text for token in tokenizer(row['sf_output'])]
         binary_appearance_df.append([1 if word in wordList else 0 for word in featureWords])
     X = pd.DataFrame(binary_appearance_df, columns=featureWords)
+    # print(X)
     return X
 
 
@@ -78,7 +78,8 @@ def get_qrel(df):
     qrel = []
     for index, row in df.iterrows():
         qrel.append(row['IsSpam'])
-    y = pd.Dataframe(qrel)
+    y = pd.DataFrame(qrel)
+    # print(y)
     return y
 
 
@@ -110,9 +111,10 @@ def k_cross_validate(X, y, num_tests):
     return train_results, test_results, clf
 
 
+# Get the model and check its accuracy
+print('We starting.')
 df = text_preparation()
 X = feature_extraction(df)
 y = get_qrel(df)
 train_spam_filter(X, y)
-
 print('We done.')
