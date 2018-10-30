@@ -20,9 +20,9 @@ OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "outputSpamLabelled.csv")
 # 1 Text Preparation
 def text_preparation ():
     num_records = 0
-    survey_cols = ["Response", "ID", "Time", "Started", "Date Submitted",
-                   "Status", "Language", "Referer", "Extended", "Referer", "User",
-                   "Agent", "Extended", "User Agent", "Longitude", "Latitude",
+    survey_cols = ["Response ID", "Time Started", "Date Submitted",
+                   "Status", "Language", "Referer", "Extended Referer", "User Agent",
+                   "Extended User Agent", "Longitude", "Latitude",
                    "Country", "City", "State / Region", "Postal",
                    "Binary Sentiment", "OS", "Positive Feedback",
                    "Negative Feedback", "Relevant Site", "compound", "neg",
