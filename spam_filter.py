@@ -8,21 +8,18 @@ import random
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-from nltk.stem import *
 from collections import Counter
-import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
-import nltk.corpus
-from nltk.corpus import wordnet
-# nltk.download('wordnet')
+import pickle
 
 # SETTINGS
 DIRECTORY = ""
 OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "outputSpamLabelled.csv")
+INPUT = os.path.join(DIRECTORY, "output.csv")
 
 
 # 1 Text Preparation
-def text_preparation():
+def text_preparation(filename):
     num_records = 5000
     survey_cols = ["Response ID", "Time Started", "Date Submitted",
                    "Status", "Language", "Referer", "Extended Referer", "User Agent",
@@ -32,7 +29,27 @@ def text_preparation():
                    "Negative Feedback", "Relevant Site", "compound", "neg",
                    "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback",
                    "IsSpam"]
-    df = pd.read_csv(OUTPUT_SPAM_LABELLED, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+    df = df.fillna('')
+    if df.empty:
+        print('DataFrame is empty!')
+    else:
+        print('Not empty!', df.shape)
+    # Make a new column and put it in there - may be a new function
+    df['sf_output'] = df.apply(clean_feedback, axis=1)
+    df.to_csv('output_new.csv', encoding='ISO-8859-1')
+    return df
+
+def text_preparation_unlabelled(filename):
+    num_records = 5000
+    survey_cols = ["Response ID", "Time Started", "Date Submitted",
+                   "Status", "Language", "Referer", "Extended Referer", "User Agent",
+                   "Extended User Agent", "Longitude", "Latitude",
+                   "Country", "City", "State/Region", "Postal",
+                   "Binary Sentiment", "OS", "Positive Feedback",
+                   "Negative Feedback", "Relevant Site", "compound", "neg",
+                   "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback"]
+    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
@@ -93,14 +110,14 @@ def get_qrel(df):
 
 # 3 Train the Classifier
 def train_spam_filter(X, y, num_tests = 10):
-    train_results, test_results, classifier = k_cross_validate(X, y, num_tests)
+    train_results, test_results, clf = k_cross_validate(X, y, num_tests)
     # calculate the train mean and the 95% confidence interval for the list of results
     train_mean = np.mean(train_results)
     train_ci_low, train_ci_high = stats.t.interval(0.95, len(train_results) - 1, loc=train_mean,scale=stats.sem(train_results))
     # calculate the test mean and the 95% confidence interval for the list of results
     test_mean = np.mean(test_results)
     test_ci_low, test_ci_high = stats.t.interval(0.95, len(test_results) - 1, loc=test_mean, scale=stats.sem(test_results))
-    return train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high
+    return clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high
 
 
 def k_cross_validate(X, y, num_tests):
@@ -119,12 +136,45 @@ def k_cross_validate(X, y, num_tests):
         test_results.append(test_accuracy)
     return train_results, test_results, clf
 
+def save_classifier_model(clf):
+    filename = "spamClassifier.sav"
+    pickle.dump(clf, open(filename, 'wb'))
+
+def load_classifier(filename):
+    return pickle.load(open(filename, 'rb'))
+
+def scoreNewData(clf, X):
+    return clf.predict(X)
+
+def getNonSpamIndices(y):
+    npArr = np.array(y)
+    x = np.where(npArr == 0)[0]
+    return x
+
+def removeSpam(df, nsi):
+    new_df = df.iloc[nsi, :]
+    return new_df
 
 # Get the model and check its accuracy
 print('We starting.')
-df = text_preparation()
-X = feature_extraction(df)
-y = get_qrel(df)
-train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
-print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
+
+# Train Classifier on labelled data
+# NOTE: run this the first time if you don't have the classifier built
+
+# df = text_preparation(OUTPUT_SPAM_LABELLED)
+# X = feature_extraction(df)
+# y = get_qrel(df)
+# clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
+# save_classifier_model(clf)
+# print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
+
+# Predict and remove spam in new csv
+loaded_clf = load_classifier("spamClassifier.sav")
+new_df = text_preparation_unlabelled(INPUT)
+X = feature_extraction(new_df)
+y = scoreNewData(loaded_clf, X)
+nsi = getNonSpamIndices(y).tolist()
+
+removeSpam(new_df, nsi).to_csv("spamRemoved.csv")
+
 print('We done.')
