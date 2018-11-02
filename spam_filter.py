@@ -10,7 +10,11 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from nltk.stem import *
 from collections import Counter
-
+import nltk
+from nltk.stem.wordnet import WordNetLemmatizer
+import nltk.corpus
+from nltk.corpus import wordnet
+# nltk.download('wordnet')
 
 # SETTINGS
 DIRECTORY = ""
@@ -82,9 +86,9 @@ def get_qrel(df):
     qrel = []
     for index, row in df.iterrows():
         qrel.append(row['IsSpam'])
-    y = pd.DataFrame(qrel)
-    # print(y)
-    return y
+    # y = pd.DataFrame(qrel)
+
+    return qrel
 
 
 # 3 Train the Classifier
@@ -108,8 +112,9 @@ def k_cross_validate(X, y, num_tests):
         clf = LogisticRegression(C=1.0).fit(X_train, y_train)
         y_train_predict = clf.predict(X_train)
         y_test_predict = clf.predict(X_test)
-        train_accuracy = accuracy_score(y_train, y_train_predict)
         test_accuracy = accuracy_score(y_test, y_test_predict)
+        train_accuracy = accuracy_score(y_train, y_train_predict)
+
         train_results.append(train_accuracy)
         test_results.append(test_accuracy)
     return train_results, test_results, clf
@@ -120,5 +125,6 @@ print('We starting.')
 df = text_preparation()
 X = feature_extraction(df)
 y = get_qrel(df)
-train_spam_filter(X, y)
+train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
+print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
 print('We done.')
