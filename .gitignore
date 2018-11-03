@@ -4,3 +4,8 @@ Top Sites for Report Analysis.csv
 refined.csv
 results.csv
 nltk_df.csv
+venv/
+.idea/*
+.idea/Mozilla-Capstone-2018.iml
+.idea/misc.xml
+.idea/workspace.xml
