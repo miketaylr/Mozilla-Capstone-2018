@@ -12,7 +12,6 @@ WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO
 # Clean up the raw dictionaries a bit more eventually, fix typos etc.
 
 
-
 #need to make num_records optional arg, s.t. if user wants all the records they don't specify a number
 def run_pipeline(top_sites_location, raw_data_location, num_records):
     print(
@@ -104,13 +103,12 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
         return ','.join(set(components))
 
 
-
     # Initialize and derive 4 new columns
     df['Sites'] = df.apply(mentioned_site, axis=1)
     df['Issues'] = df.apply(mentioned_issue, axis=1)
     df['Components'] = df.apply(mentioned_component, axis=1)
     df['Processed Feedback'] = df.apply(apply_nlp, axis=1)
-#scrfew it store as string
+    #scrfew it store as string
 
     #finally output the cleaned data to a CSV
     df.to_csv('output_pipeline.csv', encoding='ISO-8859-1')
