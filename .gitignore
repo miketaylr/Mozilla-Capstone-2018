@@ -10,3 +10,4 @@ venv/
 .idea/Mozilla-Capstone-2018.iml
 .idea/misc.xml
 .idea/workspace.xml
+data/

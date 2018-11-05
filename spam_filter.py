@@ -11,12 +11,12 @@ from sklearn.metrics import accuracy_score
 from collections import Counter
 from nltk.stem.wordnet import WordNetLemmatizer
 import pickle
+import referenceFiles as rf
+
 
 # SETTINGS
-DIRECTORY = ""
-OUTPUT_SPAM_LABELLED = os.path.join(DIRECTORY, "SpamLabelled.csv")
-INPUT = os.path.join(DIRECTORY, "output_pipeline.csv") # from pipeline.py... for now
-# TODO: merge this class with pipeline.py
+SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
+ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 
 
 # 1 Text Preparation
@@ -180,7 +180,7 @@ print('We starting.')
 
 # Predict and remove spam in new csv
 loaded_clf = load_classifier("spamClassifier.sav")
-new_df = text_preparation_unlabelled(INPUT)
+new_df = text_preparation_unlabelled(ORIGINAL_INPUT_DATA)
 X = feature_extraction(new_df)
 y = score_new_data(loaded_clf, X)
 nsi = get_nonspam_indices(y).tolist()
