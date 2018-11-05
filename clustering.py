@@ -333,19 +333,20 @@ def visualizeSpectural():
 
 def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
     # Get the key features (in our case, words) for each cluster
-    relevantFB = []
     for j in range(num_clusters):
+        relevantFB = ["",""]
         FBnum = 0
         for label in labels:
             if label == j:
-                relevantFB.append(fb[FBnum])
+                thisTuple = fb[FBnum]
+                relevantFB.append(thisTuple[1])
             FBnum = FBnum + 1
         df = pd.DataFrame(relevantFB)
         vectorizer = CountVectorizer(min_df=1, stop_words='english')
-        featuresCounted = vectorizer.fit_transform(df[1])
+        featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
         print(vectorizer.get_feature_names())
         print(featuresCounted.toarray())
-
+        print("hey")
     # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
     # ### Pulling out key words to label cluster / understand what is in each cluster
     # # pull out documents of each cluster --> tf idf for key words
