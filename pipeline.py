@@ -3,6 +3,8 @@ import pandas as pd
 import re
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
+import referenceFiles as rf
+
 
 # FOR NOW just lower the terms in the dicts. Need to see how steming and more can play into this
 WORDS_TO_ISSUE = {k: (map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
@@ -101,6 +103,8 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
         components = [k for k, v in WORDS_TO_COMPONENT.items() if any(map(lambda term: term in combined.lower(), v))]
         return ','.join(set(components))
 
+
+
     # Initialize and derive 4 new columns
     df['Sites'] = df.apply(mentioned_site, axis=1)
     df['Issues'] = df.apply(mentioned_issue, axis=1)
@@ -109,7 +113,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
 #scrfew it store as string
 
     #finally output the cleaned data to a CSV
-    df.to_csv('output.csv', encoding='ISO-8859-1')
-    print("Outputted cleaned data to output.csv")
+    df.to_csv('output_pipeline.csv', encoding='ISO-8859-1')
+    print("Outputted cleaned data to output_pipeline.csv")
 
-run_pipeline("Top Sites for Report Analysis.csv", "20181001120735-SurveyExport.csv", 5000)
+run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 5000)
