@@ -118,7 +118,7 @@ def kMeansClustering(X, numOfRows, myReader):
     num_clusters = numOfRows / 10
     num_clusters = 20
     # TODO: make this (^) more robust / logical
-    kmeans = KMeans(n_clusters=num_clusters)
+    kmeans = KMeans(n_clusters=num_clusters, random_state = 42)
     # Fitting the input data
     kmeans = kmeans.fit(X)
     # Getting the cluster labels
@@ -332,27 +332,37 @@ def visualizeSpectural():
 
 
 def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
-    # Get the key features (in our case, words) for each cluster
-    for j in range(num_clusters):
-        relevantFB = ["",""]
-        FBnum = 0
-        for label in labels:
-            if label == j:
-                thisTuple = fb[FBnum]
-                relevantFB.append(thisTuple[1])
-            FBnum = FBnum + 1
-        df = pd.DataFrame(relevantFB)
-        vectorizer = CountVectorizer(min_df=1, stop_words='english')
-        featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
-        print(vectorizer.get_feature_names())
-        print(featuresCounted.toarray())
-        print("hey")
+    # # Get the key features (in our case, words) for each cluster
+    # for j in range(num_clusters):
+    #     relevantFB = ["",""]
+    #     FBnum = 0
+    #     for label in labels:
+    #         if label == j:
+    #             thisTuple = fb[FBnum]
+    #             relevantFB.append(thisTuple[1])
+    #         FBnum = FBnum + 1
+    #     df = pd.DataFrame(relevantFB)
+    #     vectorizer = CountVectorizer(min_df=1, stop_words='english')
+    #     featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
+    #     print(vectorizer.get_feature_names())
+    #     print(featuresCounted.toarray())
+    #     print("hey")
+
     # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
-    # ### Pulling out key words to label cluster / understand what is in each cluster
-    # # pull out documents of each cluster --> tf idf for key words
-    # # set test_cluster to 12 # TODO: change based on largest cluster
+    # Pulling out key words to label cluster / understand what is in each cluster
+    # pull out documents of each cluster --> tf idf for key words
     # test_cluster = 12
-    # # indices for test cluster
+    print('Cluster Keywords:')
+    for cluster in range(num_clusters):
+        print('Cluster', cluster)
+        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
+        clusterCorpus = [doc_dict['cell_content'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices]
+        vectorizer = TfidfVectorizer(min_df = 5, stop_words='english')
+        X_tf = vectorizer.fit_transform(clusterCorpus)
+        response = vectorizer.transform(clusterCorpus)
+        feature_names = vectorizer.get_feature_names()
+        print(feature_names)
+    # indices for test cluster
     # indices = [index for index, clusterNum in enumerate(labels) if clusterNum == test_cluster]
     # # documents in test cluster
     # clusterCorpus = [doc_dict['cell_content'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices]
