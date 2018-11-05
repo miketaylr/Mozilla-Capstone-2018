@@ -115,3 +115,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     print("Outputted cleaned data to output.csv")
 
 run_pipeline("Top Sites for Report Analysis.csv", "20181001120735-SurveyExport.csv", 5000)
+
+from itertools import product
+
