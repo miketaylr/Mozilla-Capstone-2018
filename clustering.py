@@ -27,12 +27,14 @@ from scipy.cluster import hierarchy
 import random
 import seaborn as sns; sns.set()
 import pprint
+import referenceFiles as rf
 
 
 # SETTINGS - Paths
 DIRECTORY = ""
-OUTPUT = os.path.join(DIRECTORY, "output_spam_filtered.csv")
-TOP_SITES = os.path.join(DIRECTORY, "Top Sites for Report Analysis.csv")
+OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
+SITES = rf.filePath(rf.SITES)
+
 # TODO: get a directory for the new spam removal output
 
 
@@ -65,7 +67,7 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
         writer.commit()
 
 def getSitesList():
-    sites = pd.read_csv(TOP_SITES, usecols=['Domains', 'Brand'])
+    sites = pd.read_csv(SITES, usecols=['Domains', 'Brand'])
     # , skiprows = 50, nrows = 25
     # display(sites)
     siteList = list(sites.values.flatten())
@@ -84,7 +86,7 @@ def createNormalizedMatrix(siteList):
                     cell_content=TEXT(stored=True))
     indexToImport = createIndex(schema)
     # TODO: put indexToImport into dataframe instead of going through whoosh
-    addFilesToIndex(indexToImport, OUTPUT, "Negative Feedback", "sf_output")
+    addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "sf_output")
     myReader = indexToImport.reader()
     print("Index is empty?", indexToImport.is_empty())
     print("Number of indexed files:", indexToImport.doc_count())
@@ -113,7 +115,7 @@ def createNormalizedMatrix(siteList):
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
     word_list = mostFrequentWords
-    with codecs.open(OUTPUT, "r", "ISO-8859-1") as csvfile:
+    with codecs.open(OUTPUT_SPAM_REMOVAL, "r", "ISO-8859-1") as csvfile:
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
             value = row["sf_output"]
@@ -289,7 +291,7 @@ def kMeansClustering(X, numOfRows, myReader):
                     cell_content=TEXT(stored=True))
     indexToImport = createIndex(schema)
     # TODO: put indexToImport into dataframe instead of going through whoosh
-    addFilesToIndex(indexToImport, OUTPUT, "Negative Feedback", "Negative Feedback")
+    addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "Negative Feedback")
     myReader = indexToImport.reader()
     print("Index is empty?", indexToImport.is_empty())
     print("Number of indexed files:", indexToImport.doc_count())

@@ -109,7 +109,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     # scrfew it store as string
 
     # finally output the cleaned data to a CSV
-    df.to_csv('output_pipeline.csv', encoding='ISO-8859-1')
+    df.to_csv(rf.filePath(rf.OUTPUT_PIPELINE), encoding='ISO-8859-1')
     print("Outputted cleaned data to output_pipeline.csv")
 
 
