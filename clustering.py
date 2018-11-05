@@ -84,10 +84,15 @@ def createNormalizedMatrix():
     # print(myReader.frequency("cell_content", "android"))
     # 1000 most distinctive terms according by TF-IDF score
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
-                            myReader.most_distinctive_terms("cell_content", 1000)]
+                            myReader.most_distinctive_terms("cell_content", 1002)]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
-                         myReader.most_frequent_terms("cell_content", 1000)]
+                         myReader.most_frequent_terms("cell_content", 1002)]
+
+    wordVectorList = mostFrequentWords
+    wordVectorList.remove('mozilla')
+    wordVectorList.remove('firefox')
+    print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
     # Go through each document --> tokenize that single document --> compare with total word list
