@@ -68,7 +68,8 @@ def text_preparation_unlabelled(filename):
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter() | StemFilter()
     lemm = WordNetLemmatizer()
-    combined = row['Positive Feedback'] + row['Negative Feedback']
+    # combined = row['Positive Feedback'] + row['Negative Feedback']
+    combined = row['Negative Feedback'] # Just care about negative feedback for now
     tokenWords = [token.text for token in tokenizer(combined)]
     lemmList = [lemm.lemmatize(word) for word in tokenWords]
     final = tokenWords + lemmList

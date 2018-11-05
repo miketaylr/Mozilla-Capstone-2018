@@ -12,6 +12,7 @@ import codecs
 import pandas as pd
 import re
 import os.path
+import nltk as nltk
 from nltk.tokenize import RegexpTokenizer
 import numpy as np
 from sklearn import preprocessing
@@ -21,6 +22,7 @@ from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
+from sklearn.feature_extraction.text import CountVectorizer
 from scipy.cluster import hierarchy
 import random
 import seaborn as sns; sns.set()
@@ -40,7 +42,7 @@ def createIndex(schema):
     return index.create_in(indexDir, schema)
 
 
-def addFilesToIndex(indexObj, csvPath, csvColumnName):
+def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
     # open writer
     writer = indexObj.writer()
     # open csv
@@ -55,6 +57,7 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName):
         for row in csvreader:
             value = row[csvColumnName]  # i.e. "sf_output" or "Negative Feedback"
             if value != "" and isinstance(value, str):
+                value = row[columnToIndex]
                 doc[i] = value
                 writer.update_document(index=str(i), cell_content=value)
             i += 1
@@ -67,7 +70,7 @@ def createNormalizedMatrix():
                     cell_content=TEXT(stored=True))
     indexToImport = createIndex(schema)
     # TODO: put indexToImport into dataframe instead of going through whoosh
-    addFilesToIndex(indexToImport, OUTPUT, "sf_output")
+    addFilesToIndex(indexToImport, OUTPUT, "Negative Feedback", "sf_output")
     myReader = indexToImport.reader()
     print("Index is empty?", indexToImport.is_empty())
     print("Number of indexed files:", indexToImport.doc_count())
@@ -96,7 +99,7 @@ def createNormalizedMatrix():
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
             value = row["sf_output"]
-            if value != "" and isinstance(value, str):
+            if row["Negative Feedback"] != "" and isinstance(value, str): # Only looking for feedback that filled in negative feedback
                 file_words = tokenizer.tokenize(value)
                 df_rows.append([1 if word in file_words else 0 for word in word_list])
         X = pd.DataFrame(df_rows, columns=word_list)
@@ -263,6 +266,15 @@ def kMeansClustering(X, numOfRows, myReader):
     plt.bar(clusterCount.keys(), clusterCount.values(), color='g')
     plt.savefig("clusterCountBarGraph.png")
     # counts
+    # Read in the actual feedback at this time
+    schema = Schema(index=ID(stored=True),
+                    cell_content=TEXT(stored=True))
+    indexToImport = createIndex(schema)
+    # TODO: put indexToImport into dataframe instead of going through whoosh
+    addFilesToIndex(indexToImport, OUTPUT, "Negative Feedback", "Negative Feedback")
+    myReader = indexToImport.reader()
+    print("Index is empty?", indexToImport.is_empty())
+    print("Number of indexed files:", indexToImport.doc_count())
     # See top 5 vectors closest to cluster centroid for all clusters
     for j in range(num_clusters):
         d = kmeans.transform(X)[:, j]
@@ -270,6 +282,9 @@ def kMeansClustering(X, numOfRows, myReader):
         print("Cluster", j)
         print("Indices of top 5 documents:", ind)
         print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
+    fb = []
+    for content in myReader.iter_docs():
+        fb.append(content)
 
     # OTHER WORK - NOT USING
     # the distance to the j'th centroid for each point in an array X
@@ -287,8 +302,8 @@ def kMeansClustering(X, numOfRows, myReader):
     # cosineScores = pd.DataFrame(similarity_matrix)
     # clusters = SpectralClustering(n_clusters = 5, affinity = 'precomputed').fit(cosineScores)
 
-    # TODO: need to decide what to return here from our clustering
-    return labelsAsNums
+    # TODO: need to decide what to return here for our clustering
+    return labelsAsNums, kmeans, num_clusters, X, fb
 
 
 def visualizeSpectural():
@@ -316,7 +331,21 @@ def visualizeSpectural():
     return
 
 
-def labelClustersWKeywords(labels, myReader):
+def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
+    # Get the key features (in our case, words) for each cluster
+    relevantFB = []
+    for j in range(num_clusters):
+        FBnum = 0
+        for label in labels:
+            if label == j:
+                relevantFB.append(fb[FBnum])
+            FBnum = FBnum + 1
+        df = pd.DataFrame(relevantFB)
+        vectorizer = CountVectorizer(min_df=1, stop_words='english')
+        featuresCounted = vectorizer.fit_transform(df[1])
+        print(vectorizer.get_feature_names())
+        print(featuresCounted.toarray())
+
     # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
     # ### Pulling out key words to label cluster / understand what is in each cluster
     # # pull out documents of each cluster --> tf idf for key words
@@ -342,9 +371,9 @@ def labelClustersWKeywords(labels, myReader):
 # run
 print('We startin')
 X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
-labels = kMeansClustering (X_norm, numOfFB, readerForFullFB)
+labels, kmeans, num_clusters, X, fb = kMeansClustering (X_norm, numOfFB, readerForFullFB)
 # visualizeSpectural
-labelClustersWKeywords(labels, readerForFullFB)
+labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X, fb)
 print('We done.')
 
 
