@@ -32,6 +32,7 @@ import pprint
 # SETTINGS - Paths
 DIRECTORY = ""
 OUTPUT = os.path.join(DIRECTORY, "output_spam_filtered.csv")
+TOP_SITES = os.path.join(DIRECTORY, "Top Sites for Report Analysis.csv")
 # TODO: get a directory for the new spam removal output
 
 
@@ -63,8 +64,21 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
             i += 1
         writer.commit()
 
+def getSitesList():
+    sites = pd.read_csv(TOP_SITES, usecols=['Domains', 'Brand'])
+    # , skiprows = 50, nrows = 25
+    # display(sites)
+    siteList = list(sites.values.flatten())
 
-def createNormalizedMatrix():
+    # remove commas ('salesforce.com, force.com')
+    for site in siteList:
+        if ',' in site:
+            siteList += site.split(',')
+
+    siteList = [site.strip('.*') for site in list(filter(lambda site: ',' not in site, siteList))]
+    return siteList
+
+def createNormalizedMatrix(siteList):
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     cell_content=TEXT(stored=True))
@@ -84,14 +98,13 @@ def createNormalizedMatrix():
     # print(myReader.frequency("cell_content", "android"))
     # 1000 most distinctive terms according by TF-IDF score
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
-                            myReader.most_distinctive_terms("cell_content", 1002)]
+                            myReader.most_distinctive_terms("cell_content", 1000)]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
-                         myReader.most_frequent_terms("cell_content", 1002)]
+                         myReader.most_frequent_terms("cell_content", 1000)]
 
     wordVectorList = mostFrequentWords
-    wordVectorList.remove('mozilla')
-    wordVectorList.remove('firefox')
+    wordVectorList = [x for x in wordVectorList if x not in siteList]
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
@@ -386,7 +399,8 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
 
 # run
 print('We startin')
-X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
+siteList = getSitesList()
+X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
 labels, kmeans, num_clusters, X, fb = kMeansClustering (X_norm, numOfFB, readerForFullFB)
 # visualizeSpectural
 labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X, fb)
