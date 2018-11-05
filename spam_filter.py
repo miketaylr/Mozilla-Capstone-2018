@@ -38,8 +38,10 @@ def text_preparation(filename):
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
     df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df.to_csv('output_new.csv', encoding='ISO-8859-1')
+    # # Move this csv create to below...
+    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
+
 
 def text_preparation_unlabelled(filename):
     num_records = 5000
@@ -58,14 +60,16 @@ def text_preparation_unlabelled(filename):
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
     df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df.to_csv('output_new.csv', encoding='ISO-8859-1')
+    # # Move this csv create to below...
+    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
 
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter() | StemFilter()
     lemm = WordNetLemmatizer()
-    combined = row['Positive Feedback'] + row['Negative Feedback']
+    # combined = row['Positive Feedback'] + row['Negative Feedback']
+    combined = row['Negative Feedback'] # Just care about negative feedback for now
     tokenWords = [token.text for token in tokenizer(combined)]
     lemmList = [lemm.lemmatize(word) for word in tokenWords]
     final = tokenWords + lemmList
@@ -137,31 +141,36 @@ def k_cross_validate(X, y, num_tests):
         test_results.append(test_accuracy)
     return train_results, test_results, clf
 
+
 def save_classifier_model(clf):
     filename = "spamClassifier.sav"
     pickle.dump(clf, open(filename, 'wb'))
 
+
 def load_classifier(filename):
     return pickle.load(open(filename, 'rb'))
 
-def scoreNewData(clf, X):
+
+def score_new_data(clf, X):
     return clf.predict(X)
 
-def getNonSpamIndices(y):
+
+def get_nonspam_indices(y):
     npArr = np.array(y)
     x = np.where(npArr == 0)[0]
     return x
 
-def removeSpam(df, nsi):
+
+def remove_spam(df, nsi):
     new_df = df.iloc[nsi, :]
     return new_df
+
 
 # Get the model and check its accuracy
 print('We starting.')
 
-# Train Classifier on labelled data
-# NOTE: run this the first time if you don't have the classifier built
-
+# # Train Classifier on labelled data
+# # NOTE: run this the first time if you don't have the classifier built
 # df = text_preparation(OUTPUT_SPAM_LABELLED)
 # X = feature_extraction(df)
 # y = get_qrel(df)
@@ -173,9 +182,9 @@ print('We starting.')
 loaded_clf = load_classifier("spamClassifier.sav")
 new_df = text_preparation_unlabelled(ORIGINAL_INPUT_DATA)
 X = feature_extraction(new_df)
-y = scoreNewData(loaded_clf, X)
-nsi = getNonSpamIndices(y).tolist()
+y = score_new_data(loaded_clf, X)
+nsi = get_nonspam_indices(y).tolist()
 
-removeSpam(new_df, nsi).to_csv("spamRemoved.csv")
+remove_spam(new_df, nsi).to_csv("output_spam_filtered.csv")
 
 print('We done.')
