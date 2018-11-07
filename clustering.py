@@ -77,7 +77,7 @@ def getSitesList():
         if ',' in site:
             siteList += site.split(',')
 
-    siteList = [site.strip('.*') for site in list(filter(lambda site: ',' not in site, siteList))]
+    siteList = [site.strip('.*').lower() for site in list(filter(lambda site: ',' not in site, siteList))]
     return siteList
 
 def createNormalizedMatrix(siteList):
@@ -107,6 +107,8 @@ def createNormalizedMatrix(siteList):
 
     wordVectorList = mostFrequentWords
     wordVectorList = [x for x in wordVectorList if x not in siteList]
+    wordVectorList.remove('mozilla')
+    wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
@@ -114,7 +116,7 @@ def createNormalizedMatrix(siteList):
     # TODO: change to frequency encoding -> how much better would it be?
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
-    word_list = mostFrequentWords
+    word_list = wordVectorList
     with codecs.open(OUTPUT_SPAM_REMOVAL, "r", "ISO-8859-1") as csvfile:
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
@@ -138,7 +140,7 @@ def kMeansClustering(X, numOfRows, myReader):
     num_clusters = numOfRows / 10
     num_clusters = 20
     # TODO: make this (^) more robust / logical
-    kmeans = KMeans(n_clusters=num_clusters, random_state = 42)
+    kmeans = KMeans(n_clusters=num_clusters, random_state = 40)
     # Fitting the input data
     kmeans = kmeans.fit(X)
     # Getting the cluster labels
@@ -377,10 +379,17 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
         print('Cluster', cluster)
         indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
         clusterCorpus = [doc_dict['cell_content'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices]
-        vectorizer = TfidfVectorizer(min_df = 5, stop_words='english')
+        mindf = 5
+        vectorizer = TfidfVectorizer(min_df = mindf, stop_words='english')
         X_tf = vectorizer.fit_transform(clusterCorpus)
         response = vectorizer.transform(clusterCorpus)
         feature_names = vectorizer.get_feature_names()
+        if not feature_names:
+            mindf = mindf-1
+            vectorizer = TfidfVectorizer(min_df=mindf, stop_words='english')
+            X_tf = vectorizer.fit_transform(clusterCorpus)
+            response = vectorizer.transform(clusterCorpus)
+            feature_names = vectorizer.get_feature_names()
         print(feature_names)
     # indices for test cluster
     # indices = [index for index, clusterNum in enumerate(labels) if clusterNum == test_cluster]
