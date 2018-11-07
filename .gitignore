@@ -13,3 +13,4 @@ venv/
 data/
 referenceFiles.cpython-36
 *.png
+__pycache__/
