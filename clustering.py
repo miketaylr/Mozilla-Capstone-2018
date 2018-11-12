@@ -19,7 +19,7 @@ from sklearn import preprocessing
 import transformations as trafo
 import matplotlib.pyplot as plt
 from collections import Counter
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.feature_extraction.text import CountVectorizer
@@ -28,6 +28,9 @@ import random
 import seaborn as sns; sns.set()
 import pprint
 import referenceFiles as rf
+import collections
+from sklearn.feature_extraction import text
+from nltk.tag import PerceptronTagger
 
 
 # SETTINGS - Paths
@@ -52,17 +55,15 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
     with codecs.open(csvPath, "r", "ISO-8859-1") as csvfile:
         # create csv reader object
         csvreader = csv.DictReader(csvfile)
-        # create dictionary to hold document values
-        doc = {}
         # instantiate index count
         i = 0
         # read each row in file
         for row in csvreader:
-            value = row[csvColumnName]  # i.e. "sf_output" or "Negative Feedback"
-            if value != "" and isinstance(value, str):
-                value = row[columnToIndex]
-                doc[i] = value
-                writer.update_document(index=str(i), cell_content=value)
+            sf_output = row[columnToIndex]  # i.e. "sf_output" or "Negative Feedback"
+            if sf_output != "" and isinstance(sf_output, str):
+                neg_feedback = row[csvColumnName]
+                response_id = row['Response ID']
+                writer.update_document(index=str(i), sf_output=sf_output, negative_feedback=neg_feedback, response_id = response_id)
             i += 1
         writer.commit()
 
@@ -77,13 +78,15 @@ def getSitesList():
         if ',' in site:
             siteList += site.split(',')
 
-    siteList = [site.strip('.*') for site in list(filter(lambda site: ',' not in site, siteList))]
+    siteList = [site.strip('.*').lower() for site in list(filter(lambda site: ',' not in site, siteList))]
     return siteList
 
 def createNormalizedMatrix(siteList):
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
-                    cell_content=TEXT(stored=True))
+                    response_id=ID(stored=True),
+                    sf_output=TEXT(stored=True),
+                    negative_feedback=TEXT(stored=True))
     indexToImport = createIndex(schema)
     # TODO: put indexToImport into dataframe instead of going through whoosh
     addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "sf_output")
@@ -95,26 +98,30 @@ def createNormalizedMatrix(siteList):
     # [(docnum, doc_dict) for (docnum, doc_dict) in myReader.iter_docs()][0:25]
 
     # Index all words in feedback from csv
-    all_words = [term for term in myReader.field_terms("cell_content")]
+    all_words = [term for term in myReader.field_terms("sf_output")]
     # Get term freq for specific term i.e. android
     # print(myReader.frequency("cell_content", "android"))
     # 1000 most distinctive terms according by TF-IDF score
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
-                            myReader.most_distinctive_terms("cell_content", 1000)]
+                            myReader.most_distinctive_terms("sf_output", 1000)]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
-                         myReader.most_frequent_terms("cell_content", 1000)]
+                         myReader.most_frequent_terms("sf_output", 1000)]
 
-    wordVectorList = mostFrequentWords
+    wordVectorList = mostDistinctiveWords
     wordVectorList = [x for x in wordVectorList if x not in siteList]
+    wordVectorList.remove('mozilla')
+    wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
     # Go through each document --> tokenize that single document --> compare with total word list
-    # TODO: change to frequency encoding -> how much better would it be?
+
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
-    word_list = mostFrequentWords
+    word_list = wordVectorList
+
+    # TODO: redundant code, remove this
     with codecs.open(OUTPUT_SPAM_REMOVAL, "r", "ISO-8859-1") as csvfile:
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
@@ -136,9 +143,9 @@ def kMeansClustering(X, numOfRows, myReader):
     # Run k-means
     # Setting number of clusters to hopefully split comments into sets of avg(10 FB comments)
     num_clusters = numOfRows / 10
-    num_clusters = 20
+    num_clusters = 9
     # TODO: make this (^) more robust / logical
-    kmeans = KMeans(n_clusters=num_clusters, random_state = 42)
+    kmeans = KMeans(n_clusters=num_clusters, random_state = 40)
     # Fitting the input data
     kmeans = kmeans.fit(X)
     # Getting the cluster labels
@@ -287,43 +294,27 @@ def kMeansClustering(X, numOfRows, myReader):
     plt.savefig("clusterCountBarGraph.png")
     # counts
     # Read in the actual feedback at this time
-    schema = Schema(index=ID(stored=True),
-                    cell_content=TEXT(stored=True))
-    indexToImport = createIndex(schema)
-    # TODO: put indexToImport into dataframe instead of going through whoosh
-    addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "Negative Feedback")
-    myReader = indexToImport.reader()
-    print("Index is empty?", indexToImport.is_empty())
-    print("Number of indexed files:", indexToImport.doc_count())
-    # See top 5 vectors closest to cluster centroid for all clusters
-    for j in range(num_clusters):
-        d = kmeans.transform(X)[:, j]
-        ind = np.argsort(d)[::-1][:5]
-        print("Cluster", j)
-        print("Indices of top 5 documents:", ind)
-        print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
-    fb = []
-    for content in myReader.iter_docs():
-        fb.append(content)
-
-    # OTHER WORK - NOT USING
-    # the distance to the j'th centroid for each point in an array X
-    # d = kmeans.transform(X)[:, j]
-    # ind = np.argsort(d)[::-1][:5]
-    # print("Cluster", j)
-    # print("Indices of top 5 documents:", ind)
-    # print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
-    # # X[ind] # What is this?
-    # # SPECTURAL CLUSTERING
-    # # note: df_rows not imported from first function above (createNormalizedMatrix)
-    # from sklearn.cluster import SpectralClustering
-    # from sklearn.metrics.pairwise import pairwise_distances
-    # similarity_matrix = 1 - pairwise_distances(df_rows, metric='cosine')
-    # cosineScores = pd.DataFrame(similarity_matrix)
-    # clusters = SpectralClustering(n_clusters = 5, affinity = 'precomputed').fit(cosineScores)
+    # schema = Schema(index=ID(stored=True),
+    #                 cell_content=TEXT(stored=True))
+    # indexToImport = createIndex(schema)
+    # # TODO: put indexToImport into dataframe instead of going through whoosh
+    # addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "Negative Feedback")
+    # myReader = indexToImport.reader()
+    # print("Index is empty?", indexToImport.is_empty())
+    # print("Number of indexed files:", indexToImport.doc_count())
+    # # See top 5 vectors closest to cluster centroid for all clusters
+    # for j in range(num_clusters):
+    #     d = kmeans.transform(X)[:, j]
+    #     ind = np.argsort(d)[::-1][:5]
+    #     print("Cluster", j)
+    #     print("Indices of top 5 documents:", ind)
+    #     print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
+    # fb = []
+    # for content in myReader.iter_docs():
+    #     fb.append(content)
 
     # TODO: need to decide what to return here for our clustering
-    return labelsAsNums, kmeans, num_clusters, X, fb
+    return labelsAsNums, kmeans, num_clusters, X #, fb
 
 
 def visualizeSpectural():
@@ -351,61 +342,194 @@ def visualizeSpectural():
     return
 
 
-def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X, fb):
-    # # Get the key features (in our case, words) for each cluster
-    # for j in range(num_clusters):
-    #     relevantFB = ["",""]
-    #     FBnum = 0
-    #     for label in labels:
-    #         if label == j:
-    #             thisTuple = fb[FBnum]
-    #             relevantFB.append(thisTuple[1])
-    #         FBnum = FBnum + 1
-    #     df = pd.DataFrame(relevantFB)
-    #     vectorizer = CountVectorizer(min_df=1, stop_words='english')
-    #     featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
-    #     print(vectorizer.get_feature_names())
-    #     print(featuresCounted.toarray())
-    #     print("hey")
+def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
+        # # Get the key features (in our case, words) for each cluster
+        # for j in range(num_clusters):
+        #     relevantFB = ["",""]
+        #     FBnum = 0
+        #     for label in labels:
+        #         if label == j:
+        #             thisTuple = fb[FBnum]
+        #             relevantFB.append(thisTuple[1])
+        #         FBnum = FBnum + 1
+        #     df = pd.DataFrame(relevantFB)
+        #     vectorizer = CountVectorizer(min_df=1, stop_words='english')
+        #     featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
+        #     print(vectorizer.get_feature_names())
+        #     print(featuresCounted.toarray())
+        #     print("hey")
 
     # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
     # Pulling out key words to label cluster / understand what is in each cluster
     # pull out documents of each cluster --> tf idf for key words
     # test_cluster = 12
-    print('Cluster Keywords:')
+    top_features_list = []
+
     for cluster in range(num_clusters):
-        print('Cluster', cluster)
-        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
-        clusterCorpus = [doc_dict['cell_content'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices]
-        vectorizer = TfidfVectorizer(min_df = 5, stop_words='english')
+        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
+        clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] # documents in cluster
+
+        custom_stop_words = ENGLISH_STOP_WORDS.union(["firefox"])
+        vectorizer = TfidfVectorizer(stop_words=custom_stop_words)
         X_tf = vectorizer.fit_transform(clusterCorpus)
         response = vectorizer.transform(clusterCorpus)
         feature_names = vectorizer.get_feature_names()
-        print(feature_names)
-    # indices for test cluster
-    # indices = [index for index, clusterNum in enumerate(labels) if clusterNum == test_cluster]
-    # # documents in test cluster
-    # clusterCorpus = [doc_dict['cell_content'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices]
-    # print(clusterCorpus)
-    # vectorizer = TfidfVectorizer(stop_words='english')
-    # # X_tf = vectorizer.fit_transform(clusterCorpus)
-    # response = vectorizer.transform(clusterCorpus)
-    # feature_names = vectorizer.get_feature_names()
-    # feature_array = np.array(vectorizer.get_feature_names())
-    # tfidf_sorting = np.argsort(response.toarray()).flatten()[::-1]
-    # n = 10
-    # top_n = feature_array[tfidf_sorting][:n]
-    # feature_array[tfidf_sorting]
-    # # print(top_n)
-    return
+
+        top_n = 5
+        feature_name_occurences = np.nonzero(response.toarray())[1]
+        most_common_n = collections.Counter(feature_name_occurences).most_common(top_n)
+        top_features = [feature_names[feature[0]] for feature in most_common_n]
+        top_features_list.append(top_features)
+
+    feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
+    return feature_names_df
+
+def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
+    tagger = PerceptronTagger()
+    pos_tag = tagger.tag
+    grammar = r"""
+        NBAR:
+            {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
+
+        NP:
+            {<NBAR>}
+            {<NBAR><IN><NBAR>}  # Above, connected with in/of/etc...
+    """
+    # Create phrase tree
+    chunker = nltk.RegexpParser(grammar)
+
+    stop = ENGLISH_STOP_WORDS
+
+    lemmatizer = nltk.WordNetLemmatizer()
+    stemmer = nltk.stem.porter.PorterStemmer()
+
+    # generator, generate leaves one by one
+    def leaves(tree):
+        """Finds NP (nounphrase) leaf nodes of a chunk tree."""
+        for subtree in tree.subtrees(filter=lambda t: t.label() == 'NP' or t.label() == 'JJ' or t.label() == 'RB'):
+            yield subtree.leaves()
+
+    # stemming, lematizing, lower case...
+    def normalise(word):
+        """Normalises words to lowercase and stems and lemmatizes it."""
+        word = word.lower()
+        word = stemmer.stem(word)
+        word = lemmatizer.lemmatize(word)
+        return word
+
+    # stop-words and length control
+    def acceptable_word(word):
+        """Checks conditions for acceptable word: length, stopword."""
+        accepted = bool(2 <= len(word) <= 40
+                        and word.lower() not in stop)
+        return accepted
+
+    # generator, create item once a time
+    def get_terms(tree):
+        for leaf in leaves(tree):
+            term = [normalise(w) for w, t in leaf if acceptable_word(w)]
+            # Phrase only
+            if len(term) > 1:
+                yield term
+
+    def flatten(npTokenList):
+        finalList = []
+        for phrase in npTokenList:
+            token = ''
+            for word in phrase:
+                token += word + ' '
+            finalList.append(token.rstrip())
+        return finalList
+
+    counter = Counter()
+    for review in X.loc[operation(X[label_column], label_value)][value_column]:
+        counter.update(flatten([word
+                                for word
+                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', review))))
+                                ]))
+    topk = counter.most_common(k)
+    return topk
+
+
+def clusterPerformanceMetrics(labels, myReader, num_clusters):
+    # NOTE: CSV MUST BE SORTED BY ID AND SAVED THAT WAY
+    sr = pd.read_csv('data/output_clusters_defined.csv')
+    max = 0
+    total_count = 0
+
+    for cluster in range(num_clusters):
+        clusterIndices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
+        docIndices = [int(doc_dict['index']) for (docnum, doc_dict) in myReader.iter_docs() if docnum in clusterIndices]
+        response_ids = [int(doc_dict['response_id']) for (docnum, doc_dict) in myReader.iter_docs() if
+                        docnum in clusterIndices]
+
+        manual_cluster_counts = sr.loc[sr['Response ID'].isin(response_ids)]['manual_clusters'].fillna('-1').astype(int).value_counts()
+        max += manual_cluster_counts.nlargest(1).iloc[0]
+        total_count += sr.loc[sr['Response ID'].isin(response_ids)]['manual_clusters'].fillna('-1').astype(int).count()
+        print("Cluster", cluster)
+        print(manual_cluster_counts)
+        # frames.append(dict(manual_cluster_counts))
+
+    # pd.concat(frames, keys=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    purity = max/total_count
+
+    return purity
+
+def spectralClustering(X):
+    # SPECTURAL CLUSTERING
+    # note: df_rows not imported from first function above (createNormalizedMatrix)
+    from sklearn.cluster import SpectralClustering
+    from sklearn.metrics.pairwise import pairwise_distances
+
+    num_clusters = 9
+
+    # similarity_matrix = 1 - pairwise_distances(X, metric='cosine')
+    # cosineScores = pd.DataFrame(similarity_matrix)
+    clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
+    labelsAsNums = clusters.labels_
+    return labelsAsNums, clusters, num_clusters, X
+
+def hierarchicalClustering(X):
+    from sklearn.cluster import AgglomerativeClustering
+
+    num_cluster = 9
+    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='average').fit(X)
+    labelsAsNums = clusters.labels_
+    return labelsAsNums, clusters, num_clusters, X
+
 
 # run
 print('We startin')
 siteList = getSitesList()
 X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
-labels, kmeans, num_clusters, X, fb = kMeansClustering (X_norm, numOfFB, readerForFullFB)
-# visualizeSpectural
-labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X, fb)
+
+# K Means
+print(" --- K MEANS ---")
+labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
+feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
+print('Top 5 words in each cluster:')
+print(feature_names_df_kmeans)
+purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+print('Purity', purity)
+
+# Spectral
+print(" --- SPECTRAL ---")
+labels, spectral, num_clusters, X = spectralClustering(X_norm)
+feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
+print('Top 5 words in each cluster:')
+print(feature_names_df_spectral)
+purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+print('Purity', purity)
+
+# Hierarchical
+# NOTE: currently not working because there are likely empty values??
+# print(" --- HIERARCHICAL ---")
+# labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
+# feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
+# print('Top 5 words in each cluster:')
+# print(feature_names_df_spectral)
+# clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+
 print('We done.')
 
 

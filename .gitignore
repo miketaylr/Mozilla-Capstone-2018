@@ -11,3 +11,6 @@ venv/
 .idea/misc.xml
 .idea/workspace.xml
 data/
+referenceFiles.cpython-36
+*.png
+__pycache__/
