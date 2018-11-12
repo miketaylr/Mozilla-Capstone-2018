@@ -74,7 +74,7 @@ def text_preparation_unlabelled(filename):
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
     stemmer = StemFilter()
-    lemm = WordNetLemmatizer()
+    lemm = WordNetLemmatizer() # DON"T USE WORDNET
     combined = row['Positive Feedback'] + row['Negative Feedback']  # Feedback will either be positive or negative
                                                                     # can filter for negative only later on
     tokenWords = [token.text for token in tokenizer(combined)]
@@ -204,14 +204,14 @@ def performance_metrics_spam_removal():
 # Get the model and check its accuracy
 print('We starting.')
 
-# # Train Classifier on labelled data
-# # NOTE: run this the first time if you don't have the classifier built
-# df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
-# X = feature_extraction(df)
-# y = get_qrel(df)
-# clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
-# save_classifier_model(clf)
-# print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
+# Train Classifier on labelled data
+# NOTE: run this the first time if you don't have the classifier built
+df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
+X = feature_extraction(df)
+y = get_qrel(df)
+clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
+save_classifier_model(clf)
+print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
 
 # Predict and remove spam in new csv
 loaded_clf = load_classifier("spamClassifier.sav")
