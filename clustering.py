@@ -61,7 +61,8 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
             sf_output = row[columnToIndex]  # i.e. "sf_output" or "Negative Feedback"
             if sf_output != "" and isinstance(sf_output, str):
                 neg_feedback = row[csvColumnName]
-                writer.update_document(index=str(i), sf_output=sf_output, negative_feedback=neg_feedback)
+                response_id = row['Response ID']
+                writer.update_document(index=str(i), sf_output=sf_output, negative_feedback=neg_feedback, response_id = response_id)
             i += 1
         writer.commit()
 
@@ -82,6 +83,7 @@ def getSitesList():
 def createNormalizedMatrix(siteList):
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
+                    response_id=ID(stored=True),
                     sf_output=TEXT(stored=True),
                     negative_feedback=TEXT(stored=True))
     indexToImport = createIndex(schema)
@@ -397,9 +399,26 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
-def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X, fb):
+def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
     for cluster in num_clusters:
         print('Cluster', cluster)
+
+def clusterPerformanceMetrics(labels, myReader, num_clusters):
+    # NOTE: CSV MUST BE SORTED BY ID AND SAVED THAT WAY
+    sr = pd.read_csv('data/output_clusters_defined.csv')
+
+    for cluster in range(num_clusters):
+        clusterIndices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
+        docIndices = [int(doc_dict['index']) for (docnum, doc_dict) in myReader.iter_docs() if docnum in clusterIndices]
+        response_ids = [int(doc_dict['response_id']) for (docnum, doc_dict) in myReader.iter_docs() if
+                        docnum in clusterIndices]
+
+        manual_cluster_counts = sr.loc[sr['Response ID'].isin(response_ids)]['manual_clusters'].fillna('-1').astype(int).value_counts()
+        print("Cluster", cluster)
+        print(manual_cluster_counts)
+
+    return
+
 
 
 # run
@@ -411,6 +430,7 @@ labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFu
 feature_names_df = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
 print('Top 5 words in each cluster:')
 print(feature_names_df)
+clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
 print('We done.')
 
 
