@@ -30,6 +30,7 @@ import pprint
 import referenceFiles as rf
 import collections
 from sklearn.feature_extraction import text
+from nltk.tag import PerceptronTagger
 
 
 # SETTINGS - Paths
@@ -107,7 +108,7 @@ def createNormalizedMatrix(siteList):
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
                          myReader.most_frequent_terms("sf_output", 1000)]
 
-    wordVectorList = mostFrequentWords
+    wordVectorList = mostDistinctiveWords
     wordVectorList = [x for x in wordVectorList if x not in siteList]
     wordVectorList.remove('mozilla')
     wordVectorList.remove('firefox')
@@ -142,7 +143,7 @@ def kMeansClustering(X, numOfRows, myReader):
     # Run k-means
     # Setting number of clusters to hopefully split comments into sets of avg(10 FB comments)
     num_clusters = numOfRows / 10
-    num_clusters = 20
+    num_clusters = 9
     # TODO: make this (^) more robust / logical
     kmeans = KMeans(n_clusters=num_clusters, random_state = 40)
     # Fitting the input data
@@ -312,22 +313,6 @@ def kMeansClustering(X, numOfRows, myReader):
     # for content in myReader.iter_docs():
     #     fb.append(content)
 
-    # OTHER WORK - NOT USING
-    # the distance to the j'th centroid for each point in an array X
-    # d = kmeans.transform(X)[:, j]
-    # ind = np.argsort(d)[::-1][:5]
-    # print("Cluster", j)
-    # print("Indices of top 5 documents:", ind)
-    # print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
-    # # X[ind] # What is this?
-    # # SPECTURAL CLUSTERING
-    # # note: df_rows not imported from first function above (createNormalizedMatrix)
-    # from sklearn.cluster import SpectralClustering
-    # from sklearn.metrics.pairwise import pairwise_distances
-    # similarity_matrix = 1 - pairwise_distances(df_rows, metric='cosine')
-    # cosineScores = pd.DataFrame(similarity_matrix)
-    # clusters = SpectralClustering(n_clusters = 5, affinity = 'precomputed').fit(cosineScores)
-
     # TODO: need to decide what to return here for our clustering
     return labelsAsNums, kmeans, num_clusters, X #, fb
 
@@ -400,12 +385,77 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
     return feature_names_df
 
 def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
-    for cluster in num_clusters:
-        print('Cluster', cluster)
+    tagger = PerceptronTagger()
+    pos_tag = tagger.tag
+    grammar = r"""
+        NBAR:
+            {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
+
+        NP:
+            {<NBAR>}
+            {<NBAR><IN><NBAR>}  # Above, connected with in/of/etc...
+    """
+    # Create phrase tree
+    chunker = nltk.RegexpParser(grammar)
+
+    stop = ENGLISH_STOP_WORDS
+
+    lemmatizer = nltk.WordNetLemmatizer()
+    stemmer = nltk.stem.porter.PorterStemmer()
+
+    # generator, generate leaves one by one
+    def leaves(tree):
+        """Finds NP (nounphrase) leaf nodes of a chunk tree."""
+        for subtree in tree.subtrees(filter=lambda t: t.label() == 'NP' or t.label() == 'JJ' or t.label() == 'RB'):
+            yield subtree.leaves()
+
+    # stemming, lematizing, lower case...
+    def normalise(word):
+        """Normalises words to lowercase and stems and lemmatizes it."""
+        word = word.lower()
+        word = stemmer.stem(word)
+        word = lemmatizer.lemmatize(word)
+        return word
+
+    # stop-words and length control
+    def acceptable_word(word):
+        """Checks conditions for acceptable word: length, stopword."""
+        accepted = bool(2 <= len(word) <= 40
+                        and word.lower() not in stop)
+        return accepted
+
+    # generator, create item once a time
+    def get_terms(tree):
+        for leaf in leaves(tree):
+            term = [normalise(w) for w, t in leaf if acceptable_word(w)]
+            # Phrase only
+            if len(term) > 1:
+                yield term
+
+    def flatten(npTokenList):
+        finalList = []
+        for phrase in npTokenList:
+            token = ''
+            for word in phrase:
+                token += word + ' '
+            finalList.append(token.rstrip())
+        return finalList
+
+    counter = Counter()
+    for review in X.loc[operation(X[label_column], label_value)][value_column]:
+        counter.update(flatten([word
+                                for word
+                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', review))))
+                                ]))
+    topk = counter.most_common(k)
+    return topk
+
 
 def clusterPerformanceMetrics(labels, myReader, num_clusters):
     # NOTE: CSV MUST BE SORTED BY ID AND SAVED THAT WAY
     sr = pd.read_csv('data/output_clusters_defined.csv')
+    max = 0
+    total_count = 0
 
     for cluster in range(num_clusters):
         clusterIndices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
@@ -414,23 +464,72 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
                         docnum in clusterIndices]
 
         manual_cluster_counts = sr.loc[sr['Response ID'].isin(response_ids)]['manual_clusters'].fillna('-1').astype(int).value_counts()
+        max += manual_cluster_counts.nlargest(1).iloc[0]
+        total_count += sr.loc[sr['Response ID'].isin(response_ids)]['manual_clusters'].fillna('-1').astype(int).count()
         print("Cluster", cluster)
         print(manual_cluster_counts)
+        # frames.append(dict(manual_cluster_counts))
 
-    return
+    # pd.concat(frames, keys=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    purity = max/total_count
 
+    return purity
+
+def spectralClustering(X):
+    # SPECTURAL CLUSTERING
+    # note: df_rows not imported from first function above (createNormalizedMatrix)
+    from sklearn.cluster import SpectralClustering
+    from sklearn.metrics.pairwise import pairwise_distances
+
+    num_clusters = 9
+
+    # similarity_matrix = 1 - pairwise_distances(X, metric='cosine')
+    # cosineScores = pd.DataFrame(similarity_matrix)
+    clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
+    labelsAsNums = clusters.labels_
+    return labelsAsNums, clusters, num_clusters, X
+
+def hierarchicalClustering(X):
+    from sklearn.cluster import AgglomerativeClustering
+
+    num_cluster = 9
+    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='average').fit(X)
+    labelsAsNums = clusters.labels_
+    return labelsAsNums, clusters, num_clusters, X
 
 
 # run
 print('We startin')
 siteList = getSitesList()
 X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
+
+# K Means
+print(" --- K MEANS ---")
 labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
-# visualizeSpectural
-feature_names_df = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
+feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
 print('Top 5 words in each cluster:')
-print(feature_names_df)
-clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+print(feature_names_df_kmeans)
+purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+print('Purity', purity)
+
+# Spectral
+print(" --- SPECTRAL ---")
+labels, spectral, num_clusters, X = spectralClustering(X_norm)
+feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
+print('Top 5 words in each cluster:')
+print(feature_names_df_spectral)
+purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+print('Purity', purity)
+
+# Hierarchical
+# NOTE: currently not working because there are likely empty values??
+# print(" --- HIERARCHICAL ---")
+# labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
+# feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
+# print('Top 5 words in each cluster:')
+# print(feature_names_df_spectral)
+# clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+
 print('We done.')
 
 
