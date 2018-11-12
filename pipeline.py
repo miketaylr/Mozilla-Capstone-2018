@@ -4,6 +4,8 @@ import re
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
 import referenceFiles as rf
+import langid
+import re
 
 
 # FOR NOW just lower the terms in the dicts. Need to see how stemming and more can play into this
@@ -46,6 +48,12 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
     df = df.fillna(''); # repalce NaNs with blanks
     df = df.loc[df['Status'] == 'Complete'] # Only want completed surveys
     df = df.loc[df['Language'] == 'English'] # Only want english rows
+    df = df.loc[~df['Negative Feedback'].str.contains('[À-ÿ]')] # Only want rows without accented characters
+
+    # additional english filter
+    # df['Langid Language'] = df.apply(langid_language_filter, axis=1)
+    # df = df.loc[df['Langid Language'] == 'en']
+
     print("After filtering for English, only %d records remain" % len(df.index))
     # really basic spam filtering.  We can look at these separately and make spam more robust
     df = df.loc[(df['Positive Feedback']+df['Negative Feedback']).str.len() > 20] # If the length of the feedback is over 1k characters OR is less than 20 characters then it is spam.
@@ -99,6 +107,11 @@ def run_pipeline(top_sites_location, raw_data_location, num_records):
         combined = row['Positive Feedback'] + row['Negative Feedback']
         components = [k for k, v in WORDS_TO_COMPONENT.items() if any(map(lambda term: term in combined.lower(), v))]
         return ','.join(set(components))
+
+    def langid_language_filter(row):
+        combined = row['Positive Feedback'] + row['Negative Feedback']
+        language = [langid.classify(text)[0] for text in combined.lower()]
+        return language
 
 
     # Initialize and derive 4 new columns
