@@ -200,26 +200,33 @@ def remove_spam(df, nsi):
 def performance_metrics_spam_removal():
     return
 
-
-# Get the model and check its accuracy
 print('We starting.')
 
-# # Train Classifier on labelled data
-# # NOTE: run this the first time if you don't have the classifier built
-# df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
-# X = feature_extraction(df)
-# y = get_qrel(df)
-# clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
-# save_classifier_model(clf)
-# print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
+def train_classfier():
+    # Get the model and check its accuracy
+    # Train Classifier on labelled data
+    # NOTE: run this the first time if you don't have the classifier built
+    df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
+    X = feature_extraction(df)
+    y = get_qrel(df)
+    clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
+    save_classifier_model(clf)
+    print(train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high)
+    return
 
-# Predict and remove spam in new csv
-loaded_clf = load_classifier("spamClassifier.sav")
-new_df = text_preparation_unlabelled(OUTPUT_PIPELINE)
-X = feature_extraction(new_df)
-y = score_new_data(loaded_clf, X)
-nsi = get_nonspam_indices(y).tolist()
 
-remove_spam(new_df, nsi).to_csv(rf.filePath(rf.OUTPUT_SPAM_REMOVAL))
+def predict(INPUT):
+    # Predict and remove spam in new csv
+    loaded_clf = load_classifier("spamClassifier.sav")
+    new_df = text_preparation_unlabelled(INPUT)
+    X = feature_extraction(new_df)
+    y = score_new_data(loaded_clf, X)
+    nsi = get_nonspam_indices(y).tolist()
+    remove_spam(new_df, nsi).to_csv(rf.filePath(rf.OUTPUT_SPAM_REMOVAL))
+    return
 
+
+print('We starting.')
+train_classfier()
+predict(OUTPUT_PIPELINE)
 print('We done.')

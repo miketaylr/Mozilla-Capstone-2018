@@ -491,46 +491,49 @@ def spectralClustering(X):
 
 def hierarchicalClustering(X):
     from sklearn.cluster import AgglomerativeClustering
-
     num_cluster = 9
-    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='average').fit(X)
+    clusters = AgglomerativeClustering(n_clusters=num_cluster, affinity='cosine', linkage='average').fit(X)
     labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, num_clusters, X
+    return labelsAsNums, clusters, num_cluster, X
 
 
-# run
-print('We startin')
-siteList = getSitesList()
-X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
+def run():
+    # run
+    print('We startin')
+    siteList = getSitesList()
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
 
-# K Means
-print(" --- K MEANS ---")
-labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
-feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
-print('Top 5 words in each cluster:')
-print(feature_names_df_kmeans)
-purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-print('Purity', purity)
+    # K Means
+    print(" --- K MEANS ---")
+    labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_kmeans)
+    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
 
-# Spectral
-print(" --- SPECTRAL ---")
-labels, spectral, num_clusters, X = spectralClustering(X_norm)
-feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
-print('Top 5 words in each cluster:')
-print(feature_names_df_spectral)
-purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-print('Purity', purity)
+    # Spectral
+    print(" --- SPECTRAL ---")
+    labels, spectral, num_clusters, X = spectralClustering(X_norm)
+    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_spectral)
+    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
 
-# Hierarchical
-# NOTE: currently not working because there are likely empty values??
-# print(" --- HIERARCHICAL ---")
-# labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
-# feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
-# print('Top 5 words in each cluster:')
-# print(feature_names_df_spectral)
-# clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # Hierarchical
+    # NOTE: currently not working because there are likely empty values??
+    # print(" --- HIERARCHICAL ---")
+    # labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
+    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_spectral)
+    # clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
 
-print('We done.')
+    print('We done.')
+    return
+
+run()
 
 
 
