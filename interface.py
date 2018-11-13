@@ -1,12 +1,33 @@
+# IMPORTS
 import tkinter as tk
 import numpy as np
 import pandas as pd
 import holoviews as hv
+import referenceFiles as rf
+import pipeline as pl
+import spam_filter as sf
+import clustering as clustering
+import referenceFiles as rf
 hv.extension('bokeh' , 'matplotlib')
 from tkinter import ttk
 
 
-df = pd.read_csv('output.csv', encoding ="ISO-8859-1")
+# SETTINGS
+OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
+SITES = rf.filePath(rf.SITES)
+ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
+
+# MAIN FUNCTION, CALL ALL .py FILES
+# pipeline.py
+pl.run_pipeline(SITES, ORIGINAL_INPUT_DATA, 5000)
+# spam_filter.py
+# sf.train_classfier()
+sf.predict(OUTPUT_PIPELINE)
+# clustering.py
+clustering.run()
+
+
+df = pd.read_csv(OUTPUT_PIPELINE, encoding ="ISO-8859-1")
 print(df.shape)
 
 scatter = hv.Scatter(df,'compound', 'neg')

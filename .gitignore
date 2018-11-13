@@ -1,6 +1,16 @@
+allwords.txt
 *.csv
 Top Sites for Report Analysis.csv
 20180912113810-SurveyExport.csv
 refined.csv
 results.csv
 nltk_df.csv
+venv/
+.idea/*
+.idea/Mozilla-Capstone-2018.iml
+.idea/misc.xml
+.idea/workspace.xml
+data/
+referenceFiles.cpython-36
+*.png
+__pycache__/
