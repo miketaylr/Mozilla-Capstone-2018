@@ -15,11 +15,18 @@ colors = {
 }
 
 app.layout = html.Div(style={'backgroundColor': colors['background']}, children=[
+    html.H1('Dash Tabs component demo'),
+    dcc.Tabs(id="tabs-example", value='tab-1-example', children=[
+        dcc.Tab(label='Trending Issues', value='tab-1-example'),
+        dcc.Tab(label='Commmon Issues', value='tab-2-example'),
+        dcc.Tab(label='Search', value='tab-3-example'),
+    ]),
+    html.Div(id='tabs-content-example'),
     html.H1(
         children='Mozilla Customer Feedback Analytics Tool',
         style={
-            'textAlign': 'center',
-            'color': colors['text']
+            'textAlign': 'center'
+
         }
     ),
 
@@ -43,17 +50,41 @@ app.layout = html.Div(style={'backgroundColor': colors['background']}, children=
                 }
             }
         }
-    ),
-    html.Label('Dropdown'),
-    dcc.Dropdown(
-        options=[
-            {'label': 'New York City', 'value': 'NYC'},
-            {'label': u'Montréal', 'value': 'MTL'},
-            {'label': 'San Francisco', 'value': 'SF'}
-        ],
-        value='MTL'
     )
 ])
+
+@app.callback(dash.dependencies.Output('tabs-content-example', 'children'),
+              [dash.dependencies.Input('tabs-example', 'value')])
+
+def render_content(tab):
+    if tab == 'tab-1-example':
+        return html.Div([
+            html.H3('Tab content 1'),
+            dcc.Graph(
+                id='graph-1-tabs',
+                figure={
+                    'data': [{
+                        'x': [1, 2, 3],
+                        'y': [3, 1, 2],
+                        'type': 'bar'
+                    }]
+                }
+            )
+        ])
+    elif tab == 'tab-2-example':
+        return html.Div([
+            html.H3('Tab content 2'),
+            dcc.Graph(
+                id='graph-2-tabs',
+                figure={
+                    'data': [{
+                        'x': [1, 2, 3],
+                        'y': [5, 10, 6],
+                        'type': 'bar'
+                    }]
+                }
+            )
+        ])
 
 if __name__ == '__main__':
     app.run_server(debug=True)
