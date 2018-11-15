@@ -31,14 +31,13 @@ import referenceFiles as rf
 import collections
 from sklearn.feature_extraction import text
 from nltk.tag import PerceptronTagger
+from sklearn.cluster import SpectralClustering
 
 
 # SETTINGS - Paths
 DIRECTORY = ""
 OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
 SITES = rf.filePath(rf.SITES)
-
-# TODO: get a directory for the new spam removal output
 
 
 def createIndex(schema):
@@ -67,9 +66,9 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
             i += 1
         writer.commit()
 
+
 def getSitesList():
     sites = pd.read_csv(SITES, usecols=['Domains', 'Brand'])
-    # , skiprows = 50, nrows = 25
     # display(sites)
     siteList = list(sites.values.flatten())
 
@@ -81,7 +80,8 @@ def getSitesList():
     siteList = [site.strip('.*').lower() for site in list(filter(lambda site: ',' not in site, siteList))]
     return siteList
 
-def createNormalizedMatrix(siteList):
+
+def createNormalizedMatrix():
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -139,7 +139,7 @@ def createNormalizedMatrix(siteList):
     return X_norm, rcOfX[0], myReader
 
 
-def kMeansClustering(X, numOfRows, myReader):
+def kMeansClustering(X, numOfRows):
     # Run k-means
     # Setting number of clusters to hopefully split comments into sets of avg(10 FB comments)
     num_clusters = numOfRows / 10
@@ -342,27 +342,7 @@ def visualizeSpectural():
     return
 
 
-def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
-        # # Get the key features (in our case, words) for each cluster
-        # for j in range(num_clusters):
-        #     relevantFB = ["",""]
-        #     FBnum = 0
-        #     for label in labels:
-        #         if label == j:
-        #             thisTuple = fb[FBnum]
-        #             relevantFB.append(thisTuple[1])
-        #         FBnum = FBnum + 1
-        #     df = pd.DataFrame(relevantFB)
-        #     vectorizer = CountVectorizer(min_df=1, stop_words='english')
-        #     featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
-        #     print(vectorizer.get_feature_names())
-        #     print(featuresCounted.toarray())
-        #     print("hey")
-
-    # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
-    # Pulling out key words to label cluster / understand what is in each cluster
-    # pull out documents of each cluster --> tf idf for key words
-    # test_cluster = 12
+def labelClustersWKeywords(labels, myReader, num_clusters):
     top_features_list = []
 
     for cluster in range(num_clusters):
@@ -384,7 +364,8 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
-def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X, k):
+
+def labelClustersWithKeyPhrases(labels, myReader, num_clusters, k):
     for cluster in range(num_clusters):
         indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
         clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] #
@@ -480,10 +461,10 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
 
     return purity
 
+
 def spectralClustering(X):
     # SPECTURAL CLUSTERING
     # note: df_rows not imported from first function above (createNormalizedMatrix)
-    from sklearn.cluster import SpectralClustering
     from sklearn.metrics.pairwise import pairwise_distances
 
     num_clusters = 9
@@ -493,6 +474,7 @@ def spectralClustering(X):
     clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
     labelsAsNums = clusters.labels_
     return labelsAsNums, clusters, num_clusters, X
+
 
 def hierarchicalClustering(X):
     from sklearn.cluster import AgglomerativeClustering
@@ -506,12 +488,12 @@ def run():
     # run
     print('We startin')
     siteList = getSitesList()
-    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
 
     # K Means
     print(" --- K MEANS ---")
-    labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
+    labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
     print('Top 5 words in each cluster:')
     print(feature_names_df_kmeans)
     purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
@@ -520,7 +502,7 @@ def run():
     # Spectral
     print(" --- SPECTRAL ---")
     labels, spectral, num_clusters, X = spectralClustering(X_norm)
-    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
+    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
     print('Top 5 words in each cluster:')
     print(feature_names_df_spectral)
     purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
@@ -537,6 +519,7 @@ def run():
 
     print('We done.')
     return
+
 
 run()
 
