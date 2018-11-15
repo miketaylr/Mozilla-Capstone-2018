@@ -109,7 +109,7 @@ def createNormalizedMatrix(siteList):
                          myReader.most_frequent_terms("sf_output", 1000)]
 
     wordVectorList = mostDistinctiveWords
-    wordVectorList = [x for x in wordVectorList if x not in siteList]
+    # wordVectorList = [x for x in wordVectorList if x not in siteList]
     wordVectorList.remove('mozilla')
     wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
@@ -384,7 +384,12 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
-def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
+def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X, k):
+    for cluster in range(num_clusters):
+        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
+        clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] #
+
+
     tagger = PerceptronTagger()
     pos_tag = tagger.tag
     grammar = r"""
@@ -442,10 +447,10 @@ def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
         return finalList
 
     counter = Counter()
-    for review in X.loc[operation(X[label_column], label_value)][value_column]:
+    for doc_dict in myReader.iter_docs():
         counter.update(flatten([word
                                 for word
-                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', review))))
+                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', doc_dict['negative_feedback']))))
                                 ]))
     topk = counter.most_common(k)
     return topk
