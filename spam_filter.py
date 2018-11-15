@@ -77,6 +77,7 @@ def clean_feedback(row):
     # To install pattern:
     # RUN 'pip install pattern' OR RUN 'conda install -c conda-forge implicit'
     # -> To install Visual C++: http://go.microsoft.com/fwlink/?LinkId=691126&fixForIE=.exe.
+    #  https://intellij-support.jetbrains.com/hc/en-us/community/posts/360000034884-pip-install-mysql-Error-error-command-C-Program-Files-x86-Microsoft-Visual-Studio-2017-BuildTools-VC-Tools-MSVC-14-12-25827-bin-HostX86-x86-cl-exe-failed-with-exit-status-2
     # To debug installation: links ->
     # Bug discussion: https://github.com/benfred/implicit/issues/76,
     #  https://stackoverflow.com/questions/29846087/microsoft-visual-c-14-0-is-required-unable-to-find-vcvarsall-bat,
