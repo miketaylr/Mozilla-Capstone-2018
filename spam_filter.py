@@ -9,10 +9,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, recall_score
 from collections import Counter
-from nltk.stem.wordnet import WordNetLemmatizer
 import pickle as pickle
 import referenceFiles as rf
-
+from pattern.en import *
+from gensim.utils import lemmatize
 
 # SETTINGS
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
@@ -74,11 +74,18 @@ def text_preparation_unlabelled(filename):
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
     stemmer = StemFilter()
-    lemm = WordNetLemmatizer() # DON"T USE WORDNET
+    # To install pattern:
+    # RUN 'pip install pattern' OR RUN 'conda install -c conda-forge implicit'
+    # -> To install Visual C++: http://go.microsoft.com/fwlink/?LinkId=691126&fixForIE=.exe.
+    # To debug installation: links ->
+    # Bug discussion: https://github.com/benfred/implicit/issues/76,
+    #  https://stackoverflow.com/questions/29846087/microsoft-visual-c-14-0-is-required-unable-to-find-vcvarsall-bat,
+    #  https://stackoverflow.com/questions/50320424/error-when-installing-mysqlclient
+    # Lemmatizers found @ https: // www.machinelearningplus.com / nlp / lemmatization - examples - python /
     combined = row['Positive Feedback'] + row['Negative Feedback']  # Feedback will either be positive or negative
                                                                     # can filter for negative only later on
+    lemmList = [word.decode('utf-8').split('/')[0] for word in lemmatize(combined)]
     tokenWords = [token.text for token in tokenizer(combined)]
-    lemmList = [lemm.lemmatize(word) for word in tokenWords]
     stemWords = [stemmer.stemfn(word) for word in tokenWords]
     final = tokenWords + lemmList + stemWords
     # Join by space so it is easy for RegexTokenizer to manage
