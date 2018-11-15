@@ -18,6 +18,7 @@ from gensim.utils import lemmatize
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
 ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
+TOP_WORDS = rf.filePath(rf.TOP_WORDS)
 
 df_raw = pd.DataFrame
 
@@ -107,18 +108,25 @@ def get_top_words(df):
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         count.update(wordList)
     totalNumWords = sum(count.values())
+    numUniqueWords = len(count)
     finalWordList = [word for (word, freq) in count.most_common(round(totalNumWords/10))]
     # TODO:
     #       Discuss whether it is a good idea to take top words (might it actually
     #       be better to take least common?) Just an idea...
+    with open(TOP_WORDS, 'wb') as fp:
+        pickle.dump(finalWordList, fp)
     return finalWordList
 
 
 # 2 Feature Extraction
-def feature_extraction(df):
+def feature_extraction(df, get_new_words=True):
     tokenizer = RegexTokenizer()
     binary_appearance_df = []
-    featureWords = get_top_words(df)
+    if (get_new_words):
+        featureWords = get_top_words(df)
+    else:
+        with open(TOP_WORDS, 'rb') as fp:
+            featureWords = pickle.load(fp)
     for index, row in df.iterrows():
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         binary_appearance_df.append([1 if word in wordList else 0 for word in featureWords])
@@ -210,11 +218,11 @@ def performance_metrics_spam_removal():
 
 print('We starting.')
 
-def train_classfier():
+def train_classifier(filePath):
     # Get the model and check its accuracy
     # Train Classifier on labelled data
     # NOTE: run this the first time if you don't have the classifier built
-    df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
+    df = text_preparation(filePath)
     X = feature_extraction(df)
     y = get_qrel(df)
     clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
@@ -227,7 +235,7 @@ def predict(INPUT):
     # Predict and remove spam in new csv
     loaded_clf = load_classifier("spamClassifier.sav")
     new_df = text_preparation_unlabelled(INPUT)
-    X = feature_extraction(new_df)
+    X = feature_extraction(new_df, False)
     y = score_new_data(loaded_clf, X)
     nsi = get_nonspam_indices(y).tolist()
     remove_spam(new_df, nsi).to_csv(rf.filePath(rf.OUTPUT_SPAM_REMOVAL))
@@ -235,6 +243,6 @@ def predict(INPUT):
 
 
 print('We starting.')
-train_classfier()
+train_classifier(rf.filePath(rf.SPAM_LABELLED))
 predict(OUTPUT_PIPELINE)
 print('We done.')
