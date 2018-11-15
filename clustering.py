@@ -32,6 +32,7 @@ import collections
 from sklearn.feature_extraction import text
 from nltk.tag import PerceptronTagger
 from sklearn.cluster import SpectralClustering
+from numpy import array
 
 
 # SETTINGS - Paths
@@ -119,6 +120,7 @@ def createNormalizedMatrix():
 
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
+    feedback_length = []
     word_list = wordVectorList
 
     # TODO: redundant code, remove this
@@ -129,13 +131,23 @@ def createNormalizedMatrix():
             if row["Negative Feedback"] != "" and isinstance(value, str): # Only looking for feedback that filled in negative feedback
                 file_words = tokenizer.tokenize(value)
                 df_rows.append([1 if word in file_words else 0 for word in word_list])
-        X = pd.DataFrame(df_rows, columns=word_list)
+                if isinstance(row["Negative Feedback"], str):
+                    feedback_length.append(len(row["Negative Feedback"]))
+                else:
+                    feedback_length.append(0)
+        X_raw = pd.DataFrame(df_rows, columns=word_list)
+        length_feature = pd.DataFrame({'fb_length': np.array(feedback_length)})
+        X = X_raw.join(length_feature)
+        print(list(X))
         # convert to numpy array
         data = np.array(df_rows)
         # length normalization
-        X_norm = preprocessing.normalize(data, norm='l2')
+        X_norm_raw = preprocessing.normalize(data, norm='l2')
+        length_feature_norm = preprocessing.normalize(length_feature.values, norm='l1')
+        # TODO: fix the normalization of the length feature
+        X_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
         rcOfX = X.shape
-        # (r,c) = X.shape
+        #(r, c) = X.shape
     return X_norm, rcOfX[0], myReader
 
 
