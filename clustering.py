@@ -34,11 +34,12 @@ from nltk.tag import PerceptronTagger
 from sklearn.cluster import SpectralClustering
 from numpy import array
 
-
 # SETTINGS - Paths
 DIRECTORY = ""
 OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
 SITES = rf.filePath(rf.SITES)
+
+pd.set_option('display.max_columns',10)
 
 
 def createIndex(schema):
@@ -376,12 +377,8 @@ def labelClustersWKeywords(labels, myReader, num_clusters):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
-
-def labelClustersWithKeyPhrases(labels, myReader, num_clusters, k):
-    for cluster in range(num_clusters):
-        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
-        clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] #
-
+def labelClustersWithKeyPhrases(labels, myReader, num_clusters, n):
+    top_features_list = []
 
     tagger = PerceptronTagger()
     pos_tag = tagger.tag
@@ -439,15 +436,25 @@ def labelClustersWithKeyPhrases(labels, myReader, num_clusters, k):
             finalList.append(token.rstrip())
         return finalList
 
-    counter = Counter()
-    for doc_dict in myReader.iter_docs():
+    for cluster in range(num_clusters):
+        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
+        clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] #
+        clusterCorpus = ' '.join(clusterCorpus)
+
+        counter = Counter()
         counter.update(flatten([word
                                 for word
-                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', doc_dict['negative_feedback']))))
+                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', clusterCorpus))))
                                 ]))
-    topk = counter.most_common(k)
-    return topk
 
+        most_common_n = counter.most_common(n)
+
+        top_features = [feature[0] for feature in most_common_n]
+        top_features_list.append(top_features)
+
+    feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
+
+    return feature_names_df
 
 def clusterPerformanceMetrics(labels, myReader, num_clusters):
     # NOTE: CSV MUST BE SORTED BY ID AND SAVED THAT WAY
@@ -506,8 +513,11 @@ def run():
     print(" --- K MEANS ---")
     labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB)
     feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
     print('Top 5 words in each cluster:')
     print(feature_names_df_kmeans)
+    print('Top 5 phrases in each cluster:')
+    print(feature_phrases_df_kmeans)
     purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
     print('Purity', purity)
 
@@ -515,8 +525,11 @@ def run():
     print(" --- SPECTRAL ---")
     labels, spectral, num_clusters, X = spectralClustering(X_norm)
     feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
     print('Top 5 words in each cluster:')
     print(feature_names_df_spectral)
+    print('Top 5 phrases in each cluster:')
+    print(feature_phrases_df_spectral)
     purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
     print('Purity', purity)
 
