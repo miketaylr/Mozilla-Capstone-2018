@@ -135,6 +135,8 @@ def createNormalizedMatrix():
                     feedback_length.append(len(row["Negative Feedback"]))
                 else:
                     feedback_length.append(0)
+                if isinstance(row["Date Submitted"], str):
+                    print(row["Date Submitted"])
         X_raw = pd.DataFrame(df_rows, columns=word_list)
         length_feature = pd.DataFrame({'fb_length': np.array(feedback_length)})
         X = X_raw.join(length_feature)
@@ -146,8 +148,7 @@ def createNormalizedMatrix():
         length_feature_norm = preprocessing.normalize(length_feature.values, norm='l1')
         # TODO: fix the normalization of the length feature
         X_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
-        rcOfX = X.shape
-        #(r, c) = X.shape
+        rcOfX = X_norm.shape
     return X_norm, rcOfX[0], myReader
 
 
