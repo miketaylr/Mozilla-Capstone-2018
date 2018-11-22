@@ -33,6 +33,7 @@ from sklearn.feature_extraction import text
 from nltk.tag import PerceptronTagger
 from sklearn.cluster import SpectralClustering
 from numpy import array
+from datetime import datetime as datetime
 
 # SETTINGS - Paths
 DIRECTORY = ""
@@ -122,6 +123,7 @@ def createNormalizedMatrix():
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
     feedback_length = []
+    time_difference = []
     word_list = wordVectorList
 
     # TODO: redundant code, remove this
@@ -136,19 +138,28 @@ def createNormalizedMatrix():
                     feedback_length.append(len(row["Negative Feedback"]))
                 else:
                     feedback_length.append(0)
+                # https://stats.stackexchange.com/questions/105959/best-way-to-turn-a-date-into-a-numerical-feature
                 if isinstance(row["Date Submitted"], str):
-                    print(row["Date Submitted"])
+                    reference_now = datetime.now()
+                    date_time_str = row["Date Submitted"]
+                    datetime_formatted = datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S')
+                    difference = (reference_now-datetime_formatted)
+                    time_difference.append(int(difference.total_seconds()))
         X_raw = pd.DataFrame(df_rows, columns=word_list)
         length_feature = pd.DataFrame({'fb_length': np.array(feedback_length)})
-        X = X_raw.join(length_feature)
+        time_feature = pd.DataFrame({'time_to_now': np.array(time_difference)})
+        X_and_length = X_raw.join(length_feature)
+        X = X_and_length.join(time_feature)
         print(list(X))
         # convert to numpy array
         data = np.array(df_rows)
         # length normalization
         X_norm_raw = preprocessing.normalize(data, norm='l2')
         length_feature_norm = preprocessing.normalize(length_feature.values, norm='l1')
-        # TODO: fix the normalization of the length feature
-        X_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
+        time_feature_norm = preprocessing.normalize(time_feature.values, norm='l1')
+        # TODO: fix the normalization of the length feature and time feature
+        X_and_length_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
+        X_norm = np.append(X_and_length_norm, time_feature_norm, axis=1)
         rcOfX = X_norm.shape
     return X_norm, rcOfX[0], myReader
 
@@ -379,6 +390,7 @@ def labelClustersWKeywords(labels, myReader, num_clusters):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
+
 def labelClustersWithKeyPhrases(labels, myReader, num_clusters, n):
     top_features_list = []
 
@@ -458,6 +470,7 @@ def labelClustersWithKeyPhrases(labels, myReader, num_clusters, n):
 
     return feature_names_df
 
+
 def clusterPerformanceMetrics(labels, myReader, num_clusters):
     # NOTE: CSV MUST BE SORTED BY ID AND SAVED THAT WAY
     sr = pd.read_csv('data/output_clusters_defined.csv')
@@ -492,7 +505,7 @@ def spectralClustering(X, num_clusters):
     # cosineScores = pd.DataFrame(similarity_matrix)
     clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
     labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, num_clusters, X
+    return labelsAsNums, clusters, X
 
 
 def hierarchicalClustering(X):
@@ -501,6 +514,7 @@ def hierarchicalClustering(X):
     clusters = AgglomerativeClustering(n_clusters=num_cluster, affinity='cosine', linkage='average').fit(X)
     labelsAsNums = clusters.labels_
     return labelsAsNums, clusters, num_cluster, X
+
 
 def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     # Purity elbow graph
@@ -514,6 +528,7 @@ def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     # DO NOT RUN THIS AGAIN IT TAKES FOREVER
     # plt.savefig("purityElbowMethod.png")
 
+
 def run():
     # run
     print('We startin')
@@ -522,28 +537,28 @@ def run():
     X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
     #
     # # K Means
-    # print(" --- K MEANS ---")
-    # labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
-    # feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    # feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    # print('Top 5 words in each cluster:')
-    # print(feature_names_df_kmeans)
-    # print('Top 5 phrases in each cluster:')
-    # print(feature_phrases_df_kmeans)
-    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    # print('Purity', purity)
+    print(" --- K MEANS ---")
+    labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_kmeans)
+    print('Top 5 phrases in each cluster:')
+    print(feature_phrases_df_kmeans)
+    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
     #
     # # Spectral
-    # print(" --- SPECTRAL ---")
-    # labels, spectral, X = spectralClustering(X_norm, num_clusters)
-    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    # feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    # print('Top 5 words in each cluster:')
-    # print(feature_names_df_spectral)
-    # print('Top 5 phrases in each cluster:')
-    # print(feature_phrases_df_spectral)
-    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    # print('Purity', purity)
+    print(" --- SPECTRAL ---")
+    labels, spectral, X = spectralClustering(X_norm, num_clusters)
+    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_spectral)
+    print('Top 5 phrases in each cluster:')
+    print(feature_phrases_df_spectral)
+    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
 
     # Hierarchical
     # NOTE: currently not working because there are likely empty values??
