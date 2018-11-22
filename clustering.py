@@ -518,14 +518,19 @@ def hierarchicalClustering(X, num_clusters):
 def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     # Purity elbow graph
     purity = []
-    for n in range(3, 100):
+    clusterSize = []
+    for n in range(20, 1000, 20):
         labels, kmeans, X = kMeansClustering(X_norm, numOfFB, n)
         clusterPurity = clusterPerformanceMetrics(labels, readerForFullFB, n)
         print(clusterPurity)
         purity.append(clusterPurity)
-    plt.plot(purity)
+        clusterSize.append(n)
+    plt.plot(clusterSize, purity)
+    plt.title('Purity vs Number of Clusters using Kmeans')
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Purity')
     # DO NOT RUN THIS AGAIN IT TAKES FOREVER
-    # plt.savefig("purityElbowMethod.png")
+    plt.savefig("purityElbowMethod1000.png")
 
 
 def run():
@@ -561,16 +566,16 @@ def run():
 
     # Hierarchical
     # NOTE: currently not working because there are likely empty values??
-    print(" --- HIERARCHICAL ---")
-    labels, hierarchicalClusters, X = hierarchicalClustering(X_norm, num_clusters)
-    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    print('Top 5 words in each cluster:')
-    print(feature_names_df_spectral)
-    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
+    # print(" --- HIERARCHICAL ---")
+    # labels, hierarchicalClusters, X = hierarchicalClustering(X_norm, num_clusters)
+    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_spectral)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
 
     # Graph Purity vs num of clusters (for performance metrics purposes)
-    # purityElbowGraph()
+    purityElbowGraph(X_norm, numOfFB, readerForFullFB)
 
     print('We done.')
     return
