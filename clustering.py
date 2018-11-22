@@ -508,12 +508,11 @@ def spectralClustering(X, num_clusters):
     return labelsAsNums, clusters, X
 
 
-def hierarchicalClustering(X):
+def hierarchicalClustering(X, num_clusters):
     from sklearn.cluster import AgglomerativeClustering
-    num_cluster = 9
-    clusters = AgglomerativeClustering(n_clusters=num_cluster, affinity='cosine', linkage='average').fit(X)
+    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='average').fit(X)
     labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, num_cluster, X
+    return labelsAsNums, clusters, X
 
 
 def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
@@ -535,39 +534,40 @@ def run():
     siteList = getSitesList()
     num_clusters = 100
     X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
-    #
-    # # K Means
-    print(" --- K MEANS ---")
-    labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    print('Top 5 words in each cluster:')
-    print(feature_names_df_kmeans)
-    print('Top 5 phrases in each cluster:')
-    print(feature_phrases_df_kmeans)
-    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
-    #
-    # # Spectral
-    print(" --- SPECTRAL ---")
-    labels, spectral, X = spectralClustering(X_norm, num_clusters)
-    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    print('Top 5 words in each cluster:')
-    print(feature_names_df_spectral)
-    print('Top 5 phrases in each cluster:')
-    print(feature_phrases_df_spectral)
-    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
+
+    # # # K Means
+    # print(" --- K MEANS ---")
+    # labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
+    # feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    # feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_kmeans)
+    # print('Top 5 phrases in each cluster:')
+    # print(feature_phrases_df_kmeans)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
+    # #
+    # # # Spectral
+    # print(" --- SPECTRAL ---")
+    # labels, spectral, X = spectralClustering(X_norm, num_clusters)
+    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    # feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_spectral)
+    # print('Top 5 phrases in each cluster:')
+    # print(feature_phrases_df_spectral)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
 
     # Hierarchical
     # NOTE: currently not working because there are likely empty values??
-    # print(" --- HIERARCHICAL ---")
-    # labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
-    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
-    # print('Top 5 words in each cluster:')
-    # print(feature_names_df_spectral)
-    # clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print(" --- HIERARCHICAL ---")
+    labels, hierarchicalClusters, X = hierarchicalClustering(X_norm, num_clusters)
+    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_spectral)
+    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
 
     # Graph Purity vs num of clusters (for performance metrics purposes)
     # purityElbowGraph()
