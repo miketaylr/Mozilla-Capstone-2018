@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 df = pd.read_csv('./data/output.csv')
+df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv')
 
 data = [ dict(
         type = 'choropleth',
@@ -39,41 +40,49 @@ layout = dict(
     )
 )
 
-fig = dict( data=data, layout=layout) 
+fig = dict( data=data, layout=layout)
 
-trace1 = go.Bar(
-    x=['Youtube', 'Baidu', 'Facebook', 'Yahoo', 'Vimeo'],
-    y=[20, 14, 23, 16, 45],
-    name='Performance'
-)
-trace2 = go.Bar(
-    x=['Youtube', 'Baidu', 'Facebook', 'Yahoo', 'Vimeo'],
-    y=[0, 18, 29, 3, 11],
-    name='Crashes'
-)
-trace3 = go.Bar(
-    x=['Youtube', 'Baidu', 'Facebook', 'Yahoo', 'Vimeo'],
-    y=[1, 5, 27, 19, 22],
-    name='Security'
-)
-trace4 = go.Bar(
-    x=['Youtube', 'Baidu', 'Facebook', 'Yahoo', 'Vimeo'],
-    y=[12, 18, 2, 0, 1],
-    name='Not supported'
-)
-trace5 = go.Bar(
-    x=['Youtube', 'Baidu', 'Facebook', 'Yahoo', 'Vimeo'],
-    y=[19, 0, 4, 16, 8],
-    name='Regressions'
-)
+arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+numClusters = 5
+traces = []
 
-data2 = [trace1, trace2, trace3, trace4, trace5]
+clusterNames = list(df1)
+clusterNames.pop(0)
+print(clusterNames)
+df1 = df1.set_index('Issue')
+words = df1.drop(arrayOfNames, axis=0)
+print(words.iloc[0].values[0])
+
+clusters = df1.drop('Words', axis=0)
+
+print(clusters)
+
+for index, row in clusters.iterrows():
+    row = list(row)
+    print(index)
+    traces.append(go.Bar(
+        x = words.iloc[0].values,
+        y = row,
+        name=index,
+        hoverinfo='x+y+name',
+    ))
+
+
 layout2 = go.Layout(
-    barmode='stack'
+    barmode='stack',
+    title='Issue Clusters',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        showticklabels=False,
+        title='Clusters'
+    ),
+    yaxis=dict(
+        title='Count of Issues'
+    )
 )
 
 
-fig2 = dict( data=data2, layout=layout2)
+fig2 = dict( data=traces, layout=layout2)
 
 
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
