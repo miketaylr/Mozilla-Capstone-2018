@@ -20,7 +20,6 @@ ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
 TOP_WORDS = rf.filePath(rf.TOP_WORDS)
 
-df_raw = pd.DataFrame
 
 # 1 Text Preparation
 def text_preparation(filename):
@@ -41,9 +40,6 @@ def text_preparation(filename):
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
     df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df_raw = df
-    # # Move this csv create to below...
-    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
 
 
@@ -64,37 +60,33 @@ def text_preparation_unlabelled(filename):
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
     df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df_raw = df
-    # df['sf_output'] = df.apply(apply_stem_overlap, axis=1) #TODO
-    df_raw = df
-    # # Move this csv create to below...
-    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
+    # token_corpus = get_token_corpus(df)
+    # df['overlap'] = df.apply(apply_stem_overlap, token_corpus, axis=1)
     return df
 
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
     stemmer = StemFilter()
-    # To install pattern:
-    # RUN 'pip install pattern' OR RUN 'conda install -c conda-forge implicit'
-    # -> To install Visual C++: http://go.microsoft.com/fwlink/?LinkId=691126&fixForIE=.exe.
-    #  https://intellij-support.jetbrains.com/hc/en-us/community/posts/360000034884-pip-install-mysql-Error-error-command-C-Program-Files-x86-Microsoft-Visual-Studio-2017-BuildTools-VC-Tools-MSVC-14-12-25827-bin-HostX86-x86-cl-exe-failed-with-exit-status-2
-    # To debug installation: links ->
-    # Bug discussion: https://github.com/benfred/implicit/issues/76,
-    #  https://stackoverflow.com/questions/29846087/microsoft-visual-c-14-0-is-required-unable-to-find-vcvarsall-bat,
-    #  https://stackoverflow.com/questions/50320424/error-when-installing-mysqlclient
-    # Lemmatizers found @ https: // www.machinelearningplus.com / nlp / lemmatization - examples - python /
     combined = row['Positive Feedback'] + row['Negative Feedback']  # Feedback will either be positive or negative
                                                                     # can filter for negative only later on
     lemmList = [word.decode('utf-8').split('/')[0] for word in lemmatize(combined)]
     tokenWords = [token.text for token in tokenizer(combined)]
     stemWords = [stemmer.stemfn(word) for word in tokenWords]
     final = tokenWords + lemmList + stemWords
-    # Join by space so it is easy for RegexTokenizer to manage
-    return ' '.join(set(final))
+    return ' '.join(set(final))  # Join by space so it is easy for RegexTokenizer to manage
 
 
-def apply_stem_overlap(row):
+def get_token_corpus(df):
+    counter = Counter()
+    for index, row in df.iterrows():
+        input = row['sf_output']
+        counter.update([word.lower() for word in re.findall(r'\\w+', input)])
+    corpus = list(counter)
+    return corpus
+
+
+def apply_stem_overlap(row, token_corpus):
     # TODO
     # https://stackoverflow.com/questions/49088978/how-to-create-corpus-from-pandas-data-frame-to-operate-with-nltk
     final = []
