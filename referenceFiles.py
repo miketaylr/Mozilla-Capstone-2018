@@ -12,5 +12,7 @@ OUTPUT_SPAM_REMOVAL = 'output_spam_removed.csv'
 OUTPUT_CATEGORIZATION = 'output_categorization.csv'
 OUTPUT_CLUSTER = 'output_clustering.csv'
 
+TOP_WORDS = 'topwords.txt'
+
 def filePath(file):
     return os.path.join(DIRECTORY, file)
