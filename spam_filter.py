@@ -21,6 +21,9 @@ OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
 TOP_WORDS = rf.filePath(rf.TOP_WORDS)
 
 
+overlap_corpus = []  # For overlap, yes, I know global variables are bad
+
+
 # 1 Text Preparation
 def text_preparation(filename):
     num_records = 5000
@@ -59,9 +62,10 @@ def text_preparation_unlabelled(filename):
     else:
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
-    df['sf_output'] = df.apply(clean_feedback, axis=1)
-    # token_corpus = get_token_corpus(df)
-    # df['overlap'] = df.apply(apply_stem_overlap, token_corpus, axis=1)
+    df['sf_output_raw'] = df.apply(clean_feedback, axis=1)
+    global overlap_corpus
+    overlap_corpus = get_overlap_corpus(df)
+    df['sf_output'] = df.apply(apply_stem_overlap, axis=1)
     return df
 
 
@@ -77,20 +81,47 @@ def clean_feedback(row):
     return ' '.join(set(final))  # Join by space so it is easy for RegexTokenizer to manage
 
 
-def get_token_corpus(df):
+def get_overlap_corpus(df):
     counter = Counter()
+    tokenizer = RegexTokenizer()
     for index, row in df.iterrows():
-        input = row['sf_output']
-        counter.update([word.lower() for word in re.findall(r'\\w+', input)])
-    corpus = list(counter)
-    return corpus
+        input = row['sf_output_raw']
+        tokenWords = [token.text for token in tokenizer(input)]
+        counter.update([word.lower() for word in tokenWords])
+    corpus_first = list(counter)
+    corpus_raw = sorted(corpus_first)
+    new_token_corpus = []
+    for word in corpus_raw:
+        # Get rid of all numbers, will not overlap those
+        if any(char.isdigit() for char in word):
+            print("Token is a number.")
+        elif len(word) < 4:
+            print("Word is small, throw out before overlapping.")
+        else:
+            new_token_corpus.append(word)
+    beginnings = []
+    for word in new_token_corpus:
+        for layer_word in new_token_corpus:
+            if layer_word != word:
+                if layer_word[:4] == word[:4]:
+                    start = word[:4]
+                    if start not in beginnings:
+                        beginnings.append(start)
+    overlap_corpus = beginnings
+    return overlap_corpus
 
 
-def apply_stem_overlap(row, token_corpus):
-    # TODO
-    # https://stackoverflow.com/questions/49088978/how-to-create-corpus-from-pandas-data-frame-to-operate-with-nltk
-    final = []
-    return ' '.join(set(final))
+def apply_stem_overlap(row):
+    global overlap_corpus
+    tokenizer = RegexTokenizer()
+    overlap = []
+    tokenWords = [token.text for token in tokenizer(row['sf_output_raw'])]
+    for beginning in overlap_corpus:
+        for token in tokenWords:
+            if beginning == token[:4]:
+                overlap.append(beginning)
+    final = overlap + tokenWords
+    return ' '.join(set(final))  # Join by space so it is easy for RegexTokenizer to manage
 
 
 def get_top_words(df):
@@ -208,7 +239,6 @@ def remove_spam(df, nsi):
 def performance_metrics_spam_removal():
     return
 
-print('We starting.')
 
 def train_classifier(filePath):
     # Get the model and check its accuracy
@@ -235,6 +265,6 @@ def predict(INPUT):
 
 
 print('We starting.')
-train_classifier(rf.filePath(rf.SPAM_LABELLED))
+# train_classifier(rf.filePath(rf.SPAM_LABELLED))
 predict(OUTPUT_PIPELINE)
 print('We done.')
