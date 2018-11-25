@@ -31,14 +31,16 @@ import referenceFiles as rf
 import collections
 from sklearn.feature_extraction import text
 from nltk.tag import PerceptronTagger
-
+from sklearn.cluster import SpectralClustering
+from numpy import array
+from datetime import datetime as datetime
 
 # SETTINGS - Paths
 DIRECTORY = ""
 OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
 SITES = rf.filePath(rf.SITES)
 
-# TODO: get a directory for the new spam removal output
+pd.set_option('display.max_columns',10)
 
 
 def createIndex(schema):
@@ -59,17 +61,17 @@ def addFilesToIndex(indexObj, csvPath, csvColumnName, columnToIndex):
         i = 0
         # read each row in file
         for row in csvreader:
-            sf_output = row[columnToIndex]  # i.e. "sf_output" or "Negative Feedback"
-            if sf_output != "" and isinstance(sf_output, str):
-                neg_feedback = row[csvColumnName]
+            sf_output = row[columnToIndex]
+            neg_feedback = row[csvColumnName]
+            if sf_output != "" and isinstance(sf_output, str) and neg_feedback != "":
                 response_id = row['Response ID']
                 writer.update_document(index=str(i), sf_output=sf_output, negative_feedback=neg_feedback, response_id = response_id)
             i += 1
         writer.commit()
 
+
 def getSitesList():
     sites = pd.read_csv(SITES, usecols=['Domains', 'Brand'])
-    # , skiprows = 50, nrows = 25
     # display(sites)
     siteList = list(sites.values.flatten())
 
@@ -81,7 +83,8 @@ def getSitesList():
     siteList = [site.strip('.*').lower() for site in list(filter(lambda site: ',' not in site, siteList))]
     return siteList
 
-def createNormalizedMatrix(siteList):
+
+def createNormalizedMatrix():
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -103,13 +106,13 @@ def createNormalizedMatrix(siteList):
     # print(myReader.frequency("cell_content", "android"))
     # 1000 most distinctive terms according by TF-IDF score
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
-                            myReader.most_distinctive_terms("sf_output", 1000)]
+                            myReader.most_distinctive_terms("sf_output", 1000) if term not in ENGLISH_STOP_WORDS]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
-                         myReader.most_frequent_terms("sf_output", 1000)]
+                         myReader.most_frequent_terms("sf_output", 1000) if term not in ENGLISH_STOP_WORDS]
 
     wordVectorList = mostDistinctiveWords
-    wordVectorList = [x for x in wordVectorList if x not in siteList]
+    # wordVectorList = [x for x in wordVectorList if x not in siteList]
     wordVectorList.remove('mozilla')
     wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
@@ -119,6 +122,8 @@ def createNormalizedMatrix(siteList):
 
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
+    feedback_length = []
+    time_difference = []
     word_list = wordVectorList
 
     # TODO: redundant code, remove this
@@ -129,21 +134,41 @@ def createNormalizedMatrix(siteList):
             if row["Negative Feedback"] != "" and isinstance(value, str): # Only looking for feedback that filled in negative feedback
                 file_words = tokenizer.tokenize(value)
                 df_rows.append([1 if word in file_words else 0 for word in word_list])
-        X = pd.DataFrame(df_rows, columns=word_list)
+                if isinstance(row["Negative Feedback"], str):
+                    feedback_length.append(len(row["Negative Feedback"]))
+                else:
+                    feedback_length.append(0)
+                # https://stats.stackexchange.com/questions/105959/best-way-to-turn-a-date-into-a-numerical-feature
+                if isinstance(row["Date Submitted"], str):
+                    reference_now = datetime.now()
+                    date_time_str = row["Date Submitted"]
+                    datetime_formatted = datetime.strptime(date_time_str, '%Y-%m-%d %H:%M:%S')
+                    difference = (reference_now-datetime_formatted)
+                    time_difference.append(int(difference.total_seconds()))
+        X_raw = pd.DataFrame(df_rows, columns=word_list)
+        length_feature = pd.DataFrame({'fb_length': np.array(feedback_length)})
+        time_feature = pd.DataFrame({'time_to_now': np.array(time_difference)})
+        X_and_length = X_raw.join(length_feature)
+        X = X_and_length.join(time_feature)
+        print(list(X))
         # convert to numpy array
         data = np.array(df_rows)
         # length normalization
-        X_norm = preprocessing.normalize(data, norm='l2')
-        rcOfX = X.shape
-        # (r,c) = X.shape
+        X_norm_raw = preprocessing.normalize(data, norm='l2')
+        length_feature_norm = preprocessing.normalize(length_feature.values, norm='l1')
+        time_feature_norm = preprocessing.normalize(time_feature.values, norm='l1')
+        # TODO: fix the normalization of the length feature and time feature
+        X_and_length_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
+        X_norm = np.append(X_and_length_norm, time_feature_norm, axis=1)
+        rcOfX = X_norm.shape
     return X_norm, rcOfX[0], myReader
 
 
-def kMeansClustering(X, numOfRows, myReader):
+def kMeansClustering(X, numOfRows, num_clusters):
     # Run k-means
     # Setting number of clusters to hopefully split comments into sets of avg(10 FB comments)
-    num_clusters = numOfRows / 10
-    num_clusters = 9
+    # num_clusters = numOfRows / 10
+    # num_clusters = 100
     # TODO: make this (^) more robust / logical
     kmeans = KMeans(n_clusters=num_clusters, random_state = 40)
     # Fitting the input data
@@ -184,114 +209,115 @@ def kMeansClustering(X, numOfRows, myReader):
     # NO NEED TO RUN IN FULL - END
 
     # Hardcoded results for the Elbow Method
-    hardcoded_k_average_inertia = [996.120161061241,
-                                   971.7098230964491,
-                                   952.7861704492907,
-                                   940.0619752427674,
-                                   930.3657061792022,
-                                   918.9592073457455,
-                                   913.3144481223687,
-                                   904.4124416003946,
-                                   899.1722839754657,
-                                   892.5348899721223,
-                                   886.2081548665992,
-                                   882.3200576031841,
-                                   876.2561460493231,
-                                   873.3579443954989,
-                                   872.4941626903143,
-                                   860.9788965520158,
-                                   857.7256214194788,
-                                   858.3513261388655,
-                                   849.9107789756945,
-                                   863.6939208114576,
-                                   849.2037298957055,
-                                   857.5146014551663,
-                                   841.618518098966,
-                                   838.8230763546278,
-                                   854.3754492848997,
-                                   838.8054622193555,
-                                   838.8318530622613,
-                                   841.0033798673194,
-                                   833.2005084255725,
-                                   834.2733973798707,
-                                   834.1165654175222,
-                                   827.8246892480283,
-                                   836.952528229488,
-                                   825.3197614813049,
-                                   820.8049740765731,
-                                   823.9590905268827,
-                                   828.0031583721487,
-                                   819.973746683602,
-                                   816.0232287008629,
-                                   817.9730221219867,
-                                   820.4044853040772,
-                                   814.288086508465,
-                                   811.6128144203527,
-                                   813.0555432612409,
-                                   807.676283599881,
-                                   805.7903274017217,
-                                   804.3946283001492,
-                                   803.1046028442654,
-                                   799.5363026790563,
-                                   800.2921945062519,
-                                   799.9831930769775,
-                                   795.2297044615738,
-                                   789.9335978665301,
-                                   791.234355887476,
-                                   787.3977369202623,
-                                   785.6841859244969,
-                                   783.6128876653244,
-                                   783.1338156363867,
-                                   781.3833871560394,
-                                   779.36039738337,
-                                   776.1094714925133,
-                                   777.4673197143093,
-                                   774.7611853114802,
-                                   775.4384916877741,
-                                   774.2833951321915,
-                                   772.3287205585614,
-                                   768.3819564072758,
-                                   767.067666157384,
-                                   765.1877408787177,
-                                   766.2524704529731,
-                                   764.8723960514769,
-                                   762.2987814004226,
-                                   763.2951371245215,
-                                   760.7149203386532,
-                                   758.0283566804861,
-                                   759.9373693631244,
-                                   755.2356418617525,
-                                   754.9851550722124,
-                                   755.6487467539771,
-                                   753.9849972170422,
-                                   753.2065379394986,
-                                   752.0247411403313,
-                                   750.8518415434044,
-                                   747.5611285933307,
-                                   746.5314162043006,
-                                   746.9835885662785,
-                                   744.1933443536657,
-                                   744.2392574129924,
-                                   740.090415931636,
-                                   740.3859578173405,
-                                   739.4696035101149,
-                                   740.4889528631908,
-                                   734.9103664672026,
-                                   738.5949419195221,
-                                   737.2100816822667,
-                                   733.1439525352407,
-                                   735.0596370040473,
-                                   734.0226564464822,
-                                   730.1183747156763,
-                                   731.249786453746]
-    plt.plot(hardcoded_k_average_inertia)
+    # hardcoded_k_average_inertia = [996.120161061241,
+    #                                971.7098230964491,
+    #                                952.7861704492907,
+    #                                940.0619752427674,
+    #                                930.3657061792022,
+    #                                918.9592073457455,
+    #                                913.3144481223687,
+    #                                904.4124416003946,
+    #                                899.1722839754657,
+    #                                892.5348899721223,
+    #                                886.2081548665992,
+    #                                882.3200576031841,
+    #                                876.2561460493231,
+    #                                873.3579443954989,
+    #                                872.4941626903143,
+    #                                860.9788965520158,
+    #                                857.7256214194788,
+    #                                858.3513261388655,
+    #                                849.9107789756945,
+    #                                863.6939208114576,
+    #                                849.2037298957055,
+    #                                857.5146014551663,
+    #                                841.618518098966,
+    #                                838.8230763546278,
+    #                                854.3754492848997,
+    #                                838.8054622193555,
+    #                                838.8318530622613,
+    #                                841.0033798673194,
+    #                                833.2005084255725,
+    #                                834.2733973798707,
+    #                                834.1165654175222,
+    #                                827.8246892480283,
+    #                                836.952528229488,
+    #                                825.3197614813049,
+    #                                820.8049740765731,
+    #                                823.9590905268827,
+    #                                828.0031583721487,
+    #                                819.973746683602,
+    #                                816.0232287008629,
+    #                                817.9730221219867,
+    #                                820.4044853040772,
+    #                                814.288086508465,
+    #                                811.6128144203527,
+    #                                813.0555432612409,
+    #                                807.676283599881,
+    #                                805.7903274017217,
+    #                                804.3946283001492,
+    #                                803.1046028442654,
+    #                                799.5363026790563,
+    #                                800.2921945062519,
+    #                                799.9831930769775,
+    #                                795.2297044615738,
+    #                                789.9335978665301,
+    #                                791.234355887476,
+    #                                787.3977369202623,
+    #                                785.6841859244969,
+    #                                783.6128876653244,
+    #                                783.1338156363867,
+    #                                781.3833871560394,
+    #                                779.36039738337,
+    #                                776.1094714925133,
+    #                                777.4673197143093,
+    #                                774.7611853114802,
+    #                                775.4384916877741,
+    #                                774.2833951321915,
+    #                                772.3287205585614,
+    #                                768.3819564072758,
+    #                                767.067666157384,
+    #                                765.1877408787177,
+    #                                766.2524704529731,
+    #                                764.8723960514769,
+    #                                762.2987814004226,
+    #                                763.2951371245215,
+    #                                760.7149203386532,
+    #                                758.0283566804861,
+    #                                759.9373693631244,
+    #                                755.2356418617525,
+    #                                754.9851550722124,
+    #                                755.6487467539771,
+    #                                753.9849972170422,
+    #                                753.2065379394986,
+    #                                752.0247411403313,
+    #                                750.8518415434044,
+    #                                747.5611285933307,
+    #                                746.5314162043006,
+    #                                746.9835885662785,
+    #                                744.1933443536657,
+    #                                744.2392574129924,
+    #                                740.090415931636,
+    #                                740.3859578173405,
+    #                                739.4696035101149,
+    #                                740.4889528631908,
+    #                                734.9103664672026,
+    #                                738.5949419195221,
+    #                                737.2100816822667,
+    #                                733.1439525352407,
+    #                                735.0596370040473,
+    #                                734.0226564464822,
+    #                                730.1183747156763,
+    #                                731.249786453746]
+    # plt.plot(hardcoded_k_average_inertia)
 
     # Show the num of docs/FB in each cluster, show the docs closest to centroid
-    unique, counts = np.unique(kmeans.labels_, return_counts=True)
-    clusterCount = dict(zip(unique, counts))
-    plt.close() # To start a new with a fresh graph
-    plt.bar(clusterCount.keys(), clusterCount.values(), color='g')
-    plt.savefig("clusterCountBarGraph.png")
+    # unique, counts = np.unique(kmeans.labels_, return_counts=True)
+    # clusterCount = dict(zip(unique, counts))
+    # plt.close() # To start a new with a fresh graph
+    # plt.bar(clusterCount.keys(), clusterCount.values(), color='g')
+    # plt.savefig("clusterCountBarGraph.png")
+
     # counts
     # Read in the actual feedback at this time
     # schema = Schema(index=ID(stored=True),
@@ -314,7 +340,7 @@ def kMeansClustering(X, numOfRows, myReader):
     #     fb.append(content)
 
     # TODO: need to decide what to return here for our clustering
-    return labelsAsNums, kmeans, num_clusters, X #, fb
+    return labelsAsNums, kmeans, X #, fb
 
 
 def visualizeSpectural():
@@ -342,27 +368,7 @@ def visualizeSpectural():
     return
 
 
-def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
-        # # Get the key features (in our case, words) for each cluster
-        # for j in range(num_clusters):
-        #     relevantFB = ["",""]
-        #     FBnum = 0
-        #     for label in labels:
-        #         if label == j:
-        #             thisTuple = fb[FBnum]
-        #             relevantFB.append(thisTuple[1])
-        #         FBnum = FBnum + 1
-        #     df = pd.DataFrame(relevantFB)
-        #     vectorizer = CountVectorizer(min_df=1, stop_words='english')
-        #     featuresCounted = vectorizer.fit_transform(d.get('cell_content') for d in df[1])
-        #     print(vectorizer.get_feature_names())
-        #     print(featuresCounted.toarray())
-        #     print("hey")
-
-    # ### TODO: FIXXXXXXXXX BRUUUUHHHHHHHHHHHHHHHH
-    # Pulling out key words to label cluster / understand what is in each cluster
-    # pull out documents of each cluster --> tf idf for key words
-    # test_cluster = 12
+def labelClustersWKeywords(labels, myReader, num_clusters):
     top_features_list = []
 
     for cluster in range(num_clusters):
@@ -384,7 +390,10 @@ def labelClustersWKeywords(labels, myReader, kmeans, num_clusters, X):
     feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
     return feature_names_df
 
-def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
+
+def labelClustersWithKeyPhrases(labels, myReader, num_clusters, n):
+    top_features_list = []
+
     tagger = PerceptronTagger()
     pos_tag = tagger.tag
     grammar = r"""
@@ -441,14 +450,25 @@ def labelClustersWithKeyPhrases(labels, myReader, kmeans, num_clusters, X):
             finalList.append(token.rstrip())
         return finalList
 
-    counter = Counter()
-    for review in X.loc[operation(X[label_column], label_value)][value_column]:
+    for cluster in range(num_clusters):
+        indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster
+        clusterCorpus = [doc_dict['negative_feedback'] for (docnum, doc_dict) in myReader.iter_docs() if docnum in indices] #
+        clusterCorpus = ' '.join(clusterCorpus)
+
+        counter = Counter()
         counter.update(flatten([word
                                 for word
-                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', review))))
+                                in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', clusterCorpus))))
                                 ]))
-    topk = counter.most_common(k)
-    return topk
+
+        most_common_n = counter.most_common(n)
+
+        top_features = [feature[0] for feature in most_common_n]
+        top_features_list.append(top_features)
+
+    feature_names_df = pd.DataFrame(top_features_list, columns=['1', '2', '3', '4', '5'])
+
+    return feature_names_df
 
 
 def clusterPerformanceMetrics(labels, myReader, num_clusters):
@@ -475,63 +495,91 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
 
     return purity
 
-def spectralClustering(X):
+
+def spectralClustering(X, num_clusters):
     # SPECTURAL CLUSTERING
     # note: df_rows not imported from first function above (createNormalizedMatrix)
-    from sklearn.cluster import SpectralClustering
     from sklearn.metrics.pairwise import pairwise_distances
-
-    num_clusters = 9
 
     # similarity_matrix = 1 - pairwise_distances(X, metric='cosine')
     # cosineScores = pd.DataFrame(similarity_matrix)
     clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
     labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, num_clusters, X
+    return labelsAsNums, clusters, X
 
-def hierarchicalClustering(X):
+
+def hierarchicalClustering(X, num_clusters):
     from sklearn.cluster import AgglomerativeClustering
-    num_cluster = 9
-    clusters = AgglomerativeClustering(n_clusters=num_cluster, affinity='cosine', linkage='average').fit(X)
+    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='average').fit(X)
     labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, num_cluster, X
+    return labelsAsNums, clusters, X
+
+
+def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
+    # Purity elbow graph
+    purity = []
+    clusterSize = []
+    for n in range(20, 1000, 20):
+        labels, kmeans, X = kMeansClustering(X_norm, numOfFB, n)
+        clusterPurity = clusterPerformanceMetrics(labels, readerForFullFB, n)
+        print(clusterPurity)
+        purity.append(clusterPurity)
+        clusterSize.append(n)
+    plt.plot(clusterSize, purity)
+    plt.title('Purity vs Number of Clusters using Kmeans')
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Purity')
+    # DO NOT RUN THIS AGAIN IT TAKES FOREVER
+    plt.savefig("purityElbowMethod1000.png")
 
 
 def run():
     # run
     print('We startin')
     siteList = getSitesList()
-    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(siteList)
+    num_clusters = 100
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
 
-    # K Means
-    print(" --- K MEANS ---")
-    labels, kmeans, num_clusters, X = kMeansClustering (X_norm, numOfFB, readerForFullFB)
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, kmeans, num_clusters, X)
-    print('Top 5 words in each cluster:')
-    print(feature_names_df_kmeans)
-    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
-
-    # Spectral
-    print(" --- SPECTRAL ---")
-    labels, spectral, num_clusters, X = spectralClustering(X_norm)
-    feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, spectral, num_clusters, X)
-    print('Top 5 words in each cluster:')
-    print(feature_names_df_spectral)
-    purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
+    # # # K Means
+    # print(" --- K MEANS ---")
+    # labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
+    # feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    # feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_kmeans)
+    # print('Top 5 phrases in each cluster:')
+    # print(feature_phrases_df_kmeans)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
+    # #
+    # # # Spectral
+    # print(" --- SPECTRAL ---")
+    # labels, spectral, X = spectralClustering(X_norm, num_clusters)
+    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    # feature_phrases_df_spectral = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    # print('Top 5 words in each cluster:')
+    # print(feature_names_df_spectral)
+    # print('Top 5 phrases in each cluster:')
+    # print(feature_phrases_df_spectral)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
 
     # Hierarchical
     # NOTE: currently not working because there are likely empty values??
     # print(" --- HIERARCHICAL ---")
-    # labels, hierarchical, num_clusters, X = hierarchicalClustering(X_norm)
-    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, hierarchical, num_clusters, X)
+    # labels, hierarchicalClusters, X = hierarchicalClustering(X_norm, num_clusters)
+    # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
     # print('Top 5 words in each cluster:')
     # print(feature_names_df_spectral)
-    # clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
+
+    # Graph Purity vs num of clusters (for performance metrics purposes)
+    purityElbowGraph(X_norm, numOfFB, readerForFullFB)
 
     print('We done.')
     return
+
 
 run()
 

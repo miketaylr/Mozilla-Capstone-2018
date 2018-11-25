@@ -9,17 +9,20 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, recall_score
 from collections import Counter
-from nltk.stem.wordnet import WordNetLemmatizer
 import pickle as pickle
 import referenceFiles as rf
-
+from pattern.en import *
+from gensim.utils import lemmatize
 
 # SETTINGS
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
 ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
+TOP_WORDS = rf.filePath(rf.TOP_WORDS)
 
-df_raw = pd.DataFrame
+
+overlap_corpus = []  # For overlap, yes, I know global variables are bad
+
 
 # 1 Text Preparation
 def text_preparation(filename):
@@ -40,9 +43,6 @@ def text_preparation(filename):
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
     df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df_raw = df
-    # # Move this csv create to below...
-    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
     return df
 
 
@@ -62,34 +62,66 @@ def text_preparation_unlabelled(filename):
     else:
         print('Not empty!', df.shape)
     # Make a new column and put it in there - may be a new function
-    df['sf_output'] = df.apply(clean_feedback, axis=1)
-    df_raw = df
-    # df['sf_output'] = df.apply(apply_stem_overlap, axis=1) #TODO
-    df_raw = df
-    # # Move this csv create to below...
-    # df.to_csv('output_new.csv', encoding='ISO-8859-1')
+    df['sf_output_raw'] = df.apply(clean_feedback, axis=1)
+    global overlap_corpus
+    overlap_corpus = get_overlap_corpus(df)
+    df['sf_output'] = df.apply(apply_stem_overlap, axis=1)
     return df
 
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
     stemmer = StemFilter()
-    lemm = WordNetLemmatizer() # DON"T USE WORDNET
     combined = row['Positive Feedback'] + row['Negative Feedback']  # Feedback will either be positive or negative
                                                                     # can filter for negative only later on
+    lemmList = [word.decode('utf-8').split('/')[0] for word in lemmatize(combined)]
     tokenWords = [token.text for token in tokenizer(combined)]
-    lemmList = [lemm.lemmatize(word) for word in tokenWords]
     stemWords = [stemmer.stemfn(word) for word in tokenWords]
     final = tokenWords + lemmList + stemWords
-    # Join by space so it is easy for RegexTokenizer to manage
-    return ' '.join(set(final))
+    return ' '.join(set(final))  # Join by space so it is easy for RegexTokenizer to manage
+
+
+def get_overlap_corpus(df):
+    counter = Counter()
+    tokenizer = RegexTokenizer()
+    for index, row in df.iterrows():
+        input = row['sf_output_raw']
+        tokenWords = [token.text for token in tokenizer(input)]
+        counter.update([word.lower() for word in tokenWords])
+    corpus_first = list(counter)
+    corpus_raw = sorted(corpus_first)
+    new_token_corpus = []
+    for word in corpus_raw:
+        # Get rid of all numbers, will not overlap those
+        if any(char.isdigit() for char in word):
+            print("Token is a number.")
+        elif len(word) < 4:
+            print("Word is small, throw out before overlapping.")
+        else:
+            new_token_corpus.append(word)
+    beginnings = []
+    for word in new_token_corpus:
+        for layer_word in new_token_corpus:
+            if layer_word != word:
+                if layer_word[:4] == word[:4]:
+                    start = word[:4]
+                    if start not in beginnings:
+                        beginnings.append(start)
+    overlap_corpus = beginnings
+    return overlap_corpus
 
 
 def apply_stem_overlap(row):
-    # TODO
-    # https://stackoverflow.com/questions/49088978/how-to-create-corpus-from-pandas-data-frame-to-operate-with-nltk
-    final = []
-    return ' '.join(set(final))
+    global overlap_corpus
+    tokenizer = RegexTokenizer()
+    overlap = []
+    tokenWords = [token.text for token in tokenizer(row['sf_output_raw'])]
+    for beginning in overlap_corpus:
+        for token in tokenWords:
+            if beginning == token[:4]:
+                overlap.append(beginning)
+    final = overlap + tokenWords
+    return ' '.join(set(final))  # Join by space so it is easy for RegexTokenizer to manage
 
 
 def get_top_words(df):
@@ -99,18 +131,25 @@ def get_top_words(df):
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         count.update(wordList)
     totalNumWords = sum(count.values())
+    numUniqueWords = len(count)
     finalWordList = [word for (word, freq) in count.most_common(round(totalNumWords/10))]
     # TODO:
     #       Discuss whether it is a good idea to take top words (might it actually
     #       be better to take least common?) Just an idea...
+    with open(TOP_WORDS, 'wb') as fp:
+        pickle.dump(finalWordList, fp)
     return finalWordList
 
 
 # 2 Feature Extraction
-def feature_extraction(df):
+def feature_extraction(df, get_new_words=True):
     tokenizer = RegexTokenizer()
     binary_appearance_df = []
-    featureWords = get_top_words(df)
+    if (get_new_words):
+        featureWords = get_top_words(df)
+    else:
+        with open(TOP_WORDS, 'rb') as fp:
+            featureWords = pickle.load(fp)
     for index, row in df.iterrows():
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         binary_appearance_df.append([1 if word in wordList else 0 for word in featureWords])
@@ -200,13 +239,12 @@ def remove_spam(df, nsi):
 def performance_metrics_spam_removal():
     return
 
-print('We starting.')
 
-def train_classfier():
+def train_classifier(filePath):
     # Get the model and check its accuracy
     # Train Classifier on labelled data
     # NOTE: run this the first time if you don't have the classifier built
-    df = text_preparation(rf.filePath(rf.SPAM_LABELLED))
+    df = text_preparation(filePath)
     X = feature_extraction(df)
     y = get_qrel(df)
     clf, train_mean, train_ci_low, train_ci_high, test_mean, test_ci_low, test_ci_high = train_spam_filter(X, y)
@@ -219,7 +257,7 @@ def predict(INPUT):
     # Predict and remove spam in new csv
     loaded_clf = load_classifier("spamClassifier.sav")
     new_df = text_preparation_unlabelled(INPUT)
-    X = feature_extraction(new_df)
+    X = feature_extraction(new_df, False)
     y = score_new_data(loaded_clf, X)
     nsi = get_nonspam_indices(y).tolist()
     remove_spam(new_df, nsi).to_csv(rf.filePath(rf.OUTPUT_SPAM_REMOVAL))
@@ -227,6 +265,6 @@ def predict(INPUT):
 
 
 print('We starting.')
-train_classfier()
+# train_classifier(rf.filePath(rf.SPAM_LABELLED))
 predict(OUTPUT_PIPELINE)
 print('We done.')
