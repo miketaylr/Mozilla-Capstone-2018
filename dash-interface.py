@@ -77,7 +77,7 @@ app.layout = html.Div(children=[
 #Grab unique dates from results_df
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
-
+common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
 
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
@@ -156,8 +156,8 @@ def render_content(tab):
                 id='mentioned-site-graph',
                 figure={
                     'data': [{
-                        'x': results_df['Sites'].unique()[1:],
-                        'y': results_df.groupby(results_df['Sites'])['Binary Sentiment'].count().values[1:],
+                        'x': common_df[common_df.columns[0]],
+                        'y': common_df[common_df.columns[1]],
                         'customdata': results_df['Sites'].unique()[1:],
                         'type': 'bar'
                     }],
