@@ -80,12 +80,21 @@ def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
             html.H3('Recent Trends'),
+            dcc.RadioItems(
+                id='bin',
+                options=[{'label': i, 'value': i} for i in [
+                    'Yearly', 'Seasonally', 'Monthly', 'Weekly'
+                ]],
+                value='Yearly',
+                labelStyle={'display': 'inline'}
+            ),
             dcc.Graph(
-                id='graph-1-tabs',
+                id='trends-scatterplot',
                 figure={
                     'data': [{
                         'x': results_df['Date Submitted'],
                         'y': results_df['compound'],
+                        'customdata': results_df['Response ID'],
                         'type': 'line',
                         'name': "Sentiment score",
                         'mode': 'markers',
@@ -96,8 +105,18 @@ def render_content(tab):
                     }
                 }
             ),
-            html.Label('Here is a slider to vary # top sites to include'),
-            dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(id='trend-data-histogram')
+                ),
+                html.Div(
+                    className='six columns',
+                    id='current-content'
+                )
+            ])
+            # html.Label('Here is a slider to vary # top sites to include'),
+            # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
     elif tab == 'tab-2':
         return html.Div([
@@ -139,7 +158,8 @@ def render_content(tab):
                     'overflowY': 'scroll'
                     },
                 style_cell={
-                    'minWidth': '50px', 'maxWidth': '200px',
+                    'minWidth': '50'
+                                'px', 'maxWidth': '200px',
                     'whiteSpace': 'no-wrap',
                     'overflow': 'hidden',
                     'textOverflow': 'ellipsis',
@@ -162,6 +182,45 @@ def render_content(tab):
                      }],
             )
         ])
+
+@app.callback(
+    Output('current-content', 'children'),
+    [Input('trends-scatterplot', 'hoverData')])
+def display_hover_data(hoverData):
+    # get the row from the results
+    r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+
+    return html.H4(
+        "The comment from {} is '{}{}'. The user was {}.".format(
+            r.iloc[0]['Date Submitted'],
+            r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
+            r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
+            r.iloc[0]['Binary Sentiment']
+        )
+    )
+
+@app.callback(
+    Output('trend-data-histogram', 'figure'),
+    [Input('trends-scatterplot', 'selectedData')])
+def display_selected_trend_data(selectedData):
+    #return table matching the current selection
+
+    ids = list(d['customdata'] for d in selectedData['points'])
+    df = search_df[search_df['Response ID'].isin(ids)]
+    print(ids)
+    return {
+        'data': [
+            {
+                'x': df['compound'],
+                'name': 'Compound Sentiment',
+                'type': 'histogram',
+                'autobinx': True
+            }
+        ],
+        'layout': {
+            'margin': {'l': 40, 'r': 20, 't': 0, 'b': 30}
+        }
+    }
 
 
 @app.callback(
