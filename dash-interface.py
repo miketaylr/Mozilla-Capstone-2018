@@ -5,6 +5,9 @@ import dash_table as dt
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
+import clustering as clustering
+import ast
+import json
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -18,6 +21,8 @@ search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
                         , "Sites", "Issues", "Components", "Processed Feedback"]]#print(df.columns)
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
+
 
 data = [ dict(
         type = 'choropleth',
@@ -55,35 +60,47 @@ fig = dict( data=data, layout=layout)
 arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
 arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
 arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-numClusters = 5
+numClusters = 50
 traces = []
 
-clusterNames = list(df1)
-clusterNames.pop(0)
-print(clusterNames)
-df1 = df1.set_index('Issue')
+# Hardcoded Fake Data
+# clusterNames = list(df1)
+# clusterNames.pop(0)
+# print(clusterNames)
+# df1 = df1.set_index('Issue')
+# docs = df1.drop(arrayOfNamesWords, axis=0)
+# words = df1.drop(arrayOfNamesDocs, axis=0)
+# print(words.iloc[0].values[0])
+# clusters = df1.drop(['Words', 'Docs'], axis=0)
+# print(clusters)
 
-docs = df1.drop(arrayOfNamesWords, axis=0)
+# Dynamic Data
+df2 = clustering.runVis(numClusters)
+categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 
-words = df1.drop(arrayOfNamesDocs, axis=0)
-print(words.iloc[0].values[0])
+docs = df2.tail(1)
+df2 = df2[:-1]
+phrases = df2.tail(1)
+df2 = df2[:-1]
+words = df2.tail(1)
+df2 = df2[:-1]
+clusters = df2
+clusters = clusters.rename(index=categoryDict)
 
-clusters = df1.drop(['Words', 'Docs'], axis=0)
-
-print(clusters)
 
 def update_point(trace):
     print(trace)
     return
 
+
 for index, row in clusters.iterrows():
     row = list(row)
-    print(index)
     traces.append(go.Bar(
-        x = words.iloc[0].values,
-        y = row,
+        x=words.iloc[0].values,
+        y=row,
         name=index,
         hoverinfo='x+y+name',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
         customdata=docs.iloc[0].values
     ))
 
@@ -100,7 +117,7 @@ layout2 = go.Layout(
     )
 )
 
-fig2 = dict( data=traces, layout=layout2)
+fig2 = dict(data=traces, layout=layout2)
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -237,7 +254,17 @@ def render_content(tab):
             # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
     elif tab == 'tab-2':
-        return html.Div([])
+        return html.Div([
+            dcc.Graph(id='graph', figure=fig),
+            dcc.Graph(id='graph2', figure=fig2),
+
+            html.Div(className='row', children=[
+                html.Div([
+                    html.Div(id='click-data'),
+                    # , target='_blank'
+                ]),
+            ])
+        ])
     elif tab == 'tab-3':
         return html.Div([
             html.H3('Sites'),
@@ -458,6 +485,29 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
            pagination_settings['current_page'] * pagination_settings['page_size']:
            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
            ].to_dict('rows')
+
+
+divs = []
+@app.callback(
+    Output('click-data', 'children'),
+    [Input('graph2', 'clickData')])
+def display_click_data(clickData):
+    if (clickData):
+        htmlArr = []
+        data = clickData['points'][0]['customdata']
+        docData = json.loads(json.dumps(ast.literal_eval(data)))
+        for key, value in docData.items():
+            docArray = []
+            for doc in value:
+                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+            htmlArr.append(
+                html.Div([
+                    html.H4(key),
+                    html.Div(children=docArray)
+                ])
+            )
+        return htmlArr
+    return ''
 
 
 if __name__ == '__main__':
