@@ -60,9 +60,10 @@ app.layout = html.Div(children=[
         }
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Trends', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Common Issues', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
 
@@ -85,7 +86,7 @@ common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_in
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            html.H3('Recent Trends'),
+            html.H3('Overview & Recent Trends'),
             dcc.RadioItems(
                 id='bin',
                 options=[{'label': i, 'value': i} for i in [
@@ -149,9 +150,9 @@ def render_content(tab):
             # html.Label('Here is a slider to vary # top sites to include'),
             # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
-    elif tab == 'tab-2':
+    elif tab == 'tab-3':
         return html.Div([
-            html.H3('Common Issues'),
+            html.H3('Sites'),
             dcc.Graph(
                 id='mentioned-site-graph',
                 figure={
@@ -216,7 +217,7 @@ def render_content(tab):
             ),
             html.H4('Similar graphs & reactive table for issue/feature categories')
         ])
-    elif tab == 'tab-3':
+    elif tab == 'tab-4':
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
