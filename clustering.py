@@ -535,27 +535,27 @@ def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     # DO NOT RUN THIS AGAIN IT TAKES FOREVER
     plt.savefig("purityElbowMethod1000.png")
 
-    def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCountSeries):
-        top_words['combined'] = [", ".join(item) for item in top_words.values.tolist()]
-        top_words_combined = top_words['combined'].rename(lambda x: 'Cluster ' + str(x))
-        top_words_combined.name = 'top words'
-        top_phrases_list = top_phrases.applymap(lambda x: [x] if pd.notnull(x) else []).sum(1).tolist()
-        top_phrases['combined'] = [", ".join(item) for item in top_phrases_list]
-        top_phrases_combined = top_phrases['combined'].rename(lambda x: 'Cluster ' + str(x))
-        top_phrases_combined.name = 'top phrases'
-        countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
-        countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index=False)
-        return countsWordsPhrases
+def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCountSeries):
+    top_words['combined'] = [", ".join(item) for item in top_words.values.tolist()]
+    top_words_combined = top_words['combined'].rename(lambda x: 'Cluster ' + str(x))
+    top_words_combined.name = 'top words'
+    top_phrases_list = top_phrases.applymap(lambda x: [x] if pd.notnull(x) else []).sum(1).tolist()
+    top_phrases['combined'] = [", ".join(item) for item in top_phrases_list]
+    top_phrases_combined = top_phrases['combined'].rename(lambda x: 'Cluster ' + str(x))
+    top_phrases_combined.name = 'top phrases'
+    countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
+    countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index=False)
+    return countsWordsPhrases
 
 
-    def runVis(num_clusters):
-        X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
-        labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
-        feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-        feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-        purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-        visDf = barGraphVisualization(labels, kmeans, X, feature_names_df_kmeans, feature_phrases_df_kmeans, clusterCountSeries)
-        return visDf
+def runVis(num_clusters):
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
+    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    visDf = barGraphVisualization(labels, kmeans, X, feature_names_df_kmeans, feature_phrases_df_kmeans, clusterCountSeries)
+    return visDf
 
 
 def run():

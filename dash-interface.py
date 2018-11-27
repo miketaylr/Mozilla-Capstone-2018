@@ -9,13 +9,98 @@ from dash.dependencies import Input, Output, State, Event
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("output.csv", encoding ="ISO-8859-1")
+results_df = pd.read_csv("./data/output.csv", encoding ="ISO-8859-1")
 
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
                         , "Negative Feedback", "Relevant Site", "compound", "neg", "neu", "pos"\
                         , "Sites", "Issues", "Components", "Processed Feedback"]]#print(df.columns)
+df = pd.read_csv('./data/output_countries.csv')
+df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+
+data = [ dict(
+        type = 'choropleth',
+        locations = df['CODE'],
+        z = df['Sentiment'],
+        text = df['COUNTRY'],
+        colorscale = [[0,"rgb(5, 10, 172)"],[0.35,"rgb(40, 60, 190)"],[0.5,"rgb(70, 100, 245)"],\
+            [0.6,"rgb(90, 120, 245)"],[0.7,"rgb(106, 137, 247)"],[1,"rgb(220, 220, 220)"]],
+        autocolorscale = False,
+        reversescale = True,
+        marker = dict(
+            line = dict (
+                color = 'rgb(180,180,180)',
+                width = 0.7
+            ) ),
+        colorbar = dict(
+            autotick = False,
+            tickprefix = '',
+            title = 'Global Sentiment'),
+      ) ]
+
+layout = dict(
+    title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+    geo = dict(
+        showframe = False,
+        showcoastlines = False,
+        projection = dict(
+            type = 'Mercator'
+        )
+    )
+)
+
+fig = dict( data=data, layout=layout)
+
+arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+numClusters = 5
+traces = []
+
+clusterNames = list(df1)
+clusterNames.pop(0)
+print(clusterNames)
+df1 = df1.set_index('Issue')
+
+docs = df1.drop(arrayOfNamesWords, axis=0)
+
+words = df1.drop(arrayOfNamesDocs, axis=0)
+print(words.iloc[0].values[0])
+
+clusters = df1.drop(['Words', 'Docs'], axis=0)
+
+print(clusters)
+
+def update_point(trace):
+    print(trace)
+    return
+
+for index, row in clusters.iterrows():
+    row = list(row)
+    print(index)
+    traces.append(go.Bar(
+        x = words.iloc[0].values,
+        y = row,
+        name=index,
+        hoverinfo='x+y+name',
+        customdata=docs.iloc[0].values
+    ))
+
+layout2 = go.Layout(
+    barmode='stack',
+    title='Issue Clusters',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        showticklabels=False,
+        title='Clusters'
+    ),
+    yaxis=dict(
+        title='Count of Issues'
+    )
+)
+
+fig2 = dict( data=traces, layout=layout2)
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -151,6 +236,8 @@ def render_content(tab):
             # html.Label('Here is a slider to vary # top sites to include'),
             # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
+    elif tab == 'tab-2':
+        return html.Div([])
     elif tab == 'tab-3':
         return html.Div([
             html.H3('Sites'),

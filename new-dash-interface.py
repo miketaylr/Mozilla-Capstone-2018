@@ -19,7 +19,7 @@ data = [dict(
     locations=df['CODE'],
     z=df['Sentiment'],
     text=df['COUNTRY'],
-    colorscale=[[0, "rgb(5, 10, 172)"], [0.35, "rgb(40, 60, 190)"], [0.5, "rgb(70, 100, 245)"], \
+    colorscale=[[0, "rgb(5, 10, 172)"], [0.35, "rgb(40, 60, 190)"], [0.5, "rgb(70, 100, 245)"],\
                 [0.6, "rgb(90, 120, 245)"], [0.7, "rgb(106, 137, 247)"], [1, "rgb(220, 220, 220)"]],
     autocolorscale=False,
     reversescale=True,
@@ -128,7 +128,8 @@ app.layout = html.Div(id='test', style={'backgroundColor': colors['background']}
 
     html.Div(className='row', children=[
         html.Div([
-            html.Div(id='click-data', target='_blank'),
+            html.Div(id='click-data'),
+        #, target='_blank'
         ]),
     ])
 ])
