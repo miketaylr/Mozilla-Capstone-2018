@@ -10,7 +10,7 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 results_df = pd.read_csv("output.csv", encoding ="ISO-8859-1")
 
-print (results_df.shape)
+print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
                         , "Negative Feedback", "Relevant Site", "compound", "neg", "neu", "pos"\
@@ -60,9 +60,10 @@ app.layout = html.Div(children=[
         }
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Trends', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Common Issues', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
 
@@ -73,19 +74,59 @@ app.layout = html.Div(children=[
     })
 ])
 
+#prep data for displaying in stacked binary sentiment graph over time
+#Grab unique dates from results_df
+results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
+unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
+common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
 
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            html.H3('Recent Trends'),
+            html.H3('Overview & Recent Trends'),
+            dcc.RadioItems(
+                id='bin',
+                options=[{'label': i, 'value': i} for i in [
+                    'Yearly', 'Monthly', 'Weekly', 'Daily'
+                ]],
+                value='Daily',
+                labelStyle={'display': 'inline'}
+            ),
             dcc.Graph(
-                id='graph-1-tabs',
+                id='binary-sentiment-ts',
+                figure={
+                    'data': [{
+                        'x': unique_dates,
+                        'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                        'type': 'bar',
+                        'name': "Happy"
+                        }, {
+                        'x': unique_dates,
+                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                        'type': 'bar',
+                        'name': "Sad"
+                        }
+                    ],
+                    'layout': {
+                        'plot_bgcolor': colors['background'],
+                        'paper_bgcolor': colors['background'],
+                        'barmode': 'stack',
+                        'font': {
+                            'color': colors['text']
+                        }
+                    }
+                }
+            ),
+            dcc.Graph(
+                id='trends-scatterplot',
                 figure={
                     'data': [{
                         'x': results_df['Date Submitted'],
                         'y': results_df['compound'],
+                        'customdata': results_df['Response ID'],
                         'type': 'line',
                         'name': "Sentiment score",
                         'mode': 'markers',
@@ -96,24 +137,87 @@ def render_content(tab):
                     }
                 }
             ),
-            html.Label('Here is a slider to vary # top sites to include'),
-            dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
-        ])
-    elif tab == 'tab-2':
-        return html.Div([
-            html.H3('Common Issues'),
-            dcc.Graph(
-                id='graph-2-tabs',
-                figure={
-                    'data': [{
-                        'x': [1, 2, 3],
-                        'y': [5, 10, 6],
-                        'type': 'bar'
-                    }]
-                }
-            )
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(id='trend-data-histogram')
+                ),
+                html.Div(
+                    className='six columns',
+                    id='current-content'
+                )
+            ])
+            # html.Label('Here is a slider to vary # top sites to include'),
+            # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
     elif tab == 'tab-3':
+        return html.Div([
+            html.H3('Sites'),
+            dcc.Graph(
+                id='mentioned-site-graph',
+                figure={
+                    'data': [{
+                        'x': common_df[common_df.columns[0]],
+                        'y': common_df[common_df.columns[1]],
+                        'customdata': results_df['Sites'].unique()[1:],
+                        'type': 'bar'
+                    }],
+                    'layout': {
+                        'title': "Feedback by Mentioned Site(s)",
+                        'xaxis': {
+                            'title': 'Mentioned Site(s)'
+                        },
+                        'yaxis': {
+                            'title': 'Number of Feedback'
+                        }
+
+                    }
+                }
+            ),
+            dash_table.DataTable(
+                id='common-site-table',
+                columns=[{"name": i, "id": i} for i in search_df.columns],
+                pagination_settings={
+                    'current_page': 0,
+                    'page_size': PAGE_SIZE
+                },
+                pagination_mode='be',
+                sorting='be',
+                sorting_type='single',
+                sorting_settings=[],
+                n_fixed_rows=1,
+                style_table={
+                    'overflowX': 'scroll',
+                    'maxHeight': '800',
+                    'overflowY': 'scroll'
+                },
+                style_cell={
+                    'minWidth': '50'
+                                'px', 'maxWidth': '200px',
+                    'whiteSpace': 'no-wrap',
+                    'overflow': 'hidden',
+                    'textOverflow': 'ellipsis',
+                },
+                style_cell_conditional=[
+                    {
+                        'if': {'column_id': 'Positive Feedback'},
+                        'textAlign': 'left'
+                    },
+                    {
+                        'if': {'column_id': 'Negative Feedback'},
+                        'textAlign': 'left'
+                    },
+
+                ],
+                css=[{
+                    'selector': '.dash-cell div.dash-cell-value',
+                    'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+
+                }],
+            ),
+            html.H4('Similar graphs & reactive table for issue/feature categories')
+        ])
+    elif tab == 'tab-4':
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
@@ -139,7 +243,8 @@ def render_content(tab):
                     'overflowY': 'scroll'
                     },
                 style_cell={
-                    'minWidth': '50px', 'maxWidth': '200px',
+                    'minWidth': '50'
+                                'px', 'maxWidth': '200px',
                     'whiteSpace': 'no-wrap',
                     'overflow': 'hidden',
                     'textOverflow': 'ellipsis',
@@ -162,6 +267,45 @@ def render_content(tab):
                      }],
             )
         ])
+
+@app.callback(
+    Output('current-content', 'children'),
+    [Input('trends-scatterplot', 'hoverData')])
+def display_hover_data(hoverData):
+    # get the row from the results
+    r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+
+    return html.H4(
+        "The comment from {} is '{}{}'. The user was {}.".format(
+            r.iloc[0]['Date Submitted'],
+            r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
+            r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
+            r.iloc[0]['Binary Sentiment']
+        )
+    )
+
+@app.callback(
+    Output('trend-data-histogram', 'figure'),
+    [Input('trends-scatterplot', 'selectedData')])
+def display_selected_trend_data(selectedData):
+    #return table matching the current selection
+
+    ids = list(d['customdata'] for d in selectedData['points'])
+    df = search_df[search_df['Response ID'].isin(ids)]
+    print(ids)
+    return {
+        'data': [
+            {
+                'x': df['compound'],
+                'name': 'Compound Sentiment',
+                'type': 'histogram',
+                'autobinx': True
+            }
+        ],
+        'layout': {
+            'margin': {'l': 40, 'r': 20, 't': 0, 'b': 30}
+        }
+    }
 
 
 @app.callback(
@@ -204,6 +348,28 @@ def update_table(pagination_settings, sorting_settings, filtering_settings):
            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
            ].to_dict('rows')
 
+@app.callback(
+    Output('common-site-table', "data"),
+    [Input('common-site-table', "pagination_settings"),
+     Input('common-site-table', "sorting_settings"),
+     Input('mentioned-site-graph', "clickData")])
+def update_common_table(pagination_settings, sorting_settings, clickData):
+    dff = search_df[search_df['Sites'] == clickData['points'][0]['customdata']]
+    print('CLICKED DATA', clickData['points'][0]['customdata'])
+    if len(sorting_settings):
+        dff = dff.sort_values(
+            [col['column_id'] for col in sorting_settings],
+            ascending=[
+                col['direction'] == 'asc'
+                for col in sorting_settings
+            ],
+            inplace=False
+        )
+
+    return dff.iloc[
+           pagination_settings['current_page'] * pagination_settings['page_size']:
+           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+           ].to_dict('rows')
 
 
 if __name__ == '__main__':
