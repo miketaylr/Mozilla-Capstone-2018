@@ -476,6 +476,7 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
     sr = pd.read_csv('data/output_clusters_defined.csv')
     max = 0
     total_count = 0
+    clusterCountSeries = pd.Series([])
 
     for cluster in range(num_clusters):
         clusterIndices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster]
@@ -489,11 +490,13 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
         print("Cluster", cluster)
         print(manual_cluster_counts)
         # frames.append(dict(manual_cluster_counts))
+        clusterCountSeries = pd.concat([clusterCountSeries, manual_cluster_counts.rename('Cluster ' + str(cluster))], axis=1)
 
     # pd.concat(frames, keys=['1', '2', '3', '4', '5', '6', '7', '8', '9'])
     purity = max/total_count
+    clusterCountSeries = clusterCountSeries.drop(0, 1)
 
-    return purity
+    return purity, clusterCountSeries
 
 
 def spectralClustering(X, num_clusters):
@@ -532,6 +535,28 @@ def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     # DO NOT RUN THIS AGAIN IT TAKES FOREVER
     plt.savefig("purityElbowMethod1000.png")
 
+    def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCountSeries):
+        top_words['combined'] = [", ".join(item) for item in top_words.values.tolist()]
+        top_words_combined = top_words['combined'].rename(lambda x: 'Cluster ' + str(x))
+        top_words_combined.name = 'top words'
+        top_phrases_list = top_phrases.applymap(lambda x: [x] if pd.notnull(x) else []).sum(1).tolist()
+        top_phrases['combined'] = [", ".join(item) for item in top_phrases_list]
+        top_phrases_combined = top_phrases['combined'].rename(lambda x: 'Cluster ' + str(x))
+        top_phrases_combined.name = 'top phrases'
+        countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
+        countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index=False)
+        return countsWordsPhrases
+
+
+    def runVis(num_clusters):
+        X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
+        labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
+        feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+        feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+        purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+        visDf = barGraphVisualization(labels, kmeans, X, feature_names_df_kmeans, feature_phrases_df_kmeans, clusterCountSeries)
+        return visDf
+
 
 def run():
     # run
@@ -540,18 +565,18 @@ def run():
     num_clusters = 100
     X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
 
-    # # # K Means
-    # print(" --- K MEANS ---")
-    # labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
-    # feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    # feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    # print('Top 5 words in each cluster:')
-    # print(feature_names_df_kmeans)
-    # print('Top 5 phrases in each cluster:')
-    # print(feature_phrases_df_kmeans)
-    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    # print('Purity', purity)
-    # #
+    # # K Means
+    print(" --- K MEANS ---")
+    labels, kmeans, X = kMeansClustering (X_norm, numOfFB, num_clusters)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    print('Top 5 words in each cluster:')
+    print(feature_names_df_kmeans)
+    print('Top 5 phrases in each cluster:')
+    print(feature_phrases_df_kmeans)
+    purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    print('Purity', purity)
+
     # # # Spectral
     # print(" --- SPECTRAL ---")
     # labels, spectral, X = spectralClustering(X_norm, num_clusters)
@@ -561,29 +586,24 @@ def run():
     # print(feature_names_df_spectral)
     # print('Top 5 phrases in each cluster:')
     # print(feature_phrases_df_spectral)
-    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
     # print('Purity', purity)
 
-    # Hierarchical
+    # # # Hierarchical
     # NOTE: currently not working because there are likely empty values??
     # print(" --- HIERARCHICAL ---")
     # labels, hierarchicalClusters, X = hierarchicalClustering(X_norm, num_clusters)
     # feature_names_df_spectral = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
     # print('Top 5 words in each cluster:')
     # print(feature_names_df_spectral)
-    # purity = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # purity, clusterCountSeries = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
     # print('Purity', purity)
 
     # Graph Purity vs num of clusters (for performance metrics purposes)
-    purityElbowGraph(X_norm, numOfFB, readerForFullFB)
+    # purityElbowGraph(X_norm, numOfFB, readerForFullFB)
 
     print('We done.')
     return
 
 
 run()
-
-
-
-
-

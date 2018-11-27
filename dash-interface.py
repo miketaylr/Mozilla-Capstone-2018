@@ -1,8 +1,9 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
+import dash_table as dt
 import pandas as pd
+import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
 
 
@@ -174,7 +175,7 @@ def render_content(tab):
                     }
                 }
             ),
-            dash_table.DataTable(
+            dt.DataTable(
                 id='common-site-table',
                 columns=[{"name": i, "id": i} for i in search_df.columns],
                 pagination_settings={
@@ -222,7 +223,7 @@ def render_content(tab):
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
             dcc.Input(value='Type here', type='text'),
-            dash_table.DataTable( #add fixed header row
+            dt.DataTable( #add fixed header row
                 id='search-table',
                 columns=[{"name": i, "id": i} for i in search_df.columns],
                 pagination_settings={
