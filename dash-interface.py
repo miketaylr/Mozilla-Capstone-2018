@@ -55,7 +55,7 @@ layout = dict(
     )
 )
 
-fig = dict( data=data, layout=layout)
+fig = dict(data=data, layout=layout)
 
 arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
 arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
@@ -190,6 +190,7 @@ def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
             html.H3('Overview & Recent Trends'),
+            dcc.Graph(id='graph', figure=fig),
             dcc.RadioItems(
                 id='bin',
                 options=[{'label': i, 'value': i} for i in [
@@ -255,13 +256,13 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
-            dcc.Graph(id='graph', figure=fig),
             dcc.Graph(id='graph2', figure=fig2),
 
             html.Div(className='row', children=[
                 html.Div([
-                    html.Div(id='click-data'),
-                    # , target='_blank'
+                    html.Div(id='click-data', target='_blank'),
+                    # Above won't run on my pc for some reason unless I take out the target... -Carol
+                    # html.Div(id='click-data'),
                 ]),
             ])
         ])
