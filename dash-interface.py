@@ -12,7 +12,7 @@ import json
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("./data/output.csv", encoding ="ISO-8859-1")
+results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
@@ -21,6 +21,8 @@ search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
                         , "Sites", "Issues", "Components", "Processed Feedback"]]#print(df.columns)
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+component_df = pd.read_csv('./data/component_graph_data.csv')
+issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 
 
@@ -57,11 +59,11 @@ layout = dict(
 
 fig = dict(data=data, layout=layout)
 
-arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-numClusters = 50
-traces = []
+# arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+# arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+# arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+# numClusters = 50
+# traces = []
 
 # Hardcoded Fake Data
 # clusterNames = list(df1)
@@ -75,49 +77,79 @@ traces = []
 # print(clusters)
 
 # Dynamic Data
-df2 = clustering.runVis(numClusters)
-categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
+# df2 = clustering.runVis(numClusters)
+# categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 
-docs = df2.tail(1)
-df2 = df2[:-1]
-phrases = df2.tail(1)
-df2 = df2[:-1]
-words = df2.tail(1)
-df2 = df2[:-1]
-clusters = df2
-clusters = clusters.rename(index=categoryDict)
+# docs = df2.tail(1)
+# df2 = df2[:-1]
+# phrases = df2.tail(1)
+# df2 = df2[:-1]
+# words = df2.tail(1)
+# df2 = df2[:-1]
+# clusters = df2
+# clusters = clusters.rename(index=categoryDict)
 
+component_df = component_df.set_index('Components')
+issue_df = issue_df.set_index('Issues')
+traces_component = []
 
-def update_point(trace):
-    print(trace)
-    return
-
-
-for index, row in clusters.iterrows():
-    row = list(row)
-    traces.append(go.Bar(
-        x=words.iloc[0].values,
-        y=row,
+for index, row in component_df.iterrows():
+    print(list(row.keys()))
+    traces_component.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
         name=index,
-        hoverinfo='x+y+name',
+        # hoverinfo='none',
         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        customdata=docs.iloc[0].values
+        # customdata=docs.iloc[0].values
     ))
 
-layout2 = go.Layout(
+layout_component = go.Layout(
     barmode='stack',
-    title='Issue Clusters',
+    title='Components',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
     xaxis=dict(
-        showticklabels=False,
-        title='Clusters'
+        # showticklabels=False,
+        title='Time'
     ),
     yaxis=dict(
-        title='Count of Issues'
+        title='Count of Docs'
     )
 )
 
-fig2 = dict(data=traces, layout=layout2)
+fig_component = dict(data=traces_component, layout=layout_component)
+
+
+traces_issue = []
+
+for index, row in issue_df.iterrows():
+    print(list(row.keys()))
+    traces_issue.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+layout_issue = go.Layout(
+    barmode='stack',
+    title='Issues',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=True,
+        title='Time'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
+
+fig_issue = dict(data=traces_issue, layout=layout_issue)
+
+
+
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -153,7 +185,14 @@ colors = {
     'text': '#7FDBFF'
 }
 
-app.layout = html.Div(children=[
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='page-content')
+])
+
+list_page_children = []
+
+main_layout = html.Div(children=[
     html.H1(
         children='Mozilla Customer Feedback Analytics Tool',
         style={
@@ -174,8 +213,32 @@ app.layout = html.Div(children=[
     html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
         'textAlign': 'center',
         'color': colors['text']
-    })
+    }),
+    html.Div(id='hidden-div', style={'display': 'none'})
 ])
+
+list_layout = html.Div(children=[
+    html.H1(
+        children='List',
+        style={
+            'textAlign': 'center',
+            'color': 'orange'
+
+        }
+    ),
+    html.Div(children=list_page_children)
+    
+])
+
+@app.callback(dash.dependencies.Output('page-content', 'children'),
+              [dash.dependencies.Input('url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/list':
+        return main_layout
+    elif pathname == '/page-2':
+        return main_layout
+    else:
+        return main_layout  
 
 #prep data for displaying in stacked binary sentiment graph over time
 #Grab unique dates from results_df
@@ -185,7 +248,6 @@ common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_in
 
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
-
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
@@ -256,15 +318,17 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
-            dcc.Graph(id='graph2', figure=fig2),
+            dcc.Graph(id='graph2', figure=fig_component),
+            dcc.Graph(id='graph3', figure=fig_issue),
 
-            html.Div(className='row', children=[
-                html.Div([
-                    html.Div(id='click-data', target='_blank'),
-                    # Above won't run on my pc for some reason unless I take out the target... -Carol
-                    # html.Div(id='click-data'),
-                ]),
-            ])
+
+            # html.Div(className='row', children=[
+            #     html.Div([
+            #         html.Div(id='click-data'),
+            #         # Above won't run on my pc for some reason unless I take out the target... -Carol
+            #         # html.Div(id='click-data'),
+            #     ]),
+            # ])
         ])
     elif tab == 'tab-3':
         return html.Div([
@@ -384,21 +448,21 @@ def render_content(tab):
             )
         ])
 
-@app.callback(
-    Output('current-content', 'children'),
-    [Input('trends-scatterplot', 'hoverData')])
-def display_hover_data(hoverData):
-    # get the row from the results
-    r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+# @app.callback(
+#     Output('current-content', 'children'),
+#     [Input('trends-scatterplot', 'hoverData')])
+# def display_hover_data(hoverData):
+#     # get the row from the results
+#     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
 
-    return html.H4(
-        "The comment from {} is '{}{}'. The user was {}.".format(
-            r.iloc[0]['Date Submitted'],
-            r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
-            r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
-            r.iloc[0]['Binary Sentiment']
-        )
-    )
+#     return html.H4(
+#         "The comment from {} is '{}{}'. The user was {}.".format(
+#             r.iloc[0]['Date Submitted'],
+#             r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
+#             r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
+#             r.iloc[0]['Binary Sentiment']
+#         )
+#     )
 
 @app.callback(
     Output('trend-data-histogram', 'figure'),
@@ -490,25 +554,30 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
 
 divs = []
 @app.callback(
-    Output('click-data', 'children'),
+    Output(component_id='hidden-div', component_property='children'),
     [Input('graph2', 'clickData')])
 def display_click_data(clickData):
-    if (clickData):
-        htmlArr = []
-        data = clickData['points'][0]['customdata']
-        docData = json.loads(json.dumps(ast.literal_eval(data)))
-        for key, value in docData.items():
-            docArray = []
-            for doc in value:
-                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-            htmlArr.append(
-                html.Div([
-                    html.H4(key),
-                    html.Div(children=docArray)
-                ])
-            )
-        return htmlArr
-    return ''
+    print(clickData['points'][0]['x'])
+    # if (clickData):
+    #     htmlArr = []
+    #     data = clickData['points'][0]['customdata']
+    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
+    #     for key, value in docData.items():
+    #         docArray = []
+    #         for doc in value:
+    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+    #         htmlArr.append(
+    #             html.Div([
+    #                 html.H4(key),
+    #                 html.Div(children=docArray)
+    #             ])
+    #         )
+    #     return htmlArr
+    # return ''
+    list_page_children = [
+        html.Div(children=clickData)
+    ]
+    return str(clickData['points'][0]['x'])
 
 
 if __name__ == '__main__':
