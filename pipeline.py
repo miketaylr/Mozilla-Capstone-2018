@@ -88,12 +88,14 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
 
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_site(row):
-        combined = row['Feedback'].lower()
-        sites = [site.lower() for site in siteList if site.lower() in combined]
-        urls = re.findall('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', combined + row['Relevant Site'])
-        sites = sites + urls
-        print("le sites")
-        return set(sites)
+        combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
+        #sites = [site.lower() for site in siteList if site.lower() in combined]
+        urls = re.findall("https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+", combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
+        if len(urls) == 0:
+            urls = [row['Relevant Site'].lower()]
+
+        sites = urls
+        return ','.join(set(sites))
 
         # Find a mentioned issue based on our issues dictionary
 
@@ -122,10 +124,12 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     def derive_columns(data_frame):  # based on cols from data after cleaning
 
         data_frame['Feedback'] = data_frame['Positive Feedback'].map(str) + data_frame['Negative Feedback'].map(str)
+        data_frame['Sites'] = data_frame.apply(mentioned_site, axis=1)
 
-        data_frame = data_frame.merge(df['Feedback'].apply(lambda s: pd.Series(
-            {'Sites': re.findall(re.compile(siteList + '|https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'), s)})),
-                                      left_index=True, right_index=True)
+        # data_frame = data_frame.merge(df['Feedback'].apply(lambda s: pd.Series(
+        #     {'Sites': re.findall(re.compile(siteList + '|https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'), s)})),
+        #
+        #                               left_index=True, right_index=True)
         # data_frame = apply_and_concat(data_frame, 'Feedback', mentioned_issue2, 'Issues')
         data_frame = data_frame.merge(
             df['Feedback'].apply(lambda s: pd.Series({'Issues': [k for k, v in WTI.items() if v.search(s)]})),
