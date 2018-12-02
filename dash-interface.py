@@ -8,6 +8,8 @@ from dash.dependencies import Input, Output, State, Event
 import clustering as clustering
 import ast
 import json
+from datetime import datetime as datetime
+from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -15,15 +17,18 @@ external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
-search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
-                        , "State/Region", "Binary Sentiment", "Positive Feedback"\
-                        , "Negative Feedback", "Relevant Site", "compound", "neg", "neu", "pos"\
-                        , "Sites", "Issues", "Components", "Processed Feedback"]]#print(df.columns)
+# search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
+#                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
+#                         , "Negative Feedback", "Relevant Site", "compound"\
+#                         , "Sites", "Issues", "Components"]]#, "neg", "neu", "pos" "Processed Feedback" print(df.columns)
+search_df = results_df
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
+
+WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
 
 
 data = [ dict(
@@ -89,8 +94,29 @@ fig = dict(data=data, layout=layout)
 # clusters = df2
 # clusters = clusters.rename(index=categoryDict)
 
-component_df = component_df.set_index('Components')
-issue_df = issue_df.set_index('Issues')
+# TIME CALCULATION
+reference = datetime(2016, 12, 30)
+# reference = datetime.now()
+results_df['Day Difference'] = (reference-pd.to_datetime(results_df['Date Submitted'], format = '%Y-%m-%d %H:%M:%S')).dt.days + 1
+
+num_days_range = 7 # week, set some way to toggle this instead of hardcoded
+date_filtered_df = results_df[results_df['Day Difference'] <= 7]
+date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
+date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
+
+component_df = pd.Series([])
+issue_df = pd.Series([])
+
+for day in range(num_days_range):
+    component_df = pd.concat([component_df, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
+        lambda x: pd.Series(x).value_counts()).sum().rename('Day ' + str(day+1))], axis = 1)
+    issue_df = pd.concat([issue_df, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
+            lambda x: pd.Series(x).value_counts()).sum().rename('Day ' + str(day+1))], axis = 1)
+
+
+component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
+issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+
 traces_component = []
 
 for index, row in component_df.iterrows():
