@@ -1,5 +1,6 @@
 # Pipeline package for extracting raw data and doing cleaning
 import pandas as pd
+import numpy
 import re
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
@@ -75,7 +76,14 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # Convert to df friendly date-times
     df["Date Submitted"] = pd.to_datetime(df["Date Submitted"])
     df["Time Started"] = pd.to_datetime(df["Time Started"])  # probably don't need this anymore
+    #another spam filter, if they took less than 4s to fill a survey it's probably useless
+    #so only keep surveys w/ longer completion times
+    #df = df.loc[df['Date Submitted'] - df['Time Started'] > 4]
+    print(((df['Date Submitted'] - df['Time Started']).dtype))
 
+
+    #filtered_out = df = df.loc[df['Date Submitted'].astype('timedelta64[s]') - df['Time Started'].astype('timedelta64[s]') <= 4]
+    #filtered_out.to_csv(rf.filePath("data/filtered_out.csv"), encoding='ISO-8859-1')
     if df.empty:  # need to handle empty case later
         print('DataFrame is empty!')
     else:
@@ -90,9 +98,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     def mentioned_site(row):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         #sites = [site.lower() for site in siteList if site.lower() in combined]
-        urls = re.findall("https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+", combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
-        if len(urls) == 0:
-            urls = [row['Relevant Site'].lower()]
+        urls = re.findall(siteListRegex, combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
 
         sites = urls
         return ','.join(set(sites))
@@ -130,7 +136,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         #     {'Sites': re.findall(re.compile(siteList + '|https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'), s)})),
         #
         #                               left_index=True, right_index=True)
-        # data_frame = apply_and_concat(data_frame, 'Feedback', mentioned_issue2, 'Issues')
         data_frame = data_frame.merge(
             df['Feedback'].apply(lambda s: pd.Series({'Issues': [k for k, v in WTI.items() if v.search(s)]})),
             left_index=True, right_index=True)
@@ -161,25 +166,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     df.drop('Negative Feedback', axis=1, inplace=True)
     df.drop('Postal', axis=1, inplace=True)
     df.drop('OS', axis=1, inplace=True)
-
-
-
-
-
-
-    analyzer = SIA()
-    results = []
-
-    # just append & analyze the -ve/+ve feedback for now if user gave both
-    # df[['Neg', 'Neu', 'Pos', 'Compound']] = df['Text'].apply(lambda Text: pd.Series(TextBlob(Text).sentiment))
-    # for index, row in df.iterrows():
-    #     pol_score = analyzer.polarity_scores(row['Positive Feedback'] + row['Negative Feedback'])
-    #     results.append(pol_score)
-    #
-    # df2 = pd.DataFrame.from_records(results)
-    # print("df-sent size", df2.shape)
-    # df = df.join(df2)  # this was the bug!
-    # print('after  sentiment', df.shape)
 
     # finally output the cleaned data to a CSV
     df.to_csv(rf.filePath(rf.OUTPUT_PIPELINE), encoding='ISO-8859-1')
