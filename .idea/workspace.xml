@@ -3,6 +3,10 @@
   <component name="ChangeListManager">
     <list default="true" id="722da363-42df-4a9e-9214-ed9e70164ebd" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/pipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline.py" afterDir="false" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -11,23 +15,37 @@
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
   <component name="CoverageDataManager">
-    <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$pipeline.coverage" NAME="pipeline Coverage Results" MODIFIED="1540187285707" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$pipeline.coverage" NAME="pipeline Coverage Results" MODIFIED="1543642123262" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Mozilla_Capstone_2018$Mozilla_Capstone_2018.coverage" NAME="Mozilla-Capstone-2018 Coverage Results" MODIFIED="1539935352783" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="" />
+  </component>
+  <component name="DatabaseView">
+    <option name="SHOW_INTERMEDIATE" value="true" />
+    <option name="GROUP_DATA_SOURCES" value="true" />
+    <option name="GROUP_SCHEMA" value="true" />
+    <option name="GROUP_CONTENTS" value="false" />
+    <option name="SORT_POSITIONED" value="false" />
+    <option name="SHOW_EMPTY_GROUPS" value="false" />
+    <option name="AUTO_SCROLL_FROM_SOURCE" value="false" />
+    <option name="HIDDEN_KINDS">
+      <set />
+    </option>
+    <expand />
+    <select />
   </component>
   <component name="FUSProjectUsageTrigger">
     <session id="-1347358207">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="6" />
+          <entry key="project.closed" value="7" />
           <entry key="project.open.time.10" value="1" />
           <entry key="project.open.time.32" value="1" />
           <entry key="project.open.time.34" value="1" />
           <entry key="project.open.time.37" value="2" />
           <entry key="project.open.time.38" value="1" />
-          <entry key="project.open.time.43" value="1" />
+          <entry key="project.open.time.43" value="2" />
           <entry key="project.open.time.48" value="1" />
           <entry key="project.open.time.8" value="1" />
-          <entry key="project.opened" value="9" />
+          <entry key="project.opened" value="10" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -35,7 +53,7 @@
           <entry key="csv" value="2" />
           <entry key="gitignore" value="1" />
           <entry key="ipynb" value="4" />
-          <entry key="py" value="9" />
+          <entry key="py" value="13" />
           <entry key="yml" value="1" />
         </counts>
       </usages-collector>
@@ -44,23 +62,23 @@
           <entry key="CSV" value="2" />
           <entry key="IPNB" value="4" />
           <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="9" />
+          <entry key="Python" value="13" />
           <entry key="YAML" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="Python Console" value="1379" />
+          <entry key="Python Console" value="1899" />
           <entry key="dash-interface" value="713" />
           <entry key="gitignore" value="2" />
           <entry key="interface" value="108" />
-          <entry key="py" value="8425" />
+          <entry key="py" value="10603" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Python" value="10625" />
+          <entry key="Python" value="13323" />
         </counts>
       </usages-collector>
     </session>
@@ -76,14 +94,51 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/pipeline.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="612">
-              <caret line="42" column="103" selection-start-line="42" selection-start-column="4" selection-end-line="42" selection-end-column="103" />
+            <state relative-caret-position="374">
+              <caret line="94" column="49" selection-start-line="94" selection-start-column="49" selection-end-line="94" selection-end-column="49" />
               <folding>
                 <element signature="e#62#81#0" expanded="true" />
+                <marker date="1543642119840" expanded="true" signature="5633:5638" ph="..." />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/pandas/core/frame.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="74256">
+              <caret line="4458" selection-start-line="4458" selection-end-line="4458" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/pandas/io/common.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="6188">
+              <caret line="378" selection-start-line="378" selection-end-line="378" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="28101">
+              <caret line="1653" selection-start-line="1653" selection-end-line="1653" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/referenceFiles.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="102">
+              <caret line="6" selection-start-line="6" selection-end-line="6" />
             </state>
           </provider>
         </entry>
@@ -100,9 +155,10 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/dash-interface.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
 <<<<<<< HEAD
             <state relative-caret-position="324">
               <caret line="140" column="28" lean-forward="true" selection-start-line="140" selection-start-column="28" selection-end-line="140" selection-end-column="28" />
@@ -110,9 +166,12 @@
             <state relative-caret-position="221">
               <caret line="159" column="58" selection-start-line="159" selection-start-column="58" selection-end-line="159" selection-end-column="58" />
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+=======
+            <state relative-caret-position="5593">
+              <caret line="338" column="45" selection-start-line="338" selection-start-column="45" selection-end-line="338" selection-end-column="45" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
-                <marker date="1543233357158" expanded="true" signature="10645:11149" ph="..." />
               </folding>
             </state>
           </provider>
@@ -121,6 +180,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/constants.py">
           <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
             <state relative-caret-position="510">
               <caret line="30" selection-start-line="30" selection-end-line="30" />
             </state>
@@ -134,6 +194,10 @@
           <provider selected="true" editor-type-id="text-editor">
             <state>
               <caret column="245" selection-start-column="245" selection-end-column="245" />
+=======
+            <state relative-caret-position="153">
+              <caret line="9" column="85" selection-start-line="9" selection-start-column="85" selection-end-line="9" selection-end-column="85" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
             </state>
           </provider>
         </entry>
@@ -163,6 +227,8 @@
       <find>example</find>
       <find>search-table</find>
       <find>graph-1-tabs</find>
+      <find>print</find>
+      <find>langid</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -175,9 +241,9 @@
         <option value="$PROJECT_DIR$/Prelim EDA.ipynb" />
         <option value="$PROJECT_DIR$/interface.py" />
         <option value="$PROJECT_DIR$/interface.ipynb" />
-        <option value="$PROJECT_DIR$/pipeline.py" />
-        <option value="$PROJECT_DIR$/constants.py" />
         <option value="$PROJECT_DIR$/dash-interface.py" />
+        <option value="$PROJECT_DIR$/constants.py" />
+        <option value="$PROJECT_DIR$/pipeline.py" />
       </list>
     </option>
   </component>
@@ -188,6 +254,7 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
 <<<<<<< HEAD
+<<<<<<< HEAD
   <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="-20" />
     <option name="y" value="-20" />
@@ -196,6 +263,10 @@
 =======
   <component name="ProjectFrameBounds">
     <option name="x" value="1908" />
+=======
+  <component name="ProjectFrameBounds" extendedState="6">
+    <option name="x" value="-12" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
     <option name="width" value="1944" />
     <option name="height" value="2082" />
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
@@ -206,6 +277,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -217,7 +289,6 @@
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -239,7 +310,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.dash-interface">
+  <component name="RunManager" selected="Python.pipeline">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="Mozilla-Capstone-2018" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -288,6 +359,9 @@
       <module name="Mozilla-Capstone-2018" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -355,10 +429,10 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.pipeline" />
         <item itemvalue="Python.dash-interface" />
         <item itemvalue="Python.constants" />
         <item itemvalue="Python.interface" />
-        <item itemvalue="Python.pipeline" />
       </list>
     </recent_temporary>
   </component>
@@ -377,6 +451,7 @@
   </component>
   <component name="ToolWindowManager">
 <<<<<<< HEAD
+<<<<<<< HEAD
     <frame x="-6" y="-6" width="1293" height="693" extended-state="6" />
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.12307692" />
@@ -386,18 +461,30 @@
     <layout>
       <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.26856434" />
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+=======
+    <frame x="-6" y="-6" width="1719" height="932" extended-state="6" />
+    <editor active="true" />
+    <layout>
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.13168971" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
+<<<<<<< HEAD
       <window_info anchor="bottom" id="Run" order="2" weight="0.3127148" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.39601496" />
+=======
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.68971735" weight="0.33915213" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.73920864" weight="0.44779873" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="Database Changes" order="9" show_stripe_button="false" />
+<<<<<<< HEAD
       <window_info anchor="bottom" id="Event Log" order="10" side_tool="true" />
 <<<<<<< HEAD
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.3316583" />
@@ -406,11 +493,16 @@
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.3308176" />
       <window_info active="true" anchor="bottom" id="Python Console" order="12" visible="true" weight="0.4062893" />
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+=======
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.50270593" side_tool="true" visible="true" weight="0.23566085" />
+      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49969932" weight="0.33042395" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="12" sideWeight="0.49729404" visible="true" weight="0.23566085" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="SciView" order="3" weight="0.5408416" />
-      <window_info anchor="right" id="Database" order="4" />
+      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.0072158747" />
+      <window_info anchor="right" id="Database" order="4" weight="0.32952496" />
       <window_info anchor="right" x="0" y="0" width="166" height="725" id="Documentation" order="5" side_tool="true" visible="true" weight="0.19925742" />
       <window_info anchor="right" id="R Graphics" order="6" />
       <window_info anchor="right" id="R Packages" order="7" />
@@ -423,7 +515,13 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
+<<<<<<< HEAD
     <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/pandas/core/frame.py" />
+=======
+    <entry file="file://$PROJECT_DIR$/environment.yml">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
     <entry file="file://$PROJECT_DIR$/interface.ipynb">
       <provider selected="true" editor-type-id="ipnb-editor">
         <state>
@@ -431,13 +529,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Prelim EDA.ipynb">
-      <provider selected="true" editor-type-id="ipnb-editor">
+    <entry file="file://$PROJECT_DIR$/Prelim EDA.ipynb" />
+    <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/dash_table/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/output.csv">
+      <provider selected="true" editor-type-id="text-editor">
         <state>
-          <selected id="11" />
+          <caret column="245" selection-start-column="245" selection-end-column="245" />
         </state>
       </provider>
     </entry>
+<<<<<<< HEAD
 <<<<<<< HEAD
     <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/dash_table/__init__.py" />
     <entry file="file://$PROJECT_DIR$/output.csv" />
@@ -446,17 +549,63 @@
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+=======
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
     <entry file="file://$PROJECT_DIR$/pipeline.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="612">
-          <caret line="42" column="103" selection-start-line="42" selection-start-column="4" selection-end-line="42" selection-end-column="103" />
+        <state relative-caret-position="374">
+          <caret line="94" column="49" selection-start-line="94" selection-start-column="49" selection-end-line="94" selection-end-column="49" />
           <folding>
             <element signature="e#62#81#0" expanded="true" />
+            <marker date="1543642119840" expanded="true" signature="5633:5638" ph="..." />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/pandas/core/frame.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="74256">
+          <caret line="4458" selection-start-line="4458" selection-end-line="4458" />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
+    <entry file="file://$PROJECT_DIR$/constants.py">
+=======
+    <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/pandas/io/common.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6188">
+          <caret line="378" selection-start-line="378" selection-end-line="378" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/helpers/pydev/pydevd.py">
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="28101">
+          <caret line="1653" selection-start-line="1653" selection-end-line="1653" />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    <entry file="file://$PROJECT_DIR$/output.csv">
+=======
+    <entry file="file://$PROJECT_DIR$/referenceFiles.py">
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="102">
+          <caret line="6" selection-start-line="6" selection-end-line="6" />
+        </state>
+      </provider>
+    </entry>
+<<<<<<< HEAD
+>>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+=======
     <entry file="file://$PROJECT_DIR$/interface.py">
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="442">
           <caret line="34" column="3" selection-start-line="34" selection-start-column="3" selection-end-line="34" selection-end-column="3" />
@@ -466,32 +615,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/constants.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="510">
-          <caret line="30" selection-start-line="30" selection-end-line="30" />
-        </state>
-      </provider>
-    </entry>
-<<<<<<< HEAD
-=======
-    <entry file="file://$PROJECT_DIR$/output.csv">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="245" selection-start-column="245" selection-end-column="245" />
-        </state>
-      </provider>
-    </entry>
->>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
-    <entry file="file://$PROJECT_DIR$/.gitignore">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="4" column="11" selection-start-line="4" selection-start-column="11" selection-end-line="4" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/dash-interface.py">
       <provider selected="true" editor-type-id="text-editor">
+<<<<<<< HEAD
 <<<<<<< HEAD
         <state relative-caret-position="324">
           <caret line="140" column="28" lean-forward="true" selection-start-line="140" selection-start-column="28" selection-end-line="140" selection-end-column="28" />
@@ -499,10 +625,30 @@
         <state relative-caret-position="221">
           <caret line="159" column="58" selection-start-line="159" selection-start-column="58" selection-end-line="159" selection-end-column="58" />
 >>>>>>> 51ce1fb43bb35692dfd2dba4ab930203512d6796
+=======
+        <state relative-caret-position="5593">
+          <caret line="338" column="45" selection-start-line="338" selection-start-column="45" selection-end-line="338" selection-end-column="45" />
+>>>>>>> 4931d7409f2a9d9d4851ad13b9877599a6d6c424
           <folding>
             <element signature="e#0#11#0" expanded="true" />
-            <marker date="1543233357158" expanded="true" signature="10645:11149" ph="..." />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/Anaconda3/Lib/site-packages/dash_html_components/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/constants.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="153">
+          <caret line="9" column="85" selection-start-line="9" selection-start-column="85" selection-end-line="9" selection-end-column="85" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="68">
+          <caret line="4" column="11" selection-start-line="4" selection-start-column="11" selection-end-line="4" selection-end-column="11" />
         </state>
       </provider>
     </entry>

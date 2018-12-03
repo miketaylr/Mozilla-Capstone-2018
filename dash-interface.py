@@ -1,20 +1,123 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
+import dash_table as dt
 import pandas as pd
+import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
+import clustering as clustering
+import ast
+import json
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("output.csv", encoding ="ISO-8859-1")
+results_df = pd.read_csv("./data/output.csv", encoding ="ISO-8859-1")
 
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
                         , "Negative Feedback", "Relevant Site", "compound", "neg", "neu", "pos"\
                         , "Sites", "Issues", "Components", "Processed Feedback"]]#print(df.columns)
+df = pd.read_csv('./data/output_countries.csv')
+df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
+
+
+data = [ dict(
+        type = 'choropleth',
+        locations = df['CODE'],
+        z = df['Sentiment'],
+        text = df['COUNTRY'],
+        colorscale = [[0,"rgb(5, 10, 172)"],[0.35,"rgb(40, 60, 190)"],[0.5,"rgb(70, 100, 245)"],\
+            [0.6,"rgb(90, 120, 245)"],[0.7,"rgb(106, 137, 247)"],[1,"rgb(220, 220, 220)"]],
+        autocolorscale = False,
+        reversescale = True,
+        marker = dict(
+            line = dict (
+                color = 'rgb(180,180,180)',
+                width = 0.7
+            ) ),
+        colorbar = dict(
+            autotick = False,
+            tickprefix = '',
+            title = 'Global Sentiment'),
+      ) ]
+
+layout = dict(
+    title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+    geo = dict(
+        showframe = False,
+        showcoastlines = False,
+        projection = dict(
+            type = 'Mercator'
+        )
+    )
+)
+
+fig = dict(data=data, layout=layout)
+
+arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+numClusters = 50
+traces = []
+
+# Hardcoded Fake Data
+# clusterNames = list(df1)
+# clusterNames.pop(0)
+# print(clusterNames)
+# df1 = df1.set_index('Issue')
+# docs = df1.drop(arrayOfNamesWords, axis=0)
+# words = df1.drop(arrayOfNamesDocs, axis=0)
+# print(words.iloc[0].values[0])
+# clusters = df1.drop(['Words', 'Docs'], axis=0)
+# print(clusters)
+
+# Dynamic Data
+df2 = clustering.runVis(numClusters)
+categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
+
+docs = df2.tail(1)
+df2 = df2[:-1]
+phrases = df2.tail(1)
+df2 = df2[:-1]
+words = df2.tail(1)
+df2 = df2[:-1]
+clusters = df2
+clusters = clusters.rename(index=categoryDict)
+
+
+def update_point(trace):
+    print(trace)
+    return
+
+
+for index, row in clusters.iterrows():
+    row = list(row)
+    traces.append(go.Bar(
+        x=words.iloc[0].values,
+        y=row,
+        name=index,
+        hoverinfo='x+y+name',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        customdata=docs.iloc[0].values
+    ))
+
+layout2 = go.Layout(
+    barmode='stack',
+    title='Issue Clusters',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        showticklabels=False,
+        title='Clusters'
+    ),
+    yaxis=dict(
+        title='Count of Issues'
+    )
+)
+
+fig2 = dict(data=traces, layout=layout2)
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -60,9 +163,10 @@ app.layout = html.Div(children=[
         }
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Trends', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Common Issues', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
 
@@ -85,7 +189,8 @@ common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_in
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
-            html.H3('Recent Trends'),
+            html.H3('Overview & Recent Trends'),
+            dcc.Graph(id='graph', figure=fig),
             dcc.RadioItems(
                 id='bin',
                 options=[{'label': i, 'value': i} for i in [
@@ -151,7 +256,19 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
-            html.H3('Common Issues'),
+            dcc.Graph(id='graph2', figure=fig2),
+
+            html.Div(className='row', children=[
+                html.Div([
+                    html.Div(id='click-data', target='_blank'),
+                    # Above won't run on my pc for some reason unless I take out the target... -Carol
+                    # html.Div(id='click-data'),
+                ]),
+            ])
+        ])
+    elif tab == 'tab-3':
+        return html.Div([
+            html.H3('Sites'),
             dcc.Graph(
                 id='mentioned-site-graph',
                 figure={
@@ -173,7 +290,7 @@ def render_content(tab):
                     }
                 }
             ),
-            dash_table.DataTable(
+            dt.DataTable(
                 id='common-site-table',
                 columns=[{"name": i, "id": i} for i in search_df.columns],
                 pagination_settings={
@@ -216,12 +333,12 @@ def render_content(tab):
             ),
             html.H4('Similar graphs & reactive table for issue/feature categories')
         ])
-    elif tab == 'tab-3':
+    elif tab == 'tab-4':
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
             dcc.Input(value='Type here', type='text'),
-            dash_table.DataTable( #add fixed header row
+            dt.DataTable( #add fixed header row
                 id='search-table',
                 columns=[{"name": i, "id": i} for i in search_df.columns],
                 pagination_settings={
@@ -369,6 +486,29 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
            pagination_settings['current_page'] * pagination_settings['page_size']:
            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
            ].to_dict('rows')
+
+
+divs = []
+@app.callback(
+    Output('click-data', 'children'),
+    [Input('graph2', 'clickData')])
+def display_click_data(clickData):
+    if (clickData):
+        htmlArr = []
+        data = clickData['points'][0]['customdata']
+        docData = json.loads(json.dumps(ast.literal_eval(data)))
+        for key, value in docData.items():
+            docArray = []
+            for doc in value:
+                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+            htmlArr.append(
+                html.Div([
+                    html.H4(key),
+                    html.Div(children=docArray)
+                ])
+            )
+        return htmlArr
+    return ''
 
 
 if __name__ == '__main__':

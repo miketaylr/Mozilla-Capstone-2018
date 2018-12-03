@@ -7,6 +7,7 @@ Create the environment (**probably need to update the environment.yml file event
 Activate the environment:
 
     activate mie451-lab3
+    (source activate mie451-lab2)
 
 Run Jupyter notebook:
 
