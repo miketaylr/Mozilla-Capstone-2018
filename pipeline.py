@@ -1,6 +1,6 @@
 # Pipeline package for extracting raw data and doing cleaning
 import pandas as pd
-import numpy
+import numpy as np
 import re
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
@@ -80,7 +80,8 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     #so only keep surveys w/ longer completion times
     #df = df.loc[df['Date Submitted'] - df['Time Started'] > 4]
     print(((df['Date Submitted'] - df['Time Started']).dtype))
-
+    df['temp'] = df['Date Submitted'].sub(df['Time Started'], axis=0)
+    df['temp'] = df['temp'] / np.timedelta64(1, 's')
 
     #filtered_out = df = df.loc[df['Date Submitted'].astype('timedelta64[s]') - df['Time Started'].astype('timedelta64[s]') <= 4]
     #filtered_out.to_csv(rf.filePath("data/filtered_out.csv"), encoding='ISO-8859-1')
