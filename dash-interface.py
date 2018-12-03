@@ -100,7 +100,7 @@ reference = datetime(2016, 12, 30)
 results_df['Day Difference'] = (reference-pd.to_datetime(results_df['Date Submitted'], format = '%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 num_days_range = 7 # week, set some way to toggle this instead of hardcoded
-date_filtered_df = results_df[results_df['Day Difference'] <= 7]
+date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
 date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
 date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
 
