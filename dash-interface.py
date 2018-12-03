@@ -109,10 +109,19 @@ component_df = pd.Series([])
 issue_df = pd.Series([])
 
 for day in range(num_days_range):
-    component_df = pd.concat([component_df, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
-        lambda x: pd.Series(x).value_counts()).sum().rename('Day ' + str(day+1))], axis = 1)
-    issue_df = pd.concat([issue_df, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
-            lambda x: pd.Series(x).value_counts()).sum().rename('Day ' + str(day+1))], axis = 1)
+    # count docs with components
+    new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
+        lambda x: pd.Series(x).value_counts()).sum()
+    # count docs with no assigned components
+    new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
+
+
+    new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
+        lambda x: pd.Series(x).value_counts()).sum()
+    # count docs with no assigned components
+    new_issue_info = pd.concat([new_issue_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
 
 
 component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
@@ -133,7 +142,7 @@ for index, row in component_df.iterrows():
 
 layout_component = go.Layout(
     barmode='stack',
-    title='Components',
+    title='Components Over Time',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
     xaxis=dict(
         # showticklabels=False,
@@ -162,7 +171,7 @@ for index, row in issue_df.iterrows():
 
 layout_issue = go.Layout(
     barmode='stack',
-    title='Issues',
+    title='Issues Over Time',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
     xaxis=dict(
         # showticklabels=True,
@@ -181,20 +190,22 @@ fig_issue = dict(data=traces_issue, layout=layout_issue)
 merged = pd.merge(results_df, clusters_df, on='Response ID')
 merged = merged[merged['manual_clusters'].notna()]
 
-categoryCountSeries = pd.Series([])
+compCountSeries = pd.Series([])
 
 for component in WORDS_TO_COMPONENT.keys():
-    categoryCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
-    categoryCountSeries = pd.concat([categoryCountSeries, categoryCounts.rename(component)], axis=1)
+    compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
+    compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
 
-categoryCountSeries = categoryCountSeries.drop(0, 1).fillna(0).astype(int)
-categoryCountSeries = categoryCountSeries.rename(index = categoryDict)
+compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
 
-traces_metrics = []
+compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
+compCountSeries = compCountSeries.rename(index = categoryDict)
 
-for index, row in categoryCountSeries.iterrows():
+traces_comp_metrics = []
+
+for index, row in compCountSeries.iterrows():
     print(list(row.keys()))
-    traces_metrics.append(go.Bar(
+    traces_comp_metrics.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
         name=index,
@@ -203,20 +214,61 @@ for index, row in categoryCountSeries.iterrows():
         # customdata=docs.iloc[0].values
     ))
 
-layout_metrics = go.Layout(
+layout_comp_metrics = go.Layout(
     barmode='stack',
-    title='Components',
+    title='Components vs Manual Clusters',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
     xaxis=dict(
         # showticklabels=False,
-        title='Category'
+        title='Components'
     ),
     yaxis=dict(
         title='Count of Docs'
     )
 )
 
-fig_metrics = dict(data=traces_metrics, layout=layout_metrics)
+fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
+
+issueCountSeries = pd.Series([])
+
+for issue in WORDS_TO_ISSUE.keys():
+    issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
+    issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
+
+issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
+
+issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
+issueCountSeries = issueCountSeries.rename(index = categoryDict)
+
+traces_issue_metrics = []
+
+for index, row in issueCountSeries.iterrows():
+    print(list(row.keys()))
+    traces_issue_metrics.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+layout_issue_metrics = go.Layout(
+    barmode='stack',
+    title='Issues vs Manual Clusters',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=False,
+        title='Issues'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
+
+fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
+
+
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -387,7 +439,8 @@ def render_content(tab):
         return html.Div([
             dcc.Graph(id='graph2', figure=fig_component),
             dcc.Graph(id='graph3', figure=fig_issue),
-            dcc.Graph(id='graph4', figure=fig_metrics),
+            dcc.Graph(id='graph4', figure=fig_comp_metrics),
+            dcc.Graph(id='graph5', figure=fig_issue_metrics),
 
             # html.Div(className='row', children=[
             #     html.Div([
