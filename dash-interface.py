@@ -27,9 +27,10 @@ df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
+clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
-
+WORDS_TO_ISSUE = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
 
 data = [ dict(
         type = 'choropleth',
@@ -83,7 +84,7 @@ fig = dict(data=data, layout=layout)
 
 # Dynamic Data
 # df2 = clustering.runVis(numClusters)
-# categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
+categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 
 # docs = df2.tail(1)
 # df2 = df2[:-1]
@@ -174,8 +175,48 @@ layout_issue = go.Layout(
 
 fig_issue = dict(data=traces_issue, layout=layout_issue)
 
+# CATEGORIZATION VISUALIZATION
 
+# merge output_pipeline with output_clusters_defined
+merged = pd.merge(results_df, clusters_df, on='Response ID')
+merged = merged[merged['manual_clusters'].notna()]
 
+categoryCountSeries = pd.Series([])
+
+for component in WORDS_TO_COMPONENT.keys():
+    categoryCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
+    categoryCountSeries = pd.concat([categoryCountSeries, categoryCounts.rename(component)], axis=1)
+
+categoryCountSeries = categoryCountSeries.drop(0, 1).fillna(0).astype(int)
+categoryCountSeries = categoryCountSeries.rename(index = categoryDict)
+
+traces_metrics = []
+
+for index, row in categoryCountSeries.iterrows():
+    print(list(row.keys()))
+    traces_metrics.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+layout_metrics = go.Layout(
+    barmode='stack',
+    title='Components',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=False,
+        title='Category'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
+
+fig_metrics = dict(data=traces_metrics, layout=layout_metrics)
 
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
@@ -346,7 +387,7 @@ def render_content(tab):
         return html.Div([
             dcc.Graph(id='graph2', figure=fig_component),
             dcc.Graph(id='graph3', figure=fig_issue),
-
+            dcc.Graph(id='graph4', figure=fig_metrics),
 
             # html.Div(className='row', children=[
             #     html.Div([
