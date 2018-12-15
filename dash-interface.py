@@ -442,13 +442,11 @@ def render_content(tab):
             dcc.Graph(id='graph4', figure=fig_comp_metrics),
             dcc.Graph(id='graph5', figure=fig_issue_metrics),
 
-            # html.Div(className='row', children=[
-            #     html.Div([
-            #         html.Div(id='click-data'),
-            #         # Above won't run on my pc for some reason unless I take out the target... -Carol
-            #         # html.Div(id='click-data'),
-            #     ]),
-            # ])
+            html.Div(className='row', children=[
+                html.Div([
+                    html.Div(id='click-data'),
+                ]),
+            ])
         ])
     elif tab == 'tab-3':
         return html.Div([
