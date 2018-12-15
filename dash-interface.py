@@ -2,6 +2,7 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table as dt
+import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
@@ -250,7 +251,7 @@ issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
 issueCountSeries = issueCountSeries.rename(index = categoryDict)
 traces_issue_metrics = []
 for index, row in issueCountSeries.iterrows():
-    print(list(row.keys()))
+    # print(list(row.keys()))
     traces_issue_metrics.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -326,7 +327,6 @@ main_layout = html.Div(children=[
         style={
             'textAlign': 'center',
             'color': 'orange'
-
         }
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
@@ -336,12 +336,11 @@ main_layout = html.Div(children=[
         dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
-
-
-    html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-        'textAlign': 'center',
-        'color': colors['text']
-    }),
+    # # What is this below?
+    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
+    #     'textAlign': 'center',
+    #     'color': colors['text']
+    # }),
     html.Div(id='hidden-div', style={'display': 'none'})
 ])
 
@@ -351,11 +350,9 @@ list_layout = html.Div(children=[
         style={
             'textAlign': 'center',
             'color': 'orange'
-
         }
     ),
     html.Div(children=list_page_children)
-    
 ])
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -431,16 +428,16 @@ def render_content(tab):
                     }
                 }
             ),
-            html.Div([
-                html.Div(
-                    className='six columns',
-                    children=dcc.Graph(id='trend-data-histogram')
-                ),
-                html.Div(
-                    className='six columns',
-                    id='current-content'
-                )
-            ])
+            # html.Div([
+            #     html.Div(
+            #         className='six columns',
+            #         children=dcc.Graph(id='trend-data-histogram')
+            #     ),
+            #     html.Div(
+            #         className='six columns',
+            #         id='current-content'
+            #     )
+            # ])
             # html.Label('Here is a slider to vary # top sites to include'),
             # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
@@ -450,10 +447,9 @@ def render_content(tab):
             dcc.Graph(id='graph3', figure=fig_issue),
             dcc.Graph(id='graph4', figure=fig_comp_metrics),
             dcc.Graph(id='graph5', figure=fig_issue_metrics),
-
             html.Div(className='row', children=[
                 html.Div([
-                    html.Div(id='click-data'),
+                    html.Div(id='click-data'),  # Doesn't do anything right now
                 ]),
             ])
         ])
@@ -477,7 +473,6 @@ def render_content(tab):
                         'yaxis': {
                             'title': 'Number of Feedback'
                         }
-
                     }
                 }
             ),
@@ -514,12 +509,10 @@ def render_content(tab):
                         'if': {'column_id': 'Negative Feedback'},
                         'textAlign': 'left'
                     },
-
                 ],
                 css=[{
                     'selector': '.dash-cell div.dash-cell-value',
                     'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-
                 }],
             ),
             html.H4('Similar graphs & reactive table for issue/feature categories')
@@ -528,50 +521,53 @@ def render_content(tab):
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
-            dcc.Input(value='Type here', type='text'),
-            dt.DataTable( #add fixed header row
+            dcc.Input(id='search-request', value='Type here', type='text'),
+            dte.DataTable(  # Add fixed header row
                 id='search-table',
-                columns=[{"name": i, "id": i} for i in search_df.columns],
-                pagination_settings={
-                    'current_page': 0,
-                    'page_size': PAGE_SIZE
-                },
-                pagination_mode='be',
-                sorting='be',
-                sorting_type='single',
-                sorting_settings=[],
-                filtering='be',
-                filtering_settings='',
-                data=search_df.head(50).to_dict("rows"),
-                n_fixed_rows=1,
-                style_table={
-                    'overflowX': 'scroll',
-                    'maxHeight': '800',
-                    'overflowY': 'scroll'
-                    },
-                style_cell={
-                    'minWidth': '50'
-                                'px', 'maxWidth': '200px',
-                    'whiteSpace': 'no-wrap',
-                    'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                },
-                style_cell_conditional=[
-                    {
-                        'if': {'column_id': 'Positive Feedback'},
-                        'textAlign': 'left'
-                    },
-                    {
-                        'if': {'column_id': 'Negative Feedback'},
-                        'textAlign': 'left'
-                    },
-
-                ],
-                css=[{
-                        'selector': '.dash-cell div.dash-cell-value',
-                        'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-
-                     }],
+                # columns=[{"name": i, "id": i} for i in search_df.columns],
+                # pagination_settings={
+                #     'current_page': 0,
+                #     'page_size': PAGE_SIZE
+                # },
+                # pagination_mode='be',
+                # sorting='be',
+                # sorting_type='single',
+                # sorting_settings=[],
+                # filtering='be',
+                # filtering_settings='',
+                rows=[{}],
+                row_selectable=True,
+                filterable=True,
+                sortable=True,
+                selected_row_indices=[],
+                # data=search_df.head(50).to_dict("rows"),
+                # n_fixed_rows=1,
+                # style_table={
+                #     'overflowX': 'scroll',
+                #     'maxHeight': '800',
+                #     'overflowY': 'scroll'
+                #     },
+                # style_cell={
+                #     'minWidth': '50'
+                #                 'px', 'maxWidth': '200px',
+                #     'whiteSpace': 'no-wrap',
+                #     'overflow': 'hidden',
+                #     'textOverflow': 'ellipsis',
+                # },
+                # style_cell_conditional=[
+                #     {
+                #         'if': {'column_id': 'Positive Feedback'},
+                #         'textAlign': 'left'
+                #     },
+                #     {
+                #         'if': {'column_id': 'Negative Feedback'},
+                #         'textAlign': 'left'
+                #     },
+                # ],
+                # css=[{
+                #         'selector': '.dash-cell div.dash-cell-value',
+                #         'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+                #      }],
             )
         ])
 
@@ -596,7 +592,6 @@ def render_content(tab):
     [Input('trends-scatterplot', 'selectedData')])
 def display_selected_trend_data(selectedData):
     #return table matching the current selection
-
     ids = list(d['customdata'] for d in selectedData['points'])
     df = search_df[search_df['Response ID'].isin(ids)]
     print(ids)
@@ -616,44 +611,68 @@ def display_selected_trend_data(selectedData):
 
 
 @app.callback(
-    Output('search-table', "data"),
-    [Input('search-table', "pagination_settings"),
-     Input('search-table', "sorting_settings"),
-     Input('search-table', "filtering_settings")])
-def update_table(pagination_settings, sorting_settings, filtering_settings):
-    print(sorting_settings)
-    print(filtering_settings)
-    filtering_expressions = filtering_settings.split(' && ')
-    dff = search_df
+    Output('search-table', "rows"),
+    [Input('search-request', "n_submit"), Input('request-1-submit', 'n_blur'),
+     # Input('search-table', "pagination_settings"),
+     # Input('search-table', "sorting_settings"),
+     # Input('search-table', "filtering_settings")
+     ],
+    [State('search-request', 'value')])
+def update_table(ns, nb,
+                 # pagination_settings, sorting_settings, filtering_settings,
+                 request_value):
+    print(str(ns))
+    print(str(nb))
+    print(str(request_value))
+    df = search_df
+    r_df = pd.DataFrame()
+    col_values = list(df.columns.values)
+    for index, row in df.iterrows():
+        for col in col_values:
+            if str(request_value) not in str(row[col]):
+                continue
+            else:
+                r_df.append(df.loc[df['Response ID'] == row['Response ID']])
+    return r_df.to_dict('rows')
 
-    for filter in filtering_expressions:
-        if ' eq ' in filter:
-            col_name = filter.split(' eq ')[0]
-            filter_value = filter.split(' eq ')[1]
-            dff = dff.loc[dff[col_name] == filter_value]
-        if ' > ' in filter:
-            col_name = filter.split(' > ')[0]
-            filter_value = float(filter.split(' > ')[1])
-            dff = dff.loc[dff[col_name] > filter_value]
-        if ' < ' in filter:
-            col_name = filter.split(' < ')[0]
-            filter_value = float(filter.split(' < ')[1])
-            dff = dff.loc[dff[col_name] < filter_value]
 
-    if len(sorting_settings):
-        dff = dff.sort_values(
-            [col['column_id'] for col in sorting_settings],
-            ascending=[
-                col['direction'] == 'asc'
-                for col in sorting_settings
-            ],
-            inplace=False
-        )
-
-    return dff.iloc[
-           pagination_settings['current_page'] * pagination_settings['page_size']:
-           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-           ].to_dict('rows')
+# @app.callback(
+#     Output('search-table', "data"),
+#     [Input('search-table', "pagination_settings"),
+#      Input('search-table', "sorting_settings"),
+#      Input('search-table', "filtering_settings")])
+# def update_table(pagination_settings, sorting_settings, filtering_settings):
+#     print(sorting_settings)
+#     print(filtering_settings)
+#     filtering_expressions = filtering_settings.split(' && ')
+#     dff = search_df
+#
+#     for filter in filtering_expressions:
+#         if ' eq ' in filter:
+#             col_name = filter.split(' eq ')[0]
+#             filter_value = filter.split(' eq ')[1]
+#             dff = dff.loc[dff[col_name] == filter_value]
+#         if ' > ' in filter:
+#             col_name = filter.split(' > ')[0]
+#             filter_value = float(filter.split(' > ')[1])
+#             dff = dff.loc[dff[col_name] > filter_value]
+#         if ' < ' in filter:
+#             col_name = filter.split(' < ')[0]
+#             filter_value = float(filter.split(' < ')[1])
+#             dff = dff.loc[dff[col_name] < filter_value]
+#     if len(sorting_settings):
+#         dff = dff.sort_values(
+#             [col['column_id'] for col in sorting_settings],
+#             ascending=[
+#                 col['direction'] == 'asc'
+#                 for col in sorting_settings
+#             ],
+#             inplace=False
+#         )
+#     return dff.iloc[
+#            pagination_settings['current_page'] * pagination_settings['page_size']:
+#            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+#            ].to_dict('rows')
 
 @app.callback(
     Output('common-site-table', "data"),
