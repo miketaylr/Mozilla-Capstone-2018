@@ -14,8 +14,9 @@ from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 
+# Reading in data:
+results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
@@ -29,9 +30,13 @@ issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 
+
+# Getting components and issues in string:
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
 WORDS_TO_ISSUE = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
 
+
+# Setting data and layout for world map:
 data = [ dict(
         type = 'choropleth',
         locations = df['CODE'],
@@ -52,6 +57,7 @@ data = [ dict(
             title = 'Global Sentiment'),
       ) ]
 
+
 layout = dict(
     title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
     geo = dict(
@@ -63,15 +69,16 @@ layout = dict(
     )
 )
 
+
 fig = dict(data=data, layout=layout)
 
+
+# Hardcoded Fake Data
 # arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
 # arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
 # arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
 # numClusters = 50
 # traces = []
-
-# Hardcoded Fake Data
 # clusterNames = list(df1)
 # clusterNames.pop(0)
 # print(clusterNames)
@@ -82,10 +89,10 @@ fig = dict(data=data, layout=layout)
 # clusters = df1.drop(['Words', 'Docs'], axis=0)
 # print(clusters)
 
+
 # Dynamic Data
 # df2 = clustering.runVis(numClusters)
 categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
-
 # docs = df2.tail(1)
 # df2 = df2[:-1]
 # phrases = df2.tail(1)
@@ -95,19 +102,17 @@ categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clust
 # clusters = df2
 # clusters = clusters.rename(index=categoryDict)
 
+
 # TIME CALCULATION
 reference = datetime(2016, 12, 30)
 # reference = datetime.now()
 results_df['Day Difference'] = (reference-pd.to_datetime(results_df['Date Submitted'], format = '%Y-%m-%d %H:%M:%S')).dt.days + 1
-
 num_days_range = 7 # week, set some way to toggle this instead of hardcoded
 date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
 date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
 date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
-
 component_df = pd.Series([])
 issue_df = pd.Series([])
-
 for day in range(num_days_range):
     # count docs with components
     new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
@@ -116,7 +121,6 @@ for day in range(num_days_range):
     new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
     component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
 
-
     new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
         lambda x: pd.Series(x).value_counts()).sum()
     # count docs with no assigned components
@@ -124,13 +128,16 @@ for day in range(num_days_range):
     issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
 
 
+# Fill in component and issue df with 0 for Nan (?)
 component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
 issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
-
 traces_component = []
+traces_issue = []
 
+
+# Checking df for values:
 for index, row in component_df.iterrows():
-    print(list(row.keys()))
+    # print(list(row.keys()))
     traces_component.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -140,6 +147,8 @@ for index, row in component_df.iterrows():
         # customdata=docs.iloc[0].values
     ))
 
+
+# Stacked Bar Graph figure - components:
 layout_component = go.Layout(
     barmode='stack',
     title='Components Over Time',
@@ -153,13 +162,13 @@ layout_component = go.Layout(
     )
 )
 
+
 fig_component = dict(data=traces_component, layout=layout_component)
 
 
-traces_issue = []
-
+# Checking df for values:
 for index, row in issue_df.iterrows():
-    print(list(row.keys()))
+    # print(list(row.keys()))
     traces_issue.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -169,6 +178,8 @@ for index, row in issue_df.iterrows():
         # customdata=docs.iloc[0].values
     ))
 
+
+# Stacked Bar Graph figure - issues:
 layout_issue = go.Layout(
     barmode='stack',
     title='Issues Over Time',
@@ -182,29 +193,25 @@ layout_issue = go.Layout(
     )
 )
 
+
 fig_issue = dict(data=traces_issue, layout=layout_issue)
 
-# CATEGORIZATION VISUALIZATION
 
+# CATEGORIZATION VISUALIZATION
 # merge output_pipeline with output_clusters_defined
 merged = pd.merge(results_df, clusters_df, on='Response ID')
 merged = merged[merged['manual_clusters'].notna()]
-
 compCountSeries = pd.Series([])
-
+# For components labelled:
 for component in WORDS_TO_COMPONENT.keys():
     compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
     compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
-
 compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
-
 compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
 compCountSeries = compCountSeries.rename(index = categoryDict)
-
 traces_comp_metrics = []
-
 for index, row in compCountSeries.iterrows():
-    print(list(row.keys()))
+    # print(list(row.keys()))
     traces_comp_metrics.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -214,6 +221,8 @@ for index, row in compCountSeries.iterrows():
         # customdata=docs.iloc[0].values
     ))
 
+
+# Stacked Bar Graph figure - components labelled against manual labelling:
 layout_comp_metrics = go.Layout(
     barmode='stack',
     title='Components vs Manual Clusters',
@@ -227,21 +236,19 @@ layout_comp_metrics = go.Layout(
     )
 )
 
+
 fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
 
-issueCountSeries = pd.Series([])
 
+# For issues labelled:
+issueCountSeries = pd.Series([])
 for issue in WORDS_TO_ISSUE.keys():
     issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
     issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
-
 issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
-
 issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
 issueCountSeries = issueCountSeries.rename(index = categoryDict)
-
 traces_issue_metrics = []
-
 for index, row in issueCountSeries.iterrows():
     print(list(row.keys()))
     traces_issue_metrics.append(go.Bar(
@@ -253,6 +260,8 @@ for index, row in issueCountSeries.iterrows():
         # customdata=docs.iloc[0].values
     ))
 
+
+# Stacked Bar Graph figure - issues labelled against manual labelling:
 layout_issue_metrics = go.Layout(
     barmode='stack',
     title='Issues vs Manual Clusters',
@@ -266,22 +275,21 @@ layout_issue_metrics = go.Layout(
     )
 )
 
+
 fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
 
 
-
+# Page styling - sample:
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # suppress exception of assigning callbacks to components that are genererated
 # by other callbacks
 app.config['suppress_callback_exceptions'] = True
-
 app.title = 'Mozilla Analytics'
 '''
 Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
-
 tabs_styles = {
     'height': '44px'
 }
@@ -290,7 +298,6 @@ tab_style = {
     'padding': '6px',
     'fontWeight': 'bold'
 }
-
 tab_selected_style = {
     'borderTop': '1px solid #d6d6d6',
     'borderBottom': '1px solid #d6d6d6',
@@ -298,18 +305,20 @@ tab_selected_style = {
     'color': 'white',
     'padding': '6px'
 }
-
 colors = {
     'background': '#111111',
     'text': '#7FDBFF'
 }
+
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
 
+
 list_page_children = []
+
 
 main_layout = html.Div(children=[
     html.H1(
