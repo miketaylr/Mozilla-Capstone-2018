@@ -6,7 +6,7 @@ import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-#import clustering as clustering
+# import clustering as clustering
 import ast
 import json
 from datetime import datetime as datetime
@@ -315,13 +315,12 @@ main_layout = html.Div(children=[
         dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
-
-
-    html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-        'textAlign': 'center',
-        'color': colors['text']
-    })
+    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
+    #     'textAlign': 'center',
+    #     'color': colors['text']
+    # })
 ])
+
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
               [dash.dependencies.Input('url', 'pathname')])
@@ -333,11 +332,13 @@ def display_page(pathname):
     else:
         return main_layout
 
+
 #prep data for displaying in stacked binary sentiment graph over time
 #Grab unique dates from results_df
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
 common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+
 
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
@@ -358,7 +359,7 @@ def render_content(tab):
                 html.Div(
                     className='six columns',
                     children=dcc.Graph(
-                    id='binary-sentiment-ts',
+                       id='binary-sentiment-ts',
                        figure={
                                 'data': [
                                     {
@@ -417,8 +418,6 @@ def render_content(tab):
                     id='current-content'
                 )
             ])
-            # html.Label('Here is a slider to vary # top sites to include'),
-            # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
     elif tab == 'tab-2':
         return html.Div([
@@ -511,6 +510,7 @@ def render_content(tab):
             )
         ])
 
+
 @app.callback(
     Output('current-content', 'children'),
     [Input('trends-scatterplot', 'hoverData')])
@@ -526,11 +526,12 @@ def display_hover_data(hoverData):
         )
     )
 
+
 @app.callback(
     Output('trend-data-histogram', 'figure'),
     [Input('trends-scatterplot', 'selectedData')])
 def display_selected_trend_data(selectedData):
-    #return table matching the current selection
+    # return table matching the current selection
     ids = list(d['customdata'] for d in selectedData['points'])
     df = search_df[search_df['Response ID'].isin(ids)]
     print(ids)
