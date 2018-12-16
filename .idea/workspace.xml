@@ -2,10 +2,9 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="722da363-42df-4a9e-9214-ed9e70164ebd" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/dash-interface2.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/clustering.py" beforeDir="false" afterPath="$PROJECT_DIR$/clustering.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/dash-interface.py" beforeDir="false" afterPath="$PROJECT_DIR$/dash-interface.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pipeline.py" beforeDir="false" afterPath="$PROJECT_DIR$/pipeline.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -41,12 +40,13 @@
           <entry key="project.open.time.34" value="1" />
           <entry key="project.open.time.37" value="2" />
           <entry key="project.open.time.38" value="1" />
+          <entry key="project.open.time.42" value="1" />
           <entry key="project.open.time.43" value="2" />
           <entry key="project.open.time.48" value="1" />
           <entry key="project.open.time.67" value="1" />
           <entry key="project.open.time.71" value="1" />
           <entry key="project.open.time.8" value="1" />
-          <entry key="project.opened" value="13" />
+          <entry key="project.opened" value="14" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -73,25 +73,26 @@
           <entry key="dash-interface" value="713" />
           <entry key="gitignore" value="2" />
           <entry key="interface" value="108" />
-          <entry key="py" value="11333" />
+          <entry key="py" value="11397" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Python" value="14053" />
+          <entry key="Python" value="14117" />
         </counts>
       </usages-collector>
     </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/pipeline.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="34">
-              <caret line="2" column="18" selection-start-line="2" selection-start-column="18" selection-end-line="2" selection-end-column="18" />
+            <state relative-caret-position="714">
+              <caret line="90" column="37" selection-start-line="90" selection-start-column="37" selection-end-line="90" selection-end-column="37" />
               <folding>
+                <element signature="e#62#81#0" expanded="true" />
                 <marker date="1543857155929" expanded="true" signature="6157:6162" ph="..." />
               </folding>
             </state>
@@ -119,8 +120,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/interface.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="442">
-              <caret line="34" column="3" selection-start-line="34" selection-start-column="3" selection-end-line="34" selection-end-column="3" />
+            <state relative-caret-position="567">
+              <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
               <folding>
                 <element signature="e#10#30#0" expanded="true" />
               </folding>
@@ -128,11 +129,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/dash-interface.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="151">
-              <caret line="494" column="19" lean-forward="true" selection-end-line="515" />
+            <state relative-caret-position="161">
+              <caret line="18" column="46" lean-forward="true" selection-start-line="18" selection-start-column="46" selection-end-line="18" selection-end-column="46" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -143,8 +144,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/dash-interface2.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="157">
-              <caret line="160" column="14" lean-forward="true" selection-start-line="160" selection-start-column="14" selection-end-line="160" selection-end-column="14" />
+            <state relative-caret-position="1555">
+              <caret line="160" column="14" selection-start-line="160" selection-start-column="14" selection-end-line="160" selection-end-column="14" />
               <folding>
                 <element signature="e#0#11#0" expanded="true" />
               </folding>
@@ -155,8 +156,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/clustering.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="67">
-              <caret line="585" column="9" lean-forward="true" selection-start-line="585" selection-start-column="9" selection-end-line="585" selection-end-column="9" />
+            <state relative-caret-position="431">
+              <caret line="631" column="7" selection-start-line="631" selection-start-column="7" selection-end-line="631" selection-end-column="7" />
               <folding>
                 <element signature="e#10#52#0" expanded="true" />
               </folding>
@@ -200,11 +201,13 @@
     <findStrings>
       <find>Output</find>
       <find>example</find>
-      <find>search-table</find>
       <find>graph-1-tabs</find>
       <find>print</find>
       <find>langid</find>
       <find>apply_and_concat</find>
+      <find>Compound sentiment</find>
+      <find>current-content</find>
+      <find>search-table</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -219,9 +222,10 @@
         <option value="$PROJECT_DIR$/interface.ipynb" />
         <option value="$PROJECT_DIR$/constants.py" />
         <option value="$PROJECT_DIR$/column_derivation.py" />
-        <option value="$PROJECT_DIR$/dash-interface.py" />
         <option value="$PROJECT_DIR$/dash-interface2.py" />
         <option value="$PROJECT_DIR$/pipeline.py" />
+        <option value="$PROJECT_DIR$/clustering.py" />
+        <option value="$PROJECT_DIR$/dash-interface.py" />
       </list>
     </option>
   </component>
@@ -231,7 +235,7 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
-  <component name="ProjectFrameBounds">
+  <component name="ProjectFrameBounds" extendedState="6">
     <option name="x" value="1908" />
     <option name="width" value="1944" />
     <option name="height" value="2082" />
@@ -242,6 +246,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -249,11 +254,15 @@
               <item name="Mozilla-Capstone-2018" type="b2602c69:ProjectViewProjectNode" />
               <item name="Mozilla-Capstone-2018" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="Mozilla-Capstone-2018" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Mozilla-Capstone-2018" type="462c0819:PsiDirectoryNode" />
+              <item name="data" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -280,7 +289,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.pipeline">
+  <component name="RunManager" selected="Python.dash-interface">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
       <module name="Mozilla-Capstone-2018" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -348,6 +357,9 @@
       <module name="Mozilla-Capstone-2018" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
       <option name="IS_MODULE_SDK" value="true" />
@@ -416,9 +428,9 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.dash-interface" />
         <item itemvalue="Python.pipeline" />
         <item itemvalue="Python.dash-interface2" />
-        <item itemvalue="Python.dash-interface" />
         <item itemvalue="Python.constants" />
         <item itemvalue="Python.interface" />
       </list>
@@ -438,15 +450,15 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="848" y="0" width="864" height="925" extended-state="0" />
+    <frame x="-6" y="-6" width="1719" height="932" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.16460396" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.1443175" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.74876237" weight="0.40754718" />
+      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.74752474" weight="0.40754718" />
       <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.66831684" weight="0.44779873" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -454,13 +466,13 @@
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" show_stripe_button="false" />
       <window_info anchor="bottom" id="Database Changes" order="9" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.20792079" side_tool="true" visible="true" weight="0.35220125" />
-      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49628714" weight="0.32955974" />
-      <window_info anchor="bottom" id="Python Console" order="12" sideWeight="0.7920792" visible="true" weight="0.35220125" />
+      <window_info anchor="bottom" id="Event Log" order="10" sideWeight="0.20865905" side_tool="true" visible="true" weight="0.35162094" />
+      <window_info anchor="bottom" id="Terminal" order="11" sideWeight="0.49428743" weight="0.32668328" />
+      <window_info active="true" anchor="bottom" id="Python Console" order="12" sideWeight="0.79134095" visible="true" weight="0.35162094" />
       <window_info anchor="right" id="Commander" order="0" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
-      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.028465347" />
+      <window_info anchor="right" id="SciView" order="3" visible="true" weight="0.012627781" />
       <window_info anchor="right" id="Database" order="4" weight="0.32952496" />
       <window_info anchor="right" x="0" y="0" width="166" height="725" id="Documentation" order="5" side_tool="true" visible="true" weight="0.19925742" />
     </layout>
@@ -521,6 +533,17 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/pipeline.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="714">
+          <caret line="90" column="37" selection-start-line="90" selection-start-column="37" selection-end-line="90" selection-end-column="37" />
+          <folding>
+            <element signature="e#62#81#0" expanded="true" />
+            <marker date="1543857155929" expanded="true" signature="6157:6162" ph="..." />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/column_derivation.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="102">
@@ -532,16 +555,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="102">
           <caret line="6" selection-start-line="6" selection-end-line="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/interface.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="442">
-          <caret line="34" column="3" selection-start-line="34" selection-start-column="3" selection-end-line="34" selection-end-column="3" />
-          <folding>
-            <element signature="e#10#30#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -562,42 +575,42 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/dash-interface2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1555">
+          <caret line="160" column="14" selection-start-line="160" selection-start-column="14" selection-end-line="160" selection-end-column="14" />
+          <folding>
+            <element signature="e#0#11#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/clustering.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="67">
-          <caret line="585" column="9" lean-forward="true" selection-start-line="585" selection-start-column="9" selection-end-line="585" selection-end-column="9" />
+        <state relative-caret-position="431">
+          <caret line="631" column="7" selection-start-line="631" selection-start-column="7" selection-end-line="631" selection-end-column="7" />
           <folding>
             <element signature="e#10#52#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/interface.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="567">
+          <caret line="41" lean-forward="true" selection-start-line="41" selection-end-line="41" />
+          <folding>
+            <element signature="e#10#30#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/dash-interface.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="151">
-          <caret line="494" column="19" lean-forward="true" selection-end-line="515" />
+        <state relative-caret-position="161">
+          <caret line="18" column="46" lean-forward="true" selection-start-line="18" selection-start-column="46" selection-end-line="18" selection-end-column="46" />
           <folding>
             <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/dash-interface2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="157">
-          <caret line="160" column="14" lean-forward="true" selection-start-line="160" selection-start-column="14" selection-end-line="160" selection-end-column="14" />
-          <folding>
-            <element signature="e#0#11#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/pipeline.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="34">
-          <caret line="2" column="18" selection-start-line="2" selection-start-column="18" selection-end-line="2" selection-end-column="18" />
-          <folding>
-            <marker date="1543857155929" expanded="true" signature="6157:6162" ph="..." />
           </folding>
         </state>
       </provider>

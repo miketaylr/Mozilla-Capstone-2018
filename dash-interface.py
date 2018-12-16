@@ -5,19 +5,19 @@ import dash_table as dt
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-import clustering as clustering
+#import clustering as clustering
 import ast
 import json
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("./data/output.csv", encoding ="ISO-8859-1")
+results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
-                        , "State/Region", "Binary Sentiment", "Feedback", "Relevant Site", "compound"\
-                        , "Sites", "Issues", "Components"]]#print(df.columns)
+                        , "State/Region", "Binary Sentiment", "compound", "Issues", "Components",\
+                        "Feedback", "Relevant Site", "Sites"]]#print(df.columns)
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
@@ -74,17 +74,17 @@ traces = []
 # print(clusters)
 
 # Dynamic Data
-df2 = clustering.runVis(numClusters)
+#df2 = clustering.runVis(numClusters)
 categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 
-docs = df2.tail(1)
-df2 = df2[:-1]
-phrases = df2.tail(1)
-df2 = df2[:-1]
-words = df2.tail(1)
-df2 = df2[:-1]
-clusters = df2
-clusters = clusters.rename(index=categoryDict)
+# docs = df2.tail(1)
+# df2 = df2[:-1]
+# phrases = df2.tail(1)
+# df2 = df2[:-1]
+# words = df2.tail(1)
+# df2 = df2[:-1]
+# clusters = df2
+# clusters = clusters.rename(index=categoryDict)
 
 
 def update_point(trace):
@@ -92,16 +92,16 @@ def update_point(trace):
     return
 
 
-for index, row in clusters.iterrows():
-    row = list(row)
-    traces.append(go.Bar(
-        x=words.iloc[0].values,
-        y=row,
-        name=index,
-        hoverinfo='x+y+name',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        customdata=docs.iloc[0].values
-    ))
+# for index, row in clusters.iterrows():
+#     row = list(row)
+#     traces.append(go.Bar(
+#         x=words.iloc[0].values,
+#         y=row,
+#         name=index,
+#         hoverinfo='x+y+name',
+#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+#         customdata=docs.iloc[0].values
+#     ))
 
 layout2 = go.Layout(
     barmode='stack',
@@ -198,48 +198,62 @@ def render_content(tab):
                 value='Daily',
                 labelStyle={'display': 'inline'}
             ),
-            dcc.Graph(
-                id='binary-sentiment-ts',
-                figure={
-                    'data': [{
-                        'x': unique_dates,
-                        'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                        'type': 'bar',
-                        'name': "Happy"
-                        }, {
-                        'x': unique_dates,
-                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                        'type': 'bar',
-                        'name': "Sad"
-                        }
-                    ],
-                    'layout': {
-                        'plot_bgcolor': colors['background'],
-                        'paper_bgcolor': colors['background'],
-                        'barmode': 'stack',
-                        'font': {
-                            'color': colors['text']
-                        }
-                    }
-                }
-            ),
-            dcc.Graph(
-                id='trends-scatterplot',
-                figure={
-                    'data': [{
-                        'x': results_df['Date Submitted'],
-                        'y': results_df['compound'],
-                        'customdata': results_df['Response ID'],
-                        'type': 'line',
-                        'name': "Sentiment score",
-                        'mode': 'markers',
-                        'marker': {'size': 12}
-                    }],
-                    'layout': {
-                         'title': "Compound Sentiment Score Over Time"
-                    }
-                }
-            ),
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(
+                    id='binary-sentiment-ts',
+                       figure={
+                                'data': [
+                                    {
+                                        'x': unique_dates,
+                                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
+                                            [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                                        'type': 'bar',
+                                        'name': "Sad"
+                                    },
+                                    {
+                                    'x': unique_dates,
+                                    'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                                    'type': 'bar',
+                                    'name': "Happy"
+                                    }
+                                ],
+                                'layout': {
+                                    'plot_bgcolor': colors['background'],
+                                    'paper_bgcolor': colors['background'],
+                                    'barmode': 'stack',
+                                    'font': {
+                                        'color': colors['text']
+                                    }
+                                }
+                            }
+                        )
+                    ),
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(
+                            id='trends-scatterplot',
+                            figure={
+                                'data': [{
+                                    'x': results_df['Date Submitted'],
+                                    'y': results_df['compound'],
+                                    'customdata': results_df['Response ID'],
+                                    'type': 'line',
+                                    'name': "Sentiment score",
+                                    'mode': 'markers',
+                                    'marker': {'size': 12}
+                                }],
+                                'layout': {
+                                     'title': "Compound Sentiment Score Over Time"
+                                }
+                            }
+                    )
+                )
+            ]),
+
+
+
             html.Div([
                 html.Div(
                     className='six columns',
@@ -391,10 +405,9 @@ def display_hover_data(hoverData):
     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
 
     return html.H4(
-        "The comment from {} is '{}{}'. The user was {}.".format(
+        "The comment from {} is '{}'. The user was {}.".format(
             r.iloc[0]['Date Submitted'],
-            r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
-            r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
+            r.iloc[0]['Feedback'],
             r.iloc[0]['Binary Sentiment']
         )
     )
