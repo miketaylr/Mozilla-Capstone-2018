@@ -521,9 +521,9 @@ def render_content(tab):
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
-            dcc.Input(id='search-request', value='Type here', type='text'),
+            dcc.Input(id='searchrequest', type='text', value='Type here'),
             dte.DataTable(  # Add fixed header row
-                id='search-table',
+                id='searchtable',
                 # columns=[{"name": i, "id": i} for i in search_df.columns],
                 # pagination_settings={
                 #     'current_page': 0,
@@ -611,68 +611,26 @@ def display_selected_trend_data(selectedData):
 
 
 @app.callback(
-    Output('search-table', "rows"),
-    [Input('search-request', "n_submit"), Input('request-1-submit', 'n_blur'),
-     # Input('search-table', "pagination_settings"),
-     # Input('search-table', "sorting_settings"),
-     # Input('search-table', "filtering_settings")
-     ],
-    [State('search-request', 'value')])
-def update_table(ns, nb,
-                 # pagination_settings, sorting_settings, filtering_settings,
-                 request_value):
-    print(str(ns))
-    print(str(nb))
-    print(str(request_value))
+    Output('searchtable', 'rows'),
+    [Input('searchrequest', 'n_submit'), Input('searchrequest', 'n_blur'),],
+    [State('searchrequest', 'value')])
+def update_table(ns, nb, request_value):
     df = search_df
+    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+              'Feedback', 'Components', 'Issues', 'Sites']
     r_df = pd.DataFrame()
-    col_values = list(df.columns.values)
+    # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
-        for col in col_values:
-            if str(request_value) not in str(row[col]):
-                continue
-            else:
-                r_df.append(df.loc[df['Response ID'] == row['Response ID']])
+        fb = str(row['Feedback'])
+        rv = str(request_value)
+        isit = rv in fb
+        if isit:
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            temp_df = pd.DataFrame([temp], columns=cnames)
+            r_df = r_df.append(temp_df, ignore_index=True)
     return r_df.to_dict('rows')
 
-
-# @app.callback(
-#     Output('search-table', "data"),
-#     [Input('search-table', "pagination_settings"),
-#      Input('search-table', "sorting_settings"),
-#      Input('search-table', "filtering_settings")])
-# def update_table(pagination_settings, sorting_settings, filtering_settings):
-#     print(sorting_settings)
-#     print(filtering_settings)
-#     filtering_expressions = filtering_settings.split(' && ')
-#     dff = search_df
-#
-#     for filter in filtering_expressions:
-#         if ' eq ' in filter:
-#             col_name = filter.split(' eq ')[0]
-#             filter_value = filter.split(' eq ')[1]
-#             dff = dff.loc[dff[col_name] == filter_value]
-#         if ' > ' in filter:
-#             col_name = filter.split(' > ')[0]
-#             filter_value = float(filter.split(' > ')[1])
-#             dff = dff.loc[dff[col_name] > filter_value]
-#         if ' < ' in filter:
-#             col_name = filter.split(' < ')[0]
-#             filter_value = float(filter.split(' < ')[1])
-#             dff = dff.loc[dff[col_name] < filter_value]
-#     if len(sorting_settings):
-#         dff = dff.sort_values(
-#             [col['column_id'] for col in sorting_settings],
-#             ascending=[
-#                 col['direction'] == 'asc'
-#                 for col in sorting_settings
-#             ],
-#             inplace=False
-#         )
-#     return dff.iloc[
-#            pagination_settings['current_page'] * pagination_settings['page_size']:
-#            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-#            ].to_dict('rows')
 
 @app.callback(
     Output('common-site-table', "data"),
