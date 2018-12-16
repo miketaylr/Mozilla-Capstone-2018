@@ -12,7 +12,7 @@ from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
 
 # Reading in data:
@@ -335,7 +335,8 @@ fig_issue_metrics = updateIssuesMetricsGraph()
 
 # Page styling - sample:
 PAGE_SIZE = 40
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__)
 # suppress exception of assigning callbacks to components that are genererated
 # by other callbacks
 app.config['suppress_callback_exceptions'] = True
@@ -348,16 +349,16 @@ tabs_styles = {
     'height': '44px'
 }
 tab_style = {
-    'borderBottom': '1px solid #d6d6d6',
-    'padding': '6px',
-    'fontWeight': 'bold'
+    # 'borderBottom': '1px solid #d6d6d6',
+    'padding': '11px',
+    'backgroundColor': 'rgb(30,30,30)'
 }
 tab_selected_style = {
-    'borderTop': '1px solid #d6d6d6',
-    'borderBottom': '1px solid #d6d6d6',
-    'backgroundColor': '#119DFF',
-    'color': 'white',
-    'padding': '6px'
+    'borderTop': 'none',
+    # 'borderBottom': '1px solid #d6d6d6',
+    'backgroundColor': 'white',
+    'color': 'rgb(30,30,30)',
+    'padding': '11px'
 }
 colors = {
     'background': '#111111',
@@ -377,11 +378,7 @@ list_page_children = []
 main_layout = html.Div(children=[
     html.H1(
         children='Mozilla Customer Feedback Analytics Tool',
-        style={
-            'textAlign': 'center',
-            'color': 'orange'
-
-        }
+        id="header",
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
         dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
