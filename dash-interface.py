@@ -104,179 +104,233 @@ categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clust
 
 
 # TIME CALCULATION
+toggle_time_params = {
+    'min': 1,
+    'max': 14,
+    'step': 1,
+    'default': 7,
+    'marks': {
+        1: 1,
+        7: 7,
+        14: 14
+    }
+}
+
+# GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
 reference = datetime(2016, 12, 30)
 # reference = datetime.now()
-results_df['Day Difference'] = (reference-pd.to_datetime(results_df['Date Submitted'], format = '%Y-%m-%d %H:%M:%S')).dt.days + 1
-num_days_range = 7 # week, set some way to toggle this instead of hardcoded
-date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
-date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
-date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
-component_df = pd.Series([])
-issue_df = pd.Series([])
-for day in range(num_days_range):
-    # count docs with components
-    new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
+results_df['Day Difference'] = (reference - pd.to_datetime(results_df['Date Submitted'],
+                                                           format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
-    new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_issue_info = pd.concat([new_issue_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
+def initCompDF(results_df, num_days_range = 7):
+    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
+    date_filtered_df['Components'] = date_filtered_df['Components'].apply(
+        lambda x: ast.literal_eval(x))  # gives warning but works, fix later
 
+    component_df = pd.Series([])
 
-# Fill in component and issue df with 0 for Nan (?)
-component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
-issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
-traces_component = []
-traces_issue = []
+    for day in range(num_days_range):
+        # count docs with components
+        new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
+            lambda x: pd.Series(x).value_counts()).sum()
+        # count docs with no assigned components
+        new_comp_info = pd.concat([new_comp_info,
+                                   date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
+                                       lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+        component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
 
+    component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
 
-# Checking df for values:
-for index, row in component_df.iterrows():
-    # print(list(row.keys()))
-    traces_component.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
+    return component_df
 
+def initIssueDF(results_df, num_days_range = 7):
+    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
+    date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
 
-# Stacked Bar Graph figure - components:
-layout_component = go.Layout(
-    barmode='stack',
-    title='Components Over Time',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=False,
-        title='Time'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
+    issue_df = pd.Series([])
+
+    for day in range(num_days_range):
+        new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
+            lambda x: pd.Series(x).value_counts()).sum()
+        # count docs with no assigned components
+        new_issue_info = pd.concat([new_issue_info,
+                                    date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
+                                        lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+        issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
+
+    # Fill in component and issue df with 0 for Nan (?)
+    issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+
+    return issue_df
+
+def updateComponentGraph(component_df):
+    traces_component = []
+    # Checking df for values:
+    for index, row in component_df.iterrows():
+        # print(list(row.keys()))
+        traces_component.append(go.Bar(
+            x=list(row.keys()),
+            y=row.values,
+            name=index,
+            # hoverinfo='none',
+            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+            # customdata=docs.iloc[0].values
+        ))
+
+    # Stacked Bar Graph figure - components:
+    layout_component = go.Layout(
+        barmode='stack',
+        title='Components Over Time',
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Time'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
     )
-)
 
+    fig_component = dict(data=traces_component, layout=layout_component)
 
-fig_component = dict(data=traces_component, layout=layout_component)
+    return fig_component
 
+def updateIssuesGraph(issue_df):
+    traces_issue = []
 
-# Checking df for values:
-for index, row in issue_df.iterrows():
-    # print(list(row.keys()))
-    traces_issue.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
+    # Checking df for values:
+    for index, row in issue_df.iterrows():
+        # print(list(row.keys()))
+        traces_issue.append(go.Bar(
+            x=list(row.keys()),
+            y=row.values,
+            name=index,
+            # hoverinfo='none',
+            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+            # customdata=docs.iloc[0].values
+        ))
 
-
-# Stacked Bar Graph figure - issues:
-layout_issue = go.Layout(
-    barmode='stack',
-    title='Issues Over Time',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=True,
-        title='Time'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
+    # Stacked Bar Graph figure - issues:
+    layout_issue = go.Layout(
+        barmode='stack',
+        title='Issues Over Time',
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=True,
+            title='Time'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
     )
-)
 
+    fig_issue = dict(data=traces_issue, layout=layout_issue)
 
-fig_issue = dict(data=traces_issue, layout=layout_issue)
+    return fig_issue
 
+# CREATE FIRST TWO GRAPHS
+component_df = initCompDF(results_df)
+issue_df = initIssueDF(results_df)
+fig_component = updateComponentGraph(component_df)
+fig_issue = updateIssuesGraph(issue_df)
 
-# CATEGORIZATION VISUALIZATION
-# merge output_pipeline with output_clusters_defined
-merged = pd.merge(results_df, clusters_df, on='Response ID')
-merged = merged[merged['manual_clusters'].notna()]
-compCountSeries = pd.Series([])
-# For components labelled:
-for component in WORDS_TO_COMPONENT.keys():
-    compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
-    compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
-compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
-compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
-compCountSeries = compCountSeries.rename(index = categoryDict)
-traces_comp_metrics = []
-for index, row in compCountSeries.iterrows():
-    # print(list(row.keys()))
-    traces_comp_metrics.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
+def mergedGraph():
+    # merge output_pipeline with output_clusters_defined
+    merged = pd.merge(results_df, clusters_df, on='Response ID')
+    merged = merged[merged['manual_clusters'].notna()]
+    return merged
 
+def updateCompMetricsGraph():
+    # CATEGORIZATION VISUALIZATION
+    merged = mergedGraph()
 
-# Stacked Bar Graph figure - components labelled against manual labelling:
-layout_comp_metrics = go.Layout(
-    barmode='stack',
-    title='Components vs Manual Clusters',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=False,
-        title='Components'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
+    compCountSeries = pd.Series([])
+    # For components labelled:
+    for component in WORDS_TO_COMPONENT.keys():
+        compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
+        compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
+    compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")][
+        'manual_clusters'].value_counts().rename('No Label')], axis=1)
+    compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
+    compCountSeries = compCountSeries.rename(index=categoryDict)
+
+    traces_comp_metrics = []
+    for index, row in compCountSeries.iterrows():
+        # print(list(row.keys()))
+        traces_comp_metrics.append(go.Bar(
+            x=list(row.keys()),
+            y=row.values,
+            name=index,
+            # hoverinfo='none',
+            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+            # customdata=docs.iloc[0].values
+        ))
+
+    # Stacked Bar Graph figure - components labelled against manual labelling:
+    layout_comp_metrics = go.Layout(
+        barmode='stack',
+        title='Components vs Manual Clusters',
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Components'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
     )
-)
+
+    fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
+
+    return fig_comp_metrics
 
 
-fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
+def updateIssuesMetricsGraph():
+    # ISSUES VISUALIZATION
+    merged = mergedGraph()
 
+    # For issues labelled:
+    issueCountSeries = pd.Series([])
+    for issue in WORDS_TO_ISSUE.keys():
+        issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
+        issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
+    issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")][
+        'manual_clusters'].value_counts().rename('No Label')], axis=1)
+    issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
+    issueCountSeries = issueCountSeries.rename(index=categoryDict)
 
-# For issues labelled:
-issueCountSeries = pd.Series([])
-for issue in WORDS_TO_ISSUE.keys():
-    issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
-    issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
-issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
-issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
-issueCountSeries = issueCountSeries.rename(index = categoryDict)
-traces_issue_metrics = []
-for index, row in issueCountSeries.iterrows():
-    print(list(row.keys()))
-    traces_issue_metrics.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
+    traces_issue_metrics = []
+    for index, row in issueCountSeries.iterrows():
+        print(list(row.keys()))
+        traces_issue_metrics.append(go.Bar(
+            x=list(row.keys()),
+            y=row.values,
+            name=index,
+            # hoverinfo='none',
+            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+            # customdata=docs.iloc[0].values
+        ))
 
-
-# Stacked Bar Graph figure - issues labelled against manual labelling:
-layout_issue_metrics = go.Layout(
-    barmode='stack',
-    title='Issues vs Manual Clusters',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=False,
-        title='Issues'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
+    # Stacked Bar Graph figure - issues labelled against manual labelling:
+    layout_issue_metrics = go.Layout(
+        barmode='stack',
+        title='Issues vs Manual Clusters',
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Issues'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
     )
-)
 
+    fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
 
-fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
+    return fig_issue_metrics
+
+fig_comp_metrics = updateCompMetricsGraph()
+fig_issue_metrics = updateIssuesMetricsGraph()
 
 
 # Page styling - sample:
@@ -446,7 +500,18 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
+            html.Div(id = 'comp_slider_output'),
+            dcc.Slider(id='comp_time_slider',
+                       min=toggle_time_params['min'], max=toggle_time_params['max'],
+                       step=toggle_time_params['step'], value=toggle_time_params['default'],
+                       marks=toggle_time_params['marks']),
             dcc.Graph(id='graph2', figure=fig_component),
+
+            html.Div(id='issue_slider_output'),
+            dcc.Slider(id='issue_time_slider',
+                       min=toggle_time_params['min'], max=toggle_time_params['max'],
+                       step=toggle_time_params['step'], value=toggle_time_params['default'],
+                       marks=toggle_time_params['marks']),
             dcc.Graph(id='graph3', figure=fig_issue),
             dcc.Graph(id='graph4', figure=fig_comp_metrics),
             dcc.Graph(id='graph5', figure=fig_issue_metrics),
@@ -678,35 +743,38 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
            ].to_dict('rows')
 
-
-divs = []
+# Component DF Slider Callback
 @app.callback(
-    Output(component_id='hidden-div', component_property='children'),
-    [Input('graph2', 'clickData')])
-def display_click_data(clickData):
-    print(clickData['points'][0]['x'])
-    # if (clickData):
-    #     htmlArr = []
-    #     data = clickData['points'][0]['customdata']
-    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
-    #     for key, value in docData.items():
-    #         docArray = []
-    #         for doc in value:
-    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-    #         htmlArr.append(
-    #             html.Div([
-    #                 html.H4(key),
-    #                 html.Div(children=docArray)
-    #             ])
-    #         )
-    #     return htmlArr
-    # return ''
-    list_page_children = [
-        html.Div(children=clickData)
-    ]
-    return str(clickData['points'][0]['x'])
+    dash.dependencies.Output('comp_slider_output', 'children'),
+    [dash.dependencies.Input('comp_time_slider', 'value')])
+def update_output(value):
+    return 'Past {} days of data'.format(value)
 
+# Component DF Time Toggle Callback
+@app.callback(
+    dash.dependencies.Output('graph2', 'figure'),
+    [dash.dependencies.Input('comp_time_slider', 'value')])
+def update_output(value):
+    component_df = initCompDF(results_df, value)
+    fig_component = updateComponentGraph(component_df)
+    return fig_component
+
+# Component DF Slider Callback
+@app.callback(
+    dash.dependencies.Output('issue_slider_output', 'children'),
+    [dash.dependencies.Input('issue_time_slider', 'value')])
+def update_output(value):
+    return 'Past {} days of data'.format(value)
+
+# Component DF Time Toggle Callback
+@app.callback(
+    dash.dependencies.Output('graph3', 'figure'),
+    [dash.dependencies.Input('issue_time_slider', 'value')])
+def update_output(value):
+    issue_df = initIssueDF(results_df, value)
+    fig_issue = updateComponentGraph(issue_df)
+    return fig_issue
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
