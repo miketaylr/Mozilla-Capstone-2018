@@ -346,18 +346,21 @@ Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
 tabs_styles = {
-    'height': '44px'
+    'height': '44px',
+    'width': '350px',
+    'display': 'inline-block'
 }
 tab_style = {
     # 'borderBottom': '1px solid #d6d6d6',
     'padding': '11px',
-    'backgroundColor': 'rgb(30,30,30)'
+    'backgroundColor': 'rgb(30,30,30)',
+    'border': 'none',
 }
 tab_selected_style = {
-    'borderTop': 'none',
+    'border': 'none',
     # 'borderBottom': '1px solid #d6d6d6',
-    'backgroundColor': 'white',
-    'color': 'rgb(30,30,30)',
+    'backgroundColor': 'rgb(30,30,30)',
+    'color': 'white',
     'padding': '11px'
 }
 colors = {
@@ -377,7 +380,7 @@ list_page_children = []
 
 main_layout = html.Div(children=[
     html.H1(
-        children='Mozilla Customer Feedback Analytics Tool',
+        children='Mozilla Customer Analytics',
         id="header",
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
@@ -400,7 +403,6 @@ list_layout = html.Div(children=[
     html.H1(
         children='List',
         style={
-            'textAlign': 'center',
             'color': 'orange'
 
         }

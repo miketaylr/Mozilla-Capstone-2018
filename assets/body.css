@@ -4,12 +4,25 @@ body {
     font-family: sans-serif;
 }
 
+._dash-loading {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%);
+    left: 50%;
+}
+
 #header {
-    text-align: center;
     color: orange;
     font-family: Helvetica;
-    font-size: 2.5em;
+    font-size: 1.75em;
     font-weight: 350;
     letter-spacing: 0.03em;
     margin: 1em 0;
+    display: inline-block;
+}
+
+.tab-parent {
+    display:inline-block;
+    float: right;
+    margin: 1.75em 0;
 }
