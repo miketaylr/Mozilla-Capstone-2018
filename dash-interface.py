@@ -107,38 +107,68 @@ date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
 date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
 date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
 
+print(date_filtered_df['Issues'])
+
 component_df = pd.Series([])
 issue_df = pd.Series([])
 
+comp_response_id_map = dict()
+issue_response_id_map = dict()
+
 for day in range(num_days_range):
-    # count docs with components
-    new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
+    day_df = date_filtered_df[date_filtered_df['Day Difference'] == day+1] 
+    
+    # count docs with components    
+    new_comp_info = day_df['Components'].apply(
         lambda x: pd.Series(x).value_counts()).sum()
     # count docs with no assigned components
     new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    
+    comp_response_id_map['Day' + str(day+1)] = dict()
+    comps = new_comp_info.index.values
+    for comp in comps: 
+        comp_response_id_map['Day' + str(day+1)][comp] = [];
+
+    for index, row in day_df.iterrows():
+        for comp in row['Components']:
+            comp_response_id_map['Day' + str(day+1)][comp].append(row.index.values[0])
+        if len(row['Components']) == 0 and 'No Label' in comps:
+            comp_response_id_map['Day' + str(day+1)]['No Label'].append(row.index.values[0])
+
     component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
 
 
-    new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
+    new_issue_info = day_df['Issues'].apply(
         lambda x: pd.Series(x).value_counts()).sum()
     # count docs with no assigned components
     new_issue_info = pd.concat([new_issue_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    
+    issue_response_id_map['Day' + str(day+1)] = dict()
+    issues = new_issue_info.index.values
+    for issue in issues: 
+        issue_response_id_map['Day' + str(day+1)][issue] = [];
+
+    for index, row in day_df.iterrows():
+        for issue in row['Issues']:
+            issue_response_id_map['Day' + str(day+1)][issue].append(row.index.values[0])
+        if len(row['Issues']) == 0 and 'No Label' in issues:
+            issue_response_id_map['Day' + str(day+1)]['No Label'].append(row.index.values[0])
+
     issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
 
 
 component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
 issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
 
-print(component_df, issue_df)
-
 traces_component = []
 
 for index, row in component_df.iterrows():
-    print(list(row.keys()))
+    print(index, row)
     traces_component.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
         name=index,
+        # customdata=index,
         # link='',
         # hoverinfo='none',
         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
@@ -164,7 +194,6 @@ fig_component = dict(data=traces_component, layout=layout_component)
 traces_issue = []
 
 for index, row in issue_df.iterrows():
-    print(list(row.keys()))
     traces_issue.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -192,7 +221,6 @@ fig_issue = dict(data=traces_issue, layout=layout_issue)
 traces_component = []
 
 for index, row in component_df.iterrows():
-    print(list(row.keys()))
     traces_component.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -221,7 +249,6 @@ fig_component = dict(data=traces_component, layout=layout_component)
 traces_issue = []
 
 for index, row in issue_df.iterrows():
-    print(list(row.keys()))
     traces_issue.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -263,7 +290,6 @@ compCountSeries = compCountSeries.rename(index = categoryDict)
 traces_comp_metrics = []
 
 for index, row in compCountSeries.iterrows():
-    print(list(row.keys()))
     traces_comp_metrics.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -302,7 +328,6 @@ issueCountSeries = issueCountSeries.rename(index = categoryDict)
 traces_issue_metrics = []
 
 for index, row in issueCountSeries.iterrows():
-    print(list(row.keys()))
     traces_issue_metrics.append(go.Bar(
         x=list(row.keys()),
         y=row.values,
@@ -341,7 +366,7 @@ for index, row in clusters.iterrows():
         name=index,
         hoverinfo='x+y+name',
         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        customdata=docs.iloc[0].values
+        # customdata=docs.iloc[0].values
     ))
 
 layout2 = go.Layout(
@@ -497,7 +522,7 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
-            dcc.Graph(id='graph2', figure=fig_component),
+            dcc.Graph(id='comp-graph', figure=fig_component),
             dcc.Graph(id='issue-graph', figure=fig_issue),
             dcc.Graph(id='comp-metric-graph', figure=fig_comp_metrics),
             dcc.Graph(id='iss-metric-graph', figure=fig_issue_metrics),
@@ -622,24 +647,25 @@ def render_content(tab):
 
 @app.callback(
     Output('bitch-div', 'children'),
-    [Input('graph2', 'clickData')])
+    [Input('comp-graph', 'clickData')])
 def display_click_data(clickData):
-    print(clickData)
-    if (clickData):
-        htmlArr = []
-        data = clickData['points'][0]['customdata']
-        docData = json.loads(json.dumps(ast.literal_eval(data)))
-        for key, value in docData.items():
-            docArray = []
-            for doc in value:
-                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-            htmlArr.append(
-                html.Div([
-                    html.H4(key),
-                    html.Div(children=docArray)
-                ])
-            )
-        return htmlArr
+    print(clickData['points'][0])
+    # print(comp_response_id_map)
+    # if (clickData):
+    #     htmlArr = []
+    #     data = clickData['points'][0]['customdata']
+    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
+    #     for key, value in docData.items():
+    #         docArray = []
+    #         for doc in value:
+    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+    #         htmlArr.append(
+    #             html.Div([
+    #                 html.H4(key),
+    #                 html.Div(children=docArray)
+    #             ])
+    #         )
+    #     return htmlArr
     return ''
 
 @app.callback(
