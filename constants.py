@@ -2,7 +2,7 @@
 
 WORDS_TO_COMPONENT = {
 "Bookmark":	[x.strip() for x in "Book mark, favorite, marked site".split(',')],
-"Firefox":  [x.strip() for x in "Browser	Firefox, Browser, Like, Update, Touch, mobile, gesture, Use, Thank, icon, Menu, button, fast, app, support, extension, addon, integration, look, interface, logo, Quantum, design,  menu, version, ui, safari, chrome, navigation, happy, hate, suck, pretty,beautical,ugly, elegant,good looking,good-looking,nice,pleasant,awful,great,design, user interface, user experience, ux, slow,lag,laggy,quick,speed,smooth,crash, frozen,abort,abandon,freeze,dead,died,update,release,updated,new version,compatible, windows, mac".split(',')],
+"Firefox":  [x.strip() for x in "Firefox Browser, Browser, Like, Update, Touch, mobile, gesture, Use, Thank, icon, Menu, button, fast, app, support, extension, addon, integration, look, interface, logo, Quantum, design,  menu, version, ui, safari, chrome, navigation, happy, hate, suck, pretty,beautical,ugly, elegant,good looking,good-looking,nice,pleasant,awful,great,design, user interface, user experience, ux, slow,lag,laggy,quick,speed,smooth,crash, frozen,abort,abandon,freeze,dead,died,update,release,updated,new version,compatible, windows, mac".split(',')],
 "History/cookies/cache":	[x.strip() for x in "History,cookies,cache,cook".split(',')],
 "Top Sites":	[x.strip() for x in "top sites, topsite, top websites, frequent visit, frequent site, high visit".split(',')],
 "Highlights":	[x.strip() for x in "highlight, recent visit, recent site, recent bookmark, latest visit, latest site, latest bookmark".split(',')],
@@ -10,7 +10,7 @@ WORDS_TO_COMPONENT = {
 "Slowness":	[x.strip() for x in "slow,fast,lag,laggy,quick,speed,smooth".split(',')],
 "Crashes":	[x.strip() for x in "crash, frozen,abort,abandon,freeze,dead,died".split(',')],
 "Color":	[x.strip() for x in "color, red, orange, yellow, green, blue, purple, brown, magenta, tan, cyan, olive, maroon, navy, aquamarine, turquoise, silver, lime, teal, indigo, violet, pink, white, black".split(',')],
-"Preferences":	[x.strip() for x in "preferences, fonts&color, save files to, default browser, general, language, application download, performance settings, scrollling, default search engine, remember log in, history setting, suggest browing history, suggest bookmarks, suggest open tabs, cached web content, set tracking protection, firefox data collection and use, block dangerous content, block dangerous downloads,".split(',')],
+"Preferences":	[x.strip() for x in "preferences, fonts&color, save files to, default browser, general, language, application download, performance settings, scrollling, default search engine, remember log in, history setting, suggest browing history, suggest bookmarks, suggest open tabs, cached web content, set tracking protection, firefox data collection and use, block dangerous content, block dangerous downloads".split(',')],
 "Top Sites":	[x.strip() for x in "top sites, topsite, top websites, frequent visit, frequent site, high visit".split(',')],
 "Highlights":	[x.strip() for x in "highlight, recent visit, recent site, recent bookmark, latest visit, latest site, latest bookmark".split(',')],
 "Pocket":	[x.strip() for x in "pocket, save video, recommended by pocket".split(',')]

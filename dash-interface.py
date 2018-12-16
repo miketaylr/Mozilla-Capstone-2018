@@ -6,7 +6,7 @@ import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-import clustering as clustering
+#import clustering as clustering
 import ast
 import json
 from datetime import datetime as datetime
@@ -22,7 +22,7 @@ print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
 #                         , "Negative Feedback", "Relevant Site", "compound"\
-#                         , "Sites", "Issues", "Components"]]#, "neg", "neu", "pos" "Processed Feedback" print(df.columns)
+#                         , "Sites", "Issues", "Components"]]
 search_df = results_df
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
@@ -104,34 +104,9 @@ categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clust
 # clusters = clusters.rename(index=categoryDict)
 
 
-# TIME CALCULATION
-reference = datetime(2016, 12, 30)
-# reference = datetime.now()
-results_df['Day Difference'] = (reference-pd.to_datetime(results_df['Date Submitted'], format = '%Y-%m-%d %H:%M:%S')).dt.days + 1
-num_days_range = 7 # week, set some way to toggle this instead of hardcoded
-date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
-date_filtered_df['Components'] = date_filtered_df['Components'].apply(lambda x: ast.literal_eval(x)) # gives warning but works, fix later
-date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
-component_df = pd.Series([])
-issue_df = pd.Series([])
-for day in range(num_days_range):
-    # count docs with components
-    new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
-
-    new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_issue_info = pd.concat([new_issue_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
-
-
 # Fill in component and issue df with 0 for Nan (?)
-component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
-issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+# component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
+# issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
 traces_component = []
 traces_issue = []
 
@@ -223,6 +198,11 @@ for index, row in compCountSeries.iterrows():
     ))
 
 
+def update_point(trace):
+    print(trace)
+    return
+
+
 # Stacked Bar Graph figure - components labelled against manual labelling:
 layout_comp_metrics = go.Layout(
     barmode='stack',
@@ -265,17 +245,16 @@ for index, row in issueCountSeries.iterrows():
 # Stacked Bar Graph figure - issues labelled against manual labelling:
 layout_issue_metrics = go.Layout(
     barmode='stack',
-    title='Issues vs Manual Clusters',
+    title='Issue Clusters',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
     xaxis=dict(
-        # showticklabels=False,
-        title='Issues'
+        showticklabels=False,
+        title='Clusters'
     ),
     yaxis=dict(
-        title='Count of Docs'
+        title='Count of Issues'
     )
 )
-
 
 fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
 
@@ -336,23 +315,12 @@ main_layout = html.Div(children=[
         dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
-    # # What is this below?
-    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-    #     'textAlign': 'center',
-    #     'color': colors['text']
-    # }),
-    html.Div(id='hidden-div', style={'display': 'none'})
-])
 
-list_layout = html.Div(children=[
-    html.H1(
-        children='List',
-        style={
-            'textAlign': 'center',
-            'color': 'orange'
-        }
-    ),
-    html.Div(children=list_page_children)
+
+    html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
+        'textAlign': 'center',
+        'color': colors['text']
+    })
 ])
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -363,7 +331,7 @@ def display_page(pathname):
     elif pathname == '/page-2':
         return main_layout
     else:
-        return main_layout  
+        return main_layout
 
 #prep data for displaying in stacked binary sentiment graph over time
 #Grab unique dates from results_df
@@ -386,58 +354,69 @@ def render_content(tab):
                 value='Daily',
                 labelStyle={'display': 'inline'}
             ),
-            dcc.Graph(
-                id='binary-sentiment-ts',
-                figure={
-                    'data': [{
-                        'x': unique_dates,
-                        'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                        'type': 'bar',
-                        'name': "Happy"
-                        }, {
-                        'x': unique_dates,
-                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                        'type': 'bar',
-                        'name': "Sad"
-                        }
-                    ],
-                    'layout': {
-                        'plot_bgcolor': colors['background'],
-                        'paper_bgcolor': colors['background'],
-                        'barmode': 'stack',
-                        'font': {
-                            'color': colors['text']
-                        }
-                    }
-                }
-            ),
-            dcc.Graph(
-                id='trends-scatterplot',
-                figure={
-                    'data': [{
-                        'x': results_df['Date Submitted'],
-                        'y': results_df['compound'],
-                        'customdata': results_df['Response ID'],
-                        'type': 'line',
-                        'name': "Sentiment score",
-                        'mode': 'markers',
-                        'marker': {'size': 12}
-                    }],
-                    'layout': {
-                         'title': "Compound Sentiment Score Over Time"
-                    }
-                }
-            ),
-            # html.Div([
-            #     html.Div(
-            #         className='six columns',
-            #         children=dcc.Graph(id='trend-data-histogram')
-            #     ),
-            #     html.Div(
-            #         className='six columns',
-            #         id='current-content'
-            #     )
-            # ])
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(
+                    id='binary-sentiment-ts',
+                       figure={
+                                'data': [
+                                    {
+                                        'x': unique_dates,
+                                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
+                                            [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                                        'type': 'bar',
+                                        'name': "Sad"
+                                    },
+                                    {
+                                    'x': unique_dates,
+                                    'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                                    'type': 'bar',
+                                    'name': "Happy"
+                                    }
+                                ],
+                                'layout': {
+                                    'plot_bgcolor': colors['background'],
+                                    'paper_bgcolor': colors['background'],
+                                    'barmode': 'stack',
+                                    'font': {
+                                        'color': colors['text']
+                                    }
+                                }
+                            }
+                        )
+                    ),
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(
+                            id='trends-scatterplot',
+                            figure={
+                                'data': [{
+                                    'x': results_df['Date Submitted'],
+                                    'y': results_df['compound'],
+                                    'customdata': results_df['Response ID'],
+                                    'type': 'line',
+                                    'name': "Sentiment score",
+                                    'mode': 'markers',
+                                    'marker': {'size': 12}
+                                }],
+                                'layout': {
+                                     'title': "Compound Sentiment Score Over Time"
+                                }
+                            }
+                    )
+                )
+            ]),
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=dcc.Graph(id='trend-data-histogram')
+                ),
+                html.Div(
+                    className='six columns',
+                    id='current-content'
+                )
+            ])
             # html.Label('Here is a slider to vary # top sites to include'),
             # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
@@ -524,68 +503,28 @@ def render_content(tab):
             dcc.Input(id='searchrequest', type='text', value='Type here'),
             dte.DataTable(  # Add fixed header row
                 id='searchtable',
-                # columns=[{"name": i, "id": i} for i in search_df.columns],
-                # pagination_settings={
-                #     'current_page': 0,
-                #     'page_size': PAGE_SIZE
-                # },
-                # pagination_mode='be',
-                # sorting='be',
-                # sorting_type='single',
-                # sorting_settings=[],
-                # filtering='be',
-                # filtering_settings='',
                 rows=[{}],
                 row_selectable=True,
                 filterable=True,
                 sortable=True,
                 selected_row_indices=[],
-                # data=search_df.head(50).to_dict("rows"),
-                # n_fixed_rows=1,
-                # style_table={
-                #     'overflowX': 'scroll',
-                #     'maxHeight': '800',
-                #     'overflowY': 'scroll'
-                #     },
-                # style_cell={
-                #     'minWidth': '50'
-                #                 'px', 'maxWidth': '200px',
-                #     'whiteSpace': 'no-wrap',
-                #     'overflow': 'hidden',
-                #     'textOverflow': 'ellipsis',
-                # },
-                # style_cell_conditional=[
-                #     {
-                #         'if': {'column_id': 'Positive Feedback'},
-                #         'textAlign': 'left'
-                #     },
-                #     {
-                #         'if': {'column_id': 'Negative Feedback'},
-                #         'textAlign': 'left'
-                #     },
-                # ],
-                # css=[{
-                #         'selector': '.dash-cell div.dash-cell-value',
-                #         'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-                #      }],
             )
         ])
 
-# @app.callback(
-#     Output('current-content', 'children'),
-#     [Input('trends-scatterplot', 'hoverData')])
-# def display_hover_data(hoverData):
-#     # get the row from the results
-#     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+@app.callback(
+    Output('current-content', 'children'),
+    [Input('trends-scatterplot', 'hoverData')])
+def display_hover_data(hoverData):
+    # get the row from the results
+    r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
 
-#     return html.H4(
-#         "The comment from {} is '{}{}'. The user was {}.".format(
-#             r.iloc[0]['Date Submitted'],
-#             r.iloc[0]['Positive Feedback'] if r.iloc[0]['Positive Feedback'] != 'nan' else '',
-#             r.iloc[0]['Negative Feedback'] if r.iloc[0]['Negative Feedback'] != 'nan' else '',
-#             r.iloc[0]['Binary Sentiment']
-#         )
-#     )
+    return html.H4(
+        "The comment from {} is '{}'. The user was {}.".format(
+            r.iloc[0]['Date Submitted'],
+            r.iloc[0]['Feedback'],
+            r.iloc[0]['Binary Sentiment']
+        )
+    )
 
 @app.callback(
     Output('trend-data-histogram', 'figure'),
@@ -658,30 +597,25 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
 
 divs = []
 @app.callback(
-    Output(component_id='hidden-div', component_property='children'),
+    Output('click-data', 'children'),
     [Input('graph2', 'clickData')])
 def display_click_data(clickData):
-    print(clickData['points'][0]['x'])
-    # if (clickData):
-    #     htmlArr = []
-    #     data = clickData['points'][0]['customdata']
-    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
-    #     for key, value in docData.items():
-    #         docArray = []
-    #         for doc in value:
-    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-    #         htmlArr.append(
-    #             html.Div([
-    #                 html.H4(key),
-    #                 html.Div(children=docArray)
-    #             ])
-    #         )
-    #     return htmlArr
-    # return ''
-    list_page_children = [
-        html.Div(children=clickData)
-    ]
-    return str(clickData['points'][0]['x'])
+    if (clickData):
+        htmlArr = []
+        data = clickData['points'][0]['customdata']
+        docData = json.loads(json.dumps(ast.literal_eval(data)))
+        for key, value in docData.items():
+            docArray = []
+            for doc in value:
+                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+            htmlArr.append(
+                html.Div([
+                    html.H4(key),
+                    html.Div(children=docArray)
+                ])
+            )
+        return htmlArr
+    return ''
 
 
 if __name__ == '__main__':
