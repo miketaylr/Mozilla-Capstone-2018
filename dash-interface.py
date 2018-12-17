@@ -124,16 +124,16 @@ for day in range(num_days_range):
     # count docs with no assigned components
     new_comp_info = pd.concat([new_comp_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Components'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
     
-    comp_response_id_map['Day' + str(day+1)] = dict()
+    comp_response_id_map['Day ' + str(day+1)] = dict()
     comps = new_comp_info.index.values
     for comp in comps: 
-        comp_response_id_map['Day' + str(day+1)][comp] = [];
+        comp_response_id_map['Day ' + str(day+1)][comp] = [];
 
     for index, row in day_df.iterrows():
         for comp in row['Components']:
-            comp_response_id_map['Day' + str(day+1)][comp].append(row.index.values[0])
+            comp_response_id_map['Day ' + str(day+1)][comp].append(row['Response ID']) # TODO: can use map functions to make this faster
         if len(row['Components']) == 0 and 'No Label' in comps:
-            comp_response_id_map['Day' + str(day+1)]['No Label'].append(row.index.values[0])
+            comp_response_id_map['Day ' + str(day+1)]['No Label'].append(row['Response ID'])
 
     component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day+1))], axis = 1)
 
@@ -143,16 +143,16 @@ for day in range(num_days_range):
     # count docs with no assigned components
     new_issue_info = pd.concat([new_issue_info, date_filtered_df[date_filtered_df['Day Difference'] == day+1]['Issues'].apply(lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
     
-    issue_response_id_map['Day' + str(day+1)] = dict()
+    issue_response_id_map['Day ' + str(day+1)] = dict()
     issues = new_issue_info.index.values
     for issue in issues: 
-        issue_response_id_map['Day' + str(day+1)][issue] = [];
+        issue_response_id_map['Day ' + str(day+1)][issue] = [];
 
     for index, row in day_df.iterrows():
         for issue in row['Issues']:
-            issue_response_id_map['Day' + str(day+1)][issue].append(row.index.values[0])
+            issue_response_id_map['Day ' + str(day+1)][issue].append(row['Response ID'])
         if len(row['Issues']) == 0 and 'No Label' in issues:
-            issue_response_id_map['Day' + str(day+1)]['No Label'].append(row.index.values[0])
+            issue_response_id_map['Day ' + str(day+1)]['No Label'].append(row['Response ID'])
 
     issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day+1))], axis = 1)
 
@@ -168,7 +168,7 @@ for index, row in component_df.iterrows():
         x=list(row.keys()),
         y=row.values,
         name=index,
-        # customdata=index,
+        customdata=[index] * len(list(row.keys())),
         # link='',
         # hoverinfo='none',
         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
@@ -217,61 +217,61 @@ layout_issue = go.Layout(
 )
 
 fig_issue = dict(data=traces_issue, layout=layout_issue)
-
-traces_component = []
-
-for index, row in component_df.iterrows():
-    traces_component.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
-
-layout_component = go.Layout(
-    barmode='stack',
-    title='Components Over Time',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=False,
-        title='Time'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
-    )
-)
-
-fig_component = dict(data=traces_component, layout=layout_component)
-
-
-traces_issue = []
-
-for index, row in issue_df.iterrows():
-    traces_issue.append(go.Bar(
-        x=list(row.keys()),
-        y=row.values,
-        name=index,
-        # hoverinfo='none',
-        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-        # customdata=docs.iloc[0].values
-    ))
-
-layout_issue = go.Layout(
-    barmode='stack',
-    title='Issues Over Time',
-    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-    xaxis=dict(
-        # showticklabels=True,
-        title='Time'
-    ),
-    yaxis=dict(
-        title='Count of Docs'
-    )
-)
-
-fig_issue = dict(data=traces_issue, layout=layout_issue)
+#
+# traces_component = []
+#
+# for index, row in component_df.iterrows():
+#     traces_component.append(go.Bar(
+#         x=list(row.keys()),
+#         y=row.values,
+#         name=index,
+#         # hoverinfo='none',
+#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+#         # customdata=docs.iloc[0].values
+#     ))
+#
+# layout_component = go.Layout(
+#     barmode='stack',
+#     title='Components Over Time',
+#     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+#     xaxis=dict(
+#         # showticklabels=False,
+#         title='Time'
+#     ),
+#     yaxis=dict(
+#         title='Count of Docs'
+#     )
+# )
+#
+# fig_component = dict(data=traces_component, layout=layout_component)
+#
+#
+# traces_issue = []
+#
+# for index, row in issue_df.iterrows():
+#     traces_issue.append(go.Bar(
+#         x=list(row.keys()),
+#         y=row.values,
+#         name=index,
+#         # hoverinfo='none',
+#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+#         # customdata=docs.iloc[0].values
+#     ))
+#
+# layout_issue = go.Layout(
+#     barmode='stack',
+#     title='Issues Over Time',
+#     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+#     xaxis=dict(
+#         # showticklabels=True,
+#         title='Time'
+#     ),
+#     yaxis=dict(
+#         title='Count of Docs'
+#     )
+# )
+#
+# fig_issue = dict(data=traces_issue, layout=layout_issue)
 
 merged = pd.merge(results2_df, clusters_df, on='Response ID')
 merged = merged[merged['manual_clusters'].notna()]
@@ -649,7 +649,15 @@ def render_content(tab):
     Output('bitch-div', 'children'),
     [Input('comp-graph', 'clickData')])
 def display_click_data(clickData):
-    print(clickData['points'][0])
+    if (len(clickData['points']) == 1):
+        day = clickData['points'][0]['x']
+        component = clickData['points'][0]['customdata']
+        ids = comp_response_id_map[day][component]
+        df = search_df[search_df['Response ID'].isin(ids)]
+        return df
+    else:
+        return ''
+    # print(clickData['points'][0])
     # print(comp_response_id_map)
     # if (clickData):
     #     htmlArr = []
@@ -666,7 +674,7 @@ def display_click_data(clickData):
     #             ])
     #         )
     #     return htmlArr
-    return ''
+    # return ''
 
 @app.callback(
     Output('current-content', 'children'),
@@ -776,5 +784,5 @@ def update_common_table(pagination_settings, sorting_settings, clickData):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
