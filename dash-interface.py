@@ -198,6 +198,7 @@ for index, row in issue_df.iterrows():
         x=list(row.keys()),
         y=row.values,
         name=index,
+        customdata=[index] * len(list(row.keys())),
         # hoverinfo='none',
         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
         # customdata=docs.iloc[0].values
@@ -217,61 +218,6 @@ layout_issue = go.Layout(
 )
 
 fig_issue = dict(data=traces_issue, layout=layout_issue)
-#
-# traces_component = []
-#
-# for index, row in component_df.iterrows():
-#     traces_component.append(go.Bar(
-#         x=list(row.keys()),
-#         y=row.values,
-#         name=index,
-#         # hoverinfo='none',
-#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-#         # customdata=docs.iloc[0].values
-#     ))
-#
-# layout_component = go.Layout(
-#     barmode='stack',
-#     title='Components Over Time',
-#     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#     xaxis=dict(
-#         # showticklabels=False,
-#         title='Time'
-#     ),
-#     yaxis=dict(
-#         title='Count of Docs'
-#     )
-# )
-#
-# fig_component = dict(data=traces_component, layout=layout_component)
-#
-#
-# traces_issue = []
-#
-# for index, row in issue_df.iterrows():
-#     traces_issue.append(go.Bar(
-#         x=list(row.keys()),
-#         y=row.values,
-#         name=index,
-#         # hoverinfo='none',
-#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-#         # customdata=docs.iloc[0].values
-#     ))
-#
-# layout_issue = go.Layout(
-#     barmode='stack',
-#     title='Issues Over Time',
-#     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#     xaxis=dict(
-#         # showticklabels=True,
-#         title='Time'
-#     ),
-#     yaxis=dict(
-#         title='Count of Docs'
-#     )
-# )
-#
-# fig_issue = dict(data=traces_issue, layout=layout_issue)
 
 merged = pd.merge(results2_df, clusters_df, on='Response ID')
 merged = merged[merged['manual_clusters'].notna()]
@@ -440,7 +386,8 @@ app.layout = html.Div(children=[
         'textAlign': 'center',
         'color': colors['text']
     }),
-    html.Div(id="bitch-div")
+    html.Div(id="bitch-div"),
+    html.Div(id="bitch-div2")
 ])
 
 #prep data for displaying in stacked binary sentiment graph over time
@@ -653,7 +600,7 @@ def display_click_data(clickData):
         day = clickData['points'][0]['x']
         component = clickData['points'][0]['customdata']
         ids = comp_response_id_map[day][component]
-        df = search_df[search_df['Response ID'].isin(ids)]
+        df = results_df[results_df['Response ID'].isin(ids)]
         return df
     else:
         return ''
@@ -675,6 +622,19 @@ def display_click_data(clickData):
     #         )
     #     return htmlArr
     # return ''
+
+@app.callback(
+    Output('bitch-div2', 'children'),
+    [Input('issue-graph', 'clickData')])
+def display_click_data(clickData):
+    if (len(clickData['points']) == 1):
+        day = clickData['points'][0]['x']
+        issue = clickData['points'][0]['customdata']
+        ids = issue_response_id_map[day][issue]
+        df = results_df[results_df['Response ID'].isin(ids)]
+        return df
+    else:
+        return ''
 
 @app.callback(
     Output('current-content', 'children'),
