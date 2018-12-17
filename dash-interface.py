@@ -2,27 +2,42 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import dash_table as dt
+import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-#import clustering as clustering
+# import clustering as clustering
 import ast
 import json
+from datetime import datetime as datetime
+from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 
+# Reading in data:
+results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 print (results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
-search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
-                        , "State/Region", "Binary Sentiment", "compound", "Issues", "Components",\
-                        "Feedback", "Relevant Site", "Sites"]]#print(df.columns)
+# search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
+#                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
+#                         , "Negative Feedback", "Relevant Site", "compound"\
+#                         , "Sites", "Issues", "Components"]]
+search_df = results_df
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+component_df = pd.read_csv('./data/component_graph_data.csv')
+issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
+clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 
 
+# Getting components and issues in string:
+WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
+WORDS_TO_ISSUE = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
+
+
+# Setting data and layout for world map:
 data = [ dict(
         type = 'choropleth',
         locations = df['CODE'],
@@ -43,6 +58,7 @@ data = [ dict(
             title = 'Global Sentiment'),
       ) ]
 
+
 layout = dict(
     title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
     geo = dict(
@@ -54,15 +70,16 @@ layout = dict(
     )
 )
 
+
 fig = dict(data=data, layout=layout)
 
-arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-numClusters = 50
-traces = []
 
 # Hardcoded Fake Data
+# arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+# arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+# arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+# numClusters = 50
+# traces = []
 # clusterNames = list(df1)
 # clusterNames.pop(0)
 # print(clusterNames)
@@ -73,10 +90,10 @@ traces = []
 # clusters = df1.drop(['Words', 'Docs'], axis=0)
 # print(clusters)
 
-# Dynamic Data
-#df2 = clustering.runVis(numClusters)
-categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 
+# Dynamic Data
+# df2 = clustering.runVis(numClusters)
+categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
 # docs = df2.tail(1)
 # df2 = df2[:-1]
 # phrases = df2.tail(1)
@@ -87,23 +104,146 @@ categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clust
 # clusters = clusters.rename(index=categoryDict)
 
 
+# Fill in component and issue df with 0 for Nan (?)
+# component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
+# issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+traces_component = []
+traces_issue = []
+
+
+# Checking df for values:
+for index, row in component_df.iterrows():
+    # print(list(row.keys()))
+    traces_component.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+
+# Stacked Bar Graph figure - components:
+layout_component = go.Layout(
+    barmode='stack',
+    title='Components Over Time',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=False,
+        title='Time'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
+
+
+fig_component = dict(data=traces_component, layout=layout_component)
+
+
+# Checking df for values:
+for index, row in issue_df.iterrows():
+    # print(list(row.keys()))
+    traces_issue.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+
+# Stacked Bar Graph figure - issues:
+layout_issue = go.Layout(
+    barmode='stack',
+    title='Issues Over Time',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=True,
+        title='Time'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
+
+
+fig_issue = dict(data=traces_issue, layout=layout_issue)
+
+
+# CATEGORIZATION VISUALIZATION
+# merge output_pipeline with output_clusters_defined
+merged = pd.merge(results_df, clusters_df, on='Response ID')
+merged = merged[merged['manual_clusters'].notna()]
+compCountSeries = pd.Series([])
+# For components labelled:
+for component in WORDS_TO_COMPONENT.keys():
+    compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
+    compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
+compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
+compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
+compCountSeries = compCountSeries.rename(index = categoryDict)
+traces_comp_metrics = []
+for index, row in compCountSeries.iterrows():
+    # print(list(row.keys()))
+    traces_comp_metrics.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+
 def update_point(trace):
     print(trace)
     return
 
 
-# for index, row in clusters.iterrows():
-#     row = list(row)
-#     traces.append(go.Bar(
-#         x=words.iloc[0].values,
-#         y=row,
-#         name=index,
-#         hoverinfo='x+y+name',
-#         # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-#         customdata=docs.iloc[0].values
-#     ))
+# Stacked Bar Graph figure - components labelled against manual labelling:
+layout_comp_metrics = go.Layout(
+    barmode='stack',
+    title='Components vs Manual Clusters',
+    font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+    xaxis=dict(
+        # showticklabels=False,
+        title='Components'
+    ),
+    yaxis=dict(
+        title='Count of Docs'
+    )
+)
 
-layout2 = go.Layout(
+
+fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
+
+
+# For issues labelled:
+issueCountSeries = pd.Series([])
+for issue in WORDS_TO_ISSUE.keys():
+    issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
+    issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
+issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")]['manual_clusters'].value_counts().rename('No Label')], axis=1)
+issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
+issueCountSeries = issueCountSeries.rename(index = categoryDict)
+traces_issue_metrics = []
+for index, row in issueCountSeries.iterrows():
+    # print(list(row.keys()))
+    traces_issue_metrics.append(go.Bar(
+        x=list(row.keys()),
+        y=row.values,
+        name=index,
+        # hoverinfo='none',
+        # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
+        # customdata=docs.iloc[0].values
+    ))
+
+
+# Stacked Bar Graph figure - issues labelled against manual labelling:
+layout_issue_metrics = go.Layout(
     barmode='stack',
     title='Issue Clusters',
     font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
@@ -116,20 +256,20 @@ layout2 = go.Layout(
     )
 )
 
-fig2 = dict(data=traces, layout=layout2)
+fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
 
+
+# Page styling - sample:
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 # suppress exception of assigning callbacks to components that are genererated
 # by other callbacks
 app.config['suppress_callback_exceptions'] = True
-
 app.title = 'Mozilla Analytics'
 '''
 Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
-
 tabs_styles = {
     'height': '44px'
 }
@@ -138,7 +278,6 @@ tab_style = {
     'padding': '6px',
     'fontWeight': 'bold'
 }
-
 tab_selected_style = {
     'borderTop': '1px solid #d6d6d6',
     'borderBottom': '1px solid #d6d6d6',
@@ -146,19 +285,27 @@ tab_selected_style = {
     'color': 'white',
     'padding': '6px'
 }
-
 colors = {
     'background': '#111111',
     'text': '#7FDBFF'
 }
 
-app.layout = html.Div(children=[
+
+app.layout = html.Div([
+    dcc.Location(id='url', refresh=False),
+    html.Div(id='page-content')
+])
+
+
+list_page_children = []
+
+
+main_layout = html.Div(children=[
     html.H1(
         children='Mozilla Customer Feedback Analytics Tool',
         style={
             'textAlign': 'center',
             'color': 'orange'
-
         }
     ),
     dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
@@ -168,13 +315,23 @@ app.layout = html.Div(children=[
         dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
     html.Div(id='tabs-content-inline'),
-
-
-    html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-        'textAlign': 'center',
-        'color': colors['text']
-    })
+    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
+    #     'textAlign': 'center',
+    #     'color': colors['text']
+    # })
 ])
+
+
+@app.callback(dash.dependencies.Output('page-content', 'children'),
+              [dash.dependencies.Input('url', 'pathname')])
+def display_page(pathname):
+    if pathname == '/list':
+        return main_layout
+    elif pathname == '/page-2':
+        return main_layout
+    else:
+        return main_layout
+
 
 #prep data for displaying in stacked binary sentiment graph over time
 #Grab unique dates from results_df
@@ -182,9 +339,9 @@ results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
 common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
 
+
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
-
 def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
@@ -202,7 +359,7 @@ def render_content(tab):
                 html.Div(
                     className='six columns',
                     children=dcc.Graph(
-                    id='binary-sentiment-ts',
+                       id='binary-sentiment-ts',
                        figure={
                                 'data': [
                                     {
@@ -251,9 +408,6 @@ def render_content(tab):
                     )
                 )
             ]),
-
-
-
             html.Div([
                 html.Div(
                     className='six columns',
@@ -264,18 +418,16 @@ def render_content(tab):
                     id='current-content'
                 )
             ])
-            # html.Label('Here is a slider to vary # top sites to include'),
-            # dcc.Slider(id='hours', value=5, min=0, max=24, step=1)
         ])
     elif tab == 'tab-2':
         return html.Div([
-            dcc.Graph(id='graph2', figure=fig2),
-
+            dcc.Graph(id='graph2', figure=fig_component),
+            dcc.Graph(id='graph3', figure=fig_issue),
+            dcc.Graph(id='graph4', figure=fig_comp_metrics),
+            dcc.Graph(id='graph5', figure=fig_issue_metrics),
             html.Div(className='row', children=[
                 html.Div([
-                    html.Div(id='click-data', target='_blank'),
-                    # Above won't run on my pc for some reason unless I take out the target... -Carol
-                    # html.Div(id='click-data'),
+                    html.Div(id='click-data'),  # Doesn't do anything right now
                 ]),
             ])
         ])
@@ -299,7 +451,6 @@ def render_content(tab):
                         'yaxis': {
                             'title': 'Number of Feedback'
                         }
-
                     }
                 }
             ),
@@ -336,12 +487,10 @@ def render_content(tab):
                         'if': {'column_id': 'Negative Feedback'},
                         'textAlign': 'left'
                     },
-
                 ],
                 css=[{
                     'selector': '.dash-cell div.dash-cell-value',
                     'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-
                 }],
             ),
             html.H4('Similar graphs & reactive table for issue/feature categories')
@@ -350,52 +499,17 @@ def render_content(tab):
         return html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
-            dcc.Input(value='Type here', type='text'),
-            dt.DataTable( #add fixed header row
-                id='search-table',
-                columns=[{"name": i, "id": i} for i in search_df.columns],
-                pagination_settings={
-                    'current_page': 0,
-                    'page_size': PAGE_SIZE
-                },
-                pagination_mode='be',
-                sorting='be',
-                sorting_type='single',
-                sorting_settings=[],
-                filtering='be',
-                filtering_settings='',
-                data=search_df.head(50).to_dict("rows"),
-                n_fixed_rows=1,
-                style_table={
-                    'overflowX': 'scroll',
-                    'maxHeight': '800',
-                    'overflowY': 'scroll'
-                    },
-                style_cell={
-                    'minWidth': '50'
-                                'px', 'maxWidth': '200px',
-                    'whiteSpace': 'no-wrap',
-                    'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                },
-                style_cell_conditional=[
-                    {
-                        'if': {'column_id': 'Positive Feedback'},
-                        'textAlign': 'left'
-                    },
-                    {
-                        'if': {'column_id': 'Negative Feedback'},
-                        'textAlign': 'left'
-                    },
-
-                ],
-                css=[{
-                        'selector': '.dash-cell div.dash-cell-value',
-                        'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-
-                     }],
+            dcc.Input(id='searchrequest', type='text', value='Type here'),
+            dte.DataTable(  # Add fixed header row
+                id='searchtable',
+                rows=[{}],
+                row_selectable=True,
+                filterable=True,
+                sortable=True,
+                selected_row_indices=[],
             )
         ])
+
 
 @app.callback(
     Output('current-content', 'children'),
@@ -412,12 +526,12 @@ def display_hover_data(hoverData):
         )
     )
 
+
 @app.callback(
     Output('trend-data-histogram', 'figure'),
     [Input('trends-scatterplot', 'selectedData')])
 def display_selected_trend_data(selectedData):
-    #return table matching the current selection
-
+    # return table matching the current selection
     ids = list(d['customdata'] for d in selectedData['points'])
     df = search_df[search_df['Response ID'].isin(ids)]
     print(ids)
@@ -437,44 +551,26 @@ def display_selected_trend_data(selectedData):
 
 
 @app.callback(
-    Output('search-table', "data"),
-    [Input('search-table', "pagination_settings"),
-     Input('search-table', "sorting_settings"),
-     Input('search-table', "filtering_settings")])
-def update_table(pagination_settings, sorting_settings, filtering_settings):
-    print(sorting_settings)
-    print(filtering_settings)
-    filtering_expressions = filtering_settings.split(' && ')
-    dff = search_df
+    Output('searchtable', 'rows'),
+    [Input('searchrequest', 'n_submit'), Input('searchrequest', 'n_blur'),],
+    [State('searchrequest', 'value')])
+def update_table(ns, nb, request_value):
+    df = search_df
+    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+              'Feedback', 'Components', 'Issues', 'Sites']
+    r_df = pd.DataFrame()
+    # r_df = pd.DataFrame([cnames], columns=cnames)
+    for index, row in df.iterrows():
+        fb = str(row['Feedback'])
+        rv = str(request_value)
+        isit = rv in fb
+        if isit:
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            temp_df = pd.DataFrame([temp], columns=cnames)
+            r_df = r_df.append(temp_df, ignore_index=True)
+    return r_df.to_dict('rows')
 
-    for filter in filtering_expressions:
-        if ' eq ' in filter:
-            col_name = filter.split(' eq ')[0]
-            filter_value = filter.split(' eq ')[1]
-            dff = dff.loc[dff[col_name] == filter_value]
-        if ' > ' in filter:
-            col_name = filter.split(' > ')[0]
-            filter_value = float(filter.split(' > ')[1])
-            dff = dff.loc[dff[col_name] > filter_value]
-        if ' < ' in filter:
-            col_name = filter.split(' < ')[0]
-            filter_value = float(filter.split(' < ')[1])
-            dff = dff.loc[dff[col_name] < filter_value]
-
-    if len(sorting_settings):
-        dff = dff.sort_values(
-            [col['column_id'] for col in sorting_settings],
-            ascending=[
-                col['direction'] == 'asc'
-                for col in sorting_settings
-            ],
-            inplace=False
-        )
-
-    return dff.iloc[
-           pagination_settings['current_page'] * pagination_settings['page_size']:
-           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-           ].to_dict('rows')
 
 @app.callback(
     Output('common-site-table', "data"),
