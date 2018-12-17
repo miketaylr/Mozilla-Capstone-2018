@@ -18,7 +18,8 @@ from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 # Reading in data:
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
-print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
+results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
+# print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
 #                         , "Negative Feedback", "Relevant Site", "compound"\
@@ -56,7 +57,7 @@ data = [ dict(
             autotick = False,
             tickprefix = '',
             title = 'Global Sentiment'),
-      ) ]
+      )]
 
 
 layout = dict(
@@ -116,17 +117,61 @@ toggle_time_params = {
         14: 14
     }
 }
-
-
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
 reference = datetime(2016, 12, 30)
 # reference = datetime.now()
-results_df['Day Difference'] = (reference - pd.to_datetime(results_df['Date Submitted'],
-                                                           format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+num_days_range = 7  # week, set some way to toggle this instead of hardcoded
+date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
+date_filtered_df['Components'] = date_filtered_df['Components'].apply(
+    lambda x: ast.literal_eval(x))  # gives warning but works, fix later
+date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
+# print(date_filtered_df['Issues'])
+component_df = pd.Series([])
+issue_df = pd.Series([])
+comp_response_id_map = dict()
+issue_response_id_map = dict()
+for day in range(num_days_range):
+    day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
+    # count docs with components
+    new_comp_info = day_df['Components'].apply(
+        lambda x: pd.Series(x).value_counts()).sum()
+    # count docs with no assigned components
+    new_comp_info = pd.concat([new_comp_info,
+                               date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
+                                   lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    comp_response_id_map['Day ' + str(day + 1)] = dict()
+    comps = new_comp_info.index.values
+    for comp in comps:
+        comp_response_id_map['Day ' + str(day + 1)][comp] = [];
+    for index, row in day_df.iterrows():
+        for comp in row['Components']:
+            comp_response_id_map['Day ' + str(day + 1)][comp].append(
+                row['Response ID'])  # TODO: can use map functions to make this faster
+        if len(row['Components']) == 0 and 'No Label' in comps:
+            comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
+    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
+    new_issue_info = day_df['Issues'].apply(
+        lambda x: pd.Series(x).value_counts()).sum()
+    # count docs with no assigned components
+    new_issue_info = pd.concat([new_issue_info,
+                                date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
+                                    lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
+    issue_response_id_map['Day ' + str(day + 1)] = dict()
+    issues = new_issue_info.index.values
+    for issue in issues:
+        issue_response_id_map['Day ' + str(day + 1)][issue] = [];
+
+    for index, row in day_df.iterrows():
+        for issue in row['Issues']:
+            issue_response_id_map['Day ' + str(day + 1)][issue].append(row['Response ID'])
+        if len(row['Issues']) == 0 and 'No Label' in issues:
+            issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
+    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
 
 
 def initCompDF(results_df, num_days_range = 7):
-    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
+    date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Components'] = date_filtered_df['Components'].apply(
         lambda x: ast.literal_eval(x))  # gives warning but works, fix later
     component_df = pd.Series([])
@@ -144,7 +189,7 @@ def initCompDF(results_df, num_days_range = 7):
 
 
 def initIssueDF(results_df, num_days_range = 7):
-    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
+    date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
     issue_df = pd.Series([])
     for day in range(num_days_range):
@@ -382,6 +427,8 @@ main_layout = html.Div(children=[
     #     'textAlign': 'center',
     #     'color': colors['text']
     # })  # This is just a line at the bottom of each page..... Take it out?
+    html.Div(id="bitch-div"),
+    html.Div(id="bitch-div2")
 ])
 
 
@@ -393,7 +440,7 @@ def display_page(pathname):
     elif pathname == '/page-2':
         return main_layout
     else:
-        return main_layout  
+        return main_layout
 
 
 #prep data for displaying in stacked binary sentiment graph over time
@@ -471,17 +518,6 @@ def render_content(tab):
                     )
                 )
             ])
-            # ,
-            # html.Div([
-            #     html.Div(
-            #         className='six columns',
-            #         children=dcc.Graph(id='trend-data-histogram')
-            #     ),
-            #     html.Div(
-            #         className='six columns',
-            #         id='current-content'
-            #     )
-            # ])
         ])
     elif tab == 'tab-2':
         return html.Div([
@@ -587,12 +623,57 @@ def render_content(tab):
 
 
 @app.callback(
+    Output('bitch-div', 'children'),
+    [Input('comp-graph', 'clickData')])
+def display_click_data(clickData):
+    if (len(clickData['points']) == 1):
+        day = clickData['points'][0]['x']
+        component = clickData['points'][0]['customdata']
+        ids = comp_response_id_map[day][component]
+        df = results_df[results_df['Response ID'].isin(ids)]
+        return df
+    else:
+        return ''
+    # print(clickData['points'][0])
+    # print(comp_response_id_map)
+    # if (clickData):
+    #     htmlArr = []
+    #     data = clickData['points'][0]['customdata']
+    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
+    #     for key, value in docData.items():
+    #         docArray = []
+    #         for doc in value:
+    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+    #         htmlArr.append(
+    #             html.Div([
+    #                 html.H4(key),
+    #                 html.Div(children=docArray)
+    #             ])
+    #         )
+    #     return htmlArr
+    # return ''
+
+
+@app.callback(
+    Output('bitch-div2', 'children'),
+    [Input('issue-graph', 'clickData')])
+def display_click_data(clickData):
+    if (len(clickData['points']) == 1):
+        day = clickData['points'][0]['x']
+        issue = clickData['points'][0]['customdata']
+        ids = issue_response_id_map[day][issue]
+        df = results_df[results_df['Response ID'].isin(ids)]
+        return df
+    else:
+        return ''
+
+
+@app.callback(
     Output('current-content', 'children'),
     [Input('trends-scatterplot', 'hoverData')])
 def display_hover_data(hoverData):
     # get the row from the results
     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
-
     return html.H4(
         "The comment from {} is '{}'. The user was {}.".format(
             r.iloc[0]['Date Submitted'],
@@ -600,6 +681,7 @@ def display_hover_data(hoverData):
             r.iloc[0]['Binary Sentiment']
         )
     )
+    # return ''
 
 
 @app.callback(
@@ -653,6 +735,7 @@ def update_table(ns, nb, request_value):
      Input('common-site-table', "sorting_settings"),
      Input('mentioned-site-graph', "clickData")])
 def update_common_table(pagination_settings, sorting_settings, clickData):
+    # print(clickData)
     dff = search_df[search_df['Sites'] == clickData['points'][0]['customdata']]
     print('CLICKED DATA', clickData['points'][0]['customdata'])
     if len(sorting_settings):
