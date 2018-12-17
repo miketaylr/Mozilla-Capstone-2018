@@ -14,3 +14,5 @@ data/
 referenceFiles.cpython-36
 *.png
 __pycache__/
+ .idea/workspace.xml
+ *.xml
