@@ -517,6 +517,62 @@ def render_content(tab):
                             }
                     )
                 )
+            ]),
+            html.Div([
+                html.Div(
+                    className='six columns',
+                    children=[
+                        # dcc.Graph(id='trend-data-histogram'),
+                        html.Button('Display Selected Data', id='display_data', n_clicks_timestamp=0)
+                    ]
+                ),
+                html.Div([ #entire modal
+                        #modal content
+                             html.Div([
+                                    html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
+                                    html.H2("Selected Feedback Data Points"),#Header
+                                    dt.DataTable(
+                                         id='modal-table',
+                                         columns=[{"name": i, "id": i} for i in search_df.columns],
+                                         pagination_settings={
+                                             'current_page': 0,
+                                             'page_size': PAGE_SIZE
+                                         },
+                                         pagination_mode='be',
+                                         sorting='be',
+                                         sorting_type='single',
+                                         sorting_settings=[],
+                                         n_fixed_rows=1,
+                                         style_table={
+                                             'overflowX': 'scroll',
+                                             'maxHeight': '800',
+                                             'overflowY': 'scroll'
+                                         },
+                                         style_cell={
+                                             'minWidth': '50'
+                                                         'px', 'maxWidth': '200px',
+                                             'whiteSpace': 'no-wrap',
+                                             'overflow': 'hidden',
+                                             'textOverflow': 'ellipsis',
+                                         },
+                                         style_cell_conditional=[
+                                             {
+                                                 'if': {'column_id': 'Feedback'},
+                                                 'textAlign': 'left'
+                                             }
+                                         ],
+                                         css=[{
+                                             'selector': '.dash-cell div.dash-cell-value',
+                                             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+
+                                         }],
+                                    )
+                             ], id='modal-content', className='modal-content')
+                         ], id='modal', className='modal'),
+                html.Div(
+                    className='six columns',
+                    id='current-content'
+                )
             ])
         ])
     elif tab == 'tab-2':
@@ -591,13 +647,9 @@ def render_content(tab):
                 },
                 style_cell_conditional=[
                     {
-                        'if': {'column_id': 'Positive Feedback'},
+                        'if': {'column_id': 'Feedback'},
                         'textAlign': 'left'
-                    },
-                    {
-                        'if': {'column_id': 'Negative Feedback'},
-                        'textAlign': 'left'
-                    },
+                    }
                 ],
                 css=[{
                     'selector': '.dash-cell div.dash-cell-value',
@@ -666,6 +718,45 @@ def display_click_data(clickData):
         return df
     else:
         return ''
+
+
+
+@app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
+                                         Input('close-modal', 'n_clicks_timestamp')])
+def display_modal(openm, closem):
+    if closem > openm:
+        return {'display': 'none'}
+    elif openm > closem:
+        return {'display': 'block'}
+
+
+@app.callback(
+    Output('modal-table', "data"),
+    [Input('modal-table', "pagination_settings"),
+     Input('modal-table', "sorting_settings"),
+     Input('display_data','n_clicks_timestamp'),
+     Input('close-modal', 'n_clicks_timestamp'),
+     Input('trends-scatterplot', 'selectedData')])
+def update_modal_table(pagination_settings, sorting_settings, openm, closem, selectedData):
+    if openm > closem: # only update the table if the modal is open
+        ids = list(d['customdata'] for d in selectedData['points'])
+        dff = search_df[search_df['Response ID'].isin(ids)]
+
+        if len(sorting_settings):
+            dff = dff.sort_values(
+                [col['column_id'] for col in sorting_settings],
+                ascending=[
+                    col['direction'] == 'asc'
+                    for col in sorting_settings
+                ],
+                inplace=False
+            )
+
+        return dff.iloc[
+               pagination_settings['current_page'] * pagination_settings['page_size']:
+               (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+               ].to_dict('rows')
+
 
 
 @app.callback(
