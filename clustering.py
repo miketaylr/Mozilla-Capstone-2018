@@ -400,7 +400,6 @@ def labelClustersWithKeyPhrases(labels, myReader, num_clusters, n):
     grammar = r"""
         NBAR:
             {<NN.*|JJ>*<NN.*>}  # Nouns and Adjectives, terminated with Nouns
-
         NP:
             {<NBAR>}
             {<NBAR><IN><NBAR>}  # Above, connected with in/of/etc...
