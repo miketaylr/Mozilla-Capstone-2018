@@ -154,7 +154,7 @@ def initCompDF(results2_df, num_days_range = 14):
                 comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
 
     component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
-    return component_df
+    return component_df, comp_response_id_map
 
 
 def initIssueDF(results2_df, num_days_range = 14):
@@ -186,7 +186,7 @@ def initIssueDF(results2_df, num_days_range = 14):
                 issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
     # Fill in component and issue df with 0 for Nan (?)
     issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
-    return issue_df
+    return issue_df, issue_response_id_map
 
 
 def updateComponentGraph(component_df, num_days_range = 7):
@@ -199,6 +199,7 @@ def updateComponentGraph(component_df, num_days_range = 7):
             x=list(row.keys()),
             y=row.values,
             name=index,
+            customdata=[index] * len(list(row.keys())),
             # hoverinfo='none',
             # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
             # customdata=docs.iloc[0].values
@@ -230,6 +231,7 @@ def updateIssuesGraph(issue_df, num_days_range = 7):
             x=list(row.keys()),
             y=row.values,
             name=index,
+            customdata=[index] * len(list(row.keys())),
             # hoverinfo='none',
             # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
             # customdata=docs.iloc[0].values
@@ -253,8 +255,8 @@ def updateIssuesGraph(issue_df, num_days_range = 7):
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
-component_df = initCompDF(results2_df, day_range)
-issue_df = initIssueDF(results2_df, day_range)
+component_df, comp_response_id_map = initCompDF(results2_df, day_range)
+issue_df, issue_response_id_map = initIssueDF(results2_df, day_range)
 fig_component = updateComponentGraph(component_df, 7)
 fig_issue = updateIssuesGraph(issue_df, 7)
 
@@ -569,14 +571,14 @@ def render_content(tab):
                        min=toggle_time_params['min'], max=toggle_time_params['max'],
                        step=toggle_time_params['step'], value=toggle_time_params['default'],
                        marks=toggle_time_params['marks']),
-            dcc.Graph(id='graph2', figure=fig_component),
+            dcc.Graph(id='comp-graph', figure=fig_component),
 
             html.Div(id='issue_slider_output'),
             dcc.Slider(id='issue_time_slider',
                        min=toggle_time_params['min'], max=toggle_time_params['max'],
                        step=toggle_time_params['step'], value=toggle_time_params['default'],
                        marks=toggle_time_params['marks']),
-            dcc.Graph(id='graph3', figure=fig_issue),
+            dcc.Graph(id='issue-graph', figure=fig_issue),
             dcc.Graph(id='graph4', figure=fig_comp_metrics),
             dcc.Graph(id='graph5', figure=fig_issue_metrics),
             html.Div(className='row', children=[
@@ -673,24 +675,6 @@ def display_click_data(clickData):
         return df
     else:
         return ''
-    # print(clickData['points'][0])
-    # print(comp_response_id_map)
-    # if (clickData):
-    #     htmlArr = []
-    #     data = clickData['points'][0]['customdata']
-    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
-    #     for key, value in docData.items():
-    #         docArray = []
-    #         for doc in value:
-    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-    #         htmlArr.append(
-    #             html.Div([
-    #                 html.H4(key),
-    #                 html.Div(children=docArray)
-    #             ])
-    #         )
-    #     return htmlArr
-    # return ''
 
 
 @app.callback(
@@ -842,7 +826,7 @@ def update_output(value):
 
 # Component DF Time Toggle Callback
 @app.callback(
-    dash.dependencies.Output('graph2', 'figure'),
+    dash.dependencies.Output('comp-graph', 'figure'),
     [dash.dependencies.Input('comp_time_slider', 'value')])
 def update_output(value):
     fig_component = updateComponentGraph(component_df, value)
@@ -850,30 +834,6 @@ def update_output(value):
 
 
 divs = []
-
-
-# Component DF Slider Callback
-@app.callback(
-    Output('click-data', 'children'),
-    [Input('graph2', 'clickData')])
-def display_click_data(clickData):
-    if (clickData):
-        htmlArr = []
-        data = clickData['points'][0]['customdata']
-        docData = json.loads(json.dumps(ast.literal_eval(data)))
-        for key, value in docData.items():
-            docArray = []
-            for doc in value:
-                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-            htmlArr.append(
-                html.Div([
-                    html.H4(key),
-                    html.Div(children=docArray)
-                ])
-            )
-        return htmlArr
-    return ''
-
 
 @app.callback(
     dash.dependencies.Output('issue_slider_output', 'children'),
@@ -884,7 +844,7 @@ def update_output(value):
 
 # Component DF Time Toggle Callback
 @app.callback(
-    dash.dependencies.Output('graph3', 'figure'),
+    dash.dependencies.Output('issue-graph', 'figure'),
     [dash.dependencies.Input('issue_time_slider', 'value')])
 def update_output(value):
     fig_issue = updateComponentGraph(issue_df, value)
