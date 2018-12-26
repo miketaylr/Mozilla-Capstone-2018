@@ -121,61 +121,17 @@ toggle_time_params = {
 reference = datetime(2016, 12, 30)
 # reference = datetime.now()
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
-num_days_range = 7  # week, set some way to toggle this instead of hardcoded
-date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
-date_filtered_df['Components'] = date_filtered_df['Components'].apply(
-    lambda x: ast.literal_eval(x))  # gives warning but works, fix later
-date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
-# print(date_filtered_df['Issues'])
-component_df = pd.Series([])
-issue_df = pd.Series([])
-comp_response_id_map = dict()
-issue_response_id_map = dict()
-for day in range(num_days_range):
-    day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
-    # count docs with components
-    new_comp_info = day_df['Components'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_comp_info = pd.concat([new_comp_info,
-                               date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
-                                   lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    comp_response_id_map['Day ' + str(day + 1)] = dict()
-    comps = new_comp_info.index.values
-    for comp in comps:
-        comp_response_id_map['Day ' + str(day + 1)][comp] = [];
-    for index, row in day_df.iterrows():
-        for comp in row['Components']:
-            comp_response_id_map['Day ' + str(day + 1)][comp].append(
-                row['Response ID'])  # TODO: can use map functions to make this faster
-        if len(row['Components']) == 0 and 'No Label' in comps:
-            comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
-    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
-    new_issue_info = day_df['Issues'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_issue_info = pd.concat([new_issue_info,
-                                date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
-                                    lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    issue_response_id_map['Day ' + str(day + 1)] = dict()
-    issues = new_issue_info.index.values
-    for issue in issues:
-        issue_response_id_map['Day ' + str(day + 1)][issue] = [];
 
-    for index, row in day_df.iterrows():
-        for issue in row['Issues']:
-            issue_response_id_map['Day ' + str(day + 1)][issue].append(row['Response ID'])
-        if len(row['Issues']) == 0 and 'No Label' in issues:
-            issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
-    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
-
-
-def initCompDF(results_df, num_days_range = 7):
+def initCompDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Components'] = date_filtered_df['Components'].apply(
         lambda x: ast.literal_eval(x))  # gives warning but works, fix later
+
     component_df = pd.Series([])
+    comp_response_id_map = dict()
+
     for day in range(num_days_range):
+        day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
         # count docs with components
         new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
             lambda x: pd.Series(x).value_counts()).sum()
@@ -184,15 +140,32 @@ def initCompDF(results_df, num_days_range = 7):
                                    date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
                                        lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
         component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
+
+        comp_response_id_map['Day ' + str(day + 1)] = dict()
+        comps = new_comp_info.index.values
+        for comp in comps:
+            comp_response_id_map['Day ' + str(day + 1)][comp] = []
+
+        for index, row in day_df.iterrows():
+            for comp in row['Components']:
+                comp_response_id_map['Day ' + str(day + 1)][comp].append(
+                    row['Response ID'])  # TODO: can use map functions to make this faster
+            if len(row['Components']) == 0 and 'No Label' in comps:
+                comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
+
     component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
     return component_df
 
 
-def initIssueDF(results_df, num_days_range = 7):
+def initIssueDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
+
     issue_df = pd.Series([])
+    issue_response_id_map = dict()
+
     for day in range(num_days_range):
+        day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
         new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
             lambda x: pd.Series(x).value_counts()).sum()
         # count docs with no assigned components
@@ -200,15 +173,27 @@ def initIssueDF(results_df, num_days_range = 7):
                                     date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
                                         lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
         issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
+
+        issue_response_id_map['Day ' + str(day + 1)] = dict()
+        issues = new_issue_info.index.values
+        for issue in issues:
+            issue_response_id_map['Day ' + str(day + 1)][issue] = [];
+
+        for index, row in day_df.iterrows():
+            for issue in row['Issues']:
+                issue_response_id_map['Day ' + str(day + 1)][issue].append(row['Response ID'])
+            if len(row['Issues']) == 0 and 'No Label' in issues:
+                issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
     # Fill in component and issue df with 0 for Nan (?)
     issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
     return issue_df
 
 
-def updateComponentGraph(component_df):
+def updateComponentGraph(component_df, num_days_range = 7):
+    filtered_df = component_df.iloc[:, 0:num_days_range]
     traces_component = []
     # Checking df for values:
-    for index, row in component_df.iterrows():
+    for index, row in filtered_df.iterrows():
         # print(list(row.keys()))
         traces_component.append(go.Bar(
             x=list(row.keys()),
@@ -235,10 +220,11 @@ def updateComponentGraph(component_df):
     return fig_component
 
 
-def updateIssuesGraph(issue_df):
+def updateIssuesGraph(issue_df, num_days_range = 7):
+    filtered_df = issue_df.iloc[:, 0:num_days_range]
     traces_issue = []
     # Checking df for values:
-    for index, row in issue_df.iterrows():
+    for index, row in filtered_df.iterrows():
         # print(list(row.keys()))
         traces_issue.append(go.Bar(
             x=list(row.keys()),
@@ -266,10 +252,11 @@ def updateIssuesGraph(issue_df):
 
 
 # CREATE FIRST TWO GRAPHS
-component_df = initCompDF(results_df)
-issue_df = initIssueDF(results_df)
-fig_component = updateComponentGraph(component_df)
-fig_issue = updateIssuesGraph(issue_df)
+day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
+component_df = initCompDF(results2_df, day_range)
+issue_df = initIssueDF(results2_df, day_range)
+fig_component = updateComponentGraph(component_df, 7)
+fig_issue = updateIssuesGraph(issue_df, 7)
 
 
 def mergedGraph():
@@ -858,8 +845,7 @@ def update_output(value):
     dash.dependencies.Output('graph2', 'figure'),
     [dash.dependencies.Input('comp_time_slider', 'value')])
 def update_output(value):
-    component_df = initCompDF(results_df, value)
-    fig_component = updateComponentGraph(component_df)
+    fig_component = updateComponentGraph(component_df, value)
     return fig_component
 
 
@@ -901,11 +887,10 @@ def update_output(value):
     dash.dependencies.Output('graph3', 'figure'),
     [dash.dependencies.Input('issue_time_slider', 'value')])
 def update_output(value):
-    issue_df = initIssueDF(results_df, value)
-    fig_issue = updateComponentGraph(issue_df)
+    fig_issue = updateComponentGraph(issue_df, value)
     return fig_issue
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
