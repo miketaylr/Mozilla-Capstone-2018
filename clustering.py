@@ -35,6 +35,9 @@ from sklearn.cluster import SpectralClustering
 from numpy import array
 from datetime import datetime as datetime
 from sklearn.cluster import AgglomerativeClustering
+import os
+import time
+import math
 
 # SETTINGS - Paths
 DIRECTORY = ""
@@ -85,7 +88,7 @@ def getSitesList():
     return siteList
 
 
-def createNormalizedMatrix():
+def createNormalizedMatrix(file):
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -93,7 +96,7 @@ def createNormalizedMatrix():
                     negative_feedback=TEXT(stored=True))
     indexToImport = createIndex(schema)
     # TODO: put indexToImport into dataframe instead of going through whoosh
-    addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "sf_output")
+    addFilesToIndex(indexToImport, file, "Feedback", "sf_output")
     myReader = indexToImport.reader()
     print("Index is empty?", indexToImport.is_empty())
     print("Number of indexed files:", indexToImport.doc_count())
@@ -128,15 +131,15 @@ def createNormalizedMatrix():
     word_list = wordVectorList
 
     # TODO: redundant code, remove this
-    with codecs.open(OUTPUT_SPAM_REMOVAL, "r", "ISO-8859-1") as csvfile:
+    with codecs.open(file, "r", "ISO-8859-1") as csvfile:
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
             value = row["sf_output"]
-            if row["Negative Feedback"] != "" and isinstance(value, str): # Only looking for feedback that filled in negative feedback
+            if row["Feedback"] != "" and isinstance(value, str): # TODO: change to just look at negative feedback
                 file_words = tokenizer.tokenize(value)
                 df_rows.append([1 if word in file_words else 0 for word in word_list])
-                if isinstance(row["Negative Feedback"], str):
-                    feedback_length.append(len(row["Negative Feedback"]))
+                if isinstance(row["Feedback"], str):
+                    feedback_length.append(len(row["Feedback"]))
                 else:
                     feedback_length.append(0)
                 # https://stats.stackexchange.com/questions/105959/best-way-to-turn-a-date-into-a-numerical-feature
@@ -551,6 +554,15 @@ def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
     plt.savefig("purityElbowMethodHierarchicalSingle1000.png")
 
 def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCountSeries, clusterGroupDF):
+    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(top_words, top_phrases)
+
+    countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
+    countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index = False)
+    countsWordsPhrasesDocs = countsWordsPhrases.append(clusterGroupDF, ignore_index = False)
+
+    return countsWordsPhrasesDocs
+
+def condenseTopWordsPhrases(top_words, top_phrases):
     top_words_list = top_words.applymap(lambda x: [x] if pd.notnull(x) else []).sum(1).tolist()
 
     top_words['combined'] = [", ".join(item) for item in top_words_list]
@@ -562,15 +574,10 @@ def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCoun
     top_phrases['combined'] = [", ".join(item) for item in top_phrases_list]
     top_phrases_combined = top_phrases['combined'].rename(lambda x: 'Cluster ' + str(x))
     top_phrases_combined.name = 'Phrases'
-
-    countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
-    countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index = False)
-    countsWordsPhrasesDocs = countsWordsPhrases.append(clusterGroupDF, ignore_index = False)
-
-    return countsWordsPhrasesDocs
+    return top_words_combined, top_phrases_combined
 
 def runVis(num_clusters):
-    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(OUTPUT_SPAM_REMOVAL)
 
     labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
     feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
@@ -586,7 +593,7 @@ def run():
     print('We startin')
     siteList = getSitesList()
     num_clusters = 100
-    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix()
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(OUTPUT_SPAM_REMOVAL)
 
     # # K Means
     print(" --- K MEANS ---")
@@ -597,8 +604,10 @@ def run():
     print(feature_names_df_kmeans)
     print('Top 5 phrases in each cluster:')
     print(feature_phrases_df_kmeans)
-    purity, clusterCountSeries, clusterGroupDF = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-    print('Purity', purity)
+
+    # TODO: currently not working because of csv mismatch
+    # purity, clusterCountSeries, clusterGroupDF = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
+    # print('Purity', purity)
 
     # # # Spectral
     # print(" --- SPECTRAL ---")
@@ -628,5 +637,31 @@ def run():
     print('We done.')
     return
 
+def runDrilldown(df):
+    # Create temp csv using timestamp as name
+    filename = 'data/' + str(round(time.time())) + '.csv'
+    df.to_csv(filename)
 
-# run()
+    # Create index based off of csv
+    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(filename)
+
+    # Delete temp csv
+    os.remove(filename)
+
+    # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
+    num_clusters = math.ceil(len(df)/10)
+
+    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+
+    unique, counts = np.unique(labels, return_counts = True)
+    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
+    counts.name = 'Count'
+
+    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
+    final = pd.concat([counts, top_words_combined, top_phrases_combined], axis=1)
+    return final
+
+
+runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
