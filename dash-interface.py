@@ -13,7 +13,8 @@ from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 
 
 # Reading in data:
@@ -357,8 +358,7 @@ fig_issue_metrics = updateIssuesMetricsGraph()
 
 # Page styling - sample:
 PAGE_SIZE = 40
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
 # suppress exception of assigning callbacks to components that are genererated
 # by other callbacks
 app.config['suppress_callback_exceptions'] = True
@@ -370,7 +370,8 @@ The 2nd part describes the interactivty of the app
 tabs_styles = {
     'height': '44px',
     'width': '350px',
-    'display': 'inline-block'
+    'display': 'inline-block',
+    'margin': '0'
 }
 tab_style = {
     # 'borderBottom': '1px solid #d6d6d6',
@@ -401,21 +402,20 @@ list_page_children = []
 
 
 main_layout = html.Div(children=[
-    html.H1(
-        children='Mozilla Customer Analytics',
-        id="header",
-    ),
-    dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
-    ], style=tabs_styles),
+    html.Div(id="header",
+             children=[
+        html.H1(
+            children='Mozilla Customer Analytics',
+            id="title",
+        ),
+        dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
+            dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
+            dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
+            dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
+            dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
+        ], style=tabs_styles),
+    ]),
     html.Div(id='tabs-content-inline'),
-    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-    #     'textAlign': 'center',
-    #     'color': colors['text']
-    # })  # This is just a line at the bottom of each page..... Take it out?
     html.Div(id="bitch-div"),
     html.Div(id="bitch-div2")
 ])
@@ -445,7 +445,7 @@ def render_content(tab):
     if tab == 'tab-1':
         return html.Div([
             html.H3('Overview & Recent Trends'),
-            dcc.Graph(id='graph', figure=fig),
+            dcc.Graph(id='country-graph', figure=fig),
             dcc.RadioItems(
                 id='bin',
                 options=[{'label': i, 'value': i} for i in [
@@ -566,26 +566,81 @@ def render_content(tab):
         ])
     elif tab == 'tab-2':
         return html.Div([
-            html.Div(id = 'comp_slider_output'),
-            dcc.Slider(id='comp_time_slider',
-                       min=toggle_time_params['min'], max=toggle_time_params['max'],
-                       step=toggle_time_params['step'], value=toggle_time_params['default'],
-                       marks=toggle_time_params['marks']),
-            dcc.Graph(id='comp-graph', figure=fig_component),
+            html.Div(id='comp_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='comp_slider_output'),
+                         dcc.Slider(id='comp_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='comp-graph', figure=fig_component),
+                     ]
+             ),
+            html.Div(id='issue_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='issue_slider_output'),
+                         dcc.Slider(id='issue_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='issue-graph', figure=fig_issue),
+            ]),
 
-            html.Div(id='issue_slider_output'),
-            dcc.Slider(id='issue_time_slider',
-                       min=toggle_time_params['min'], max=toggle_time_params['max'],
-                       step=toggle_time_params['step'], value=toggle_time_params['default'],
-                       marks=toggle_time_params['marks']),
-            dcc.Graph(id='issue-graph', figure=fig_issue),
-            dcc.Graph(id='graph4', figure=fig_comp_metrics),
-            dcc.Graph(id='graph5', figure=fig_issue_metrics),
+            # dcc.Graph(id='graph4', figure=fig_comp_metrics),
+            # dcc.Graph(id='graph5', figure=fig_issue_metrics),
+
             html.Div(className='row', children=[
                 html.Div([
                     html.Div(id='click-data'),  # Doesn't do anything right now
                 ]),
-            ])
+            ]),
+
+            # Drilldown Modal
+            html.Div([  # entire modal
+                # modal content
+                html.Div([
+                    html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),  # close button
+                    html.H2("Selected Feedback Data Points"),  # Header
+                    dt.DataTable(
+                        id='modal-table-comp-issue',
+                        columns=[{"name": i, "id": i} for i in search_df.columns],
+                        pagination_settings={
+                            'current_page': 0,
+                            'page_size': PAGE_SIZE
+                        },
+                        pagination_mode='be',
+                        sorting='be',
+                        sorting_type='single',
+                        sorting_settings=[],
+                        n_fixed_rows=1,
+                        style_table={
+                            'overflowX': 'scroll',
+                            'maxHeight': '800',
+                            'overflowY': 'scroll'
+                        },
+                        style_cell={
+                            'minWidth': '50'
+                                        'px', 'maxWidth': '200px',
+                            'whiteSpace': 'no-wrap',
+                            'overflow': 'hidden',
+                            'textOverflow': 'ellipsis',
+                        },
+                        style_cell_conditional=[
+                            {
+                                'if': {'column_id': 'Feedback'},
+                                'textAlign': 'left'
+                            }
+                        ],
+                        css=[{
+                            'selector': '.dash-cell div.dash-cell-value',
+                            'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+
+                        }],
+                    )
+                ], id='modal-content-comp-issue', className='modal-content')
+            ], id='modal-comp-issue', className='modal'),
         ])
     elif tab == 'tab-3':
         return html.Div([
@@ -662,36 +717,72 @@ def render_content(tab):
             )
         ])
 
+# # Country Click
+# @app.callback(
+#     Output('bitch-div2', 'children'),
+#     [Input('country-graph', 'clickData')])
+# def display_click_data(clickData):
+#
+#         return ''
 
+# Show Comp/Issue Modal on click
+@app.callback(Output('modal-comp-issue', 'style'),
+              [Input('comp-graph', 'clickData'),
+               Input('issue-graph', 'clickData')])
+def display_modal(compClickData, issueClickData):
+    if compClickData or issueClickData:
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
+
+# Component Drilldown Click
 @app.callback(
-    Output('bitch-div', 'children'),
-    [Input('comp-graph', 'clickData')])
-def display_click_data(clickData):
-    if (len(clickData['points']) == 1):
-        day = clickData['points'][0]['x']
-        component = clickData['points'][0]['customdata']
-        ids = comp_response_id_map[day][component]
-        df = results_df[results_df['Response ID'].isin(ids)]
-        return df
+    Output('modal-table-comp-issue', 'data'),
+    [Input('comp-graph', 'clickData'),
+     Input('issue-graph', 'clickData'),
+     Input('modal-table-comp-issue', "pagination_settings"),
+     Input('modal-table-comp-issue', "sorting_settings")])
+def display_click_data(compClickData, issueClickData, pagination_settings, sorting_settings):
+    #Set click data to whichever was clicked
+    if (compClickData):
+        clickData = compClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            ids = comp_response_id_map[day][component]
+            dff = results_df[results_df['Response ID'].isin(ids)]
+
+    elif(issueClickData):
+        clickData = issueClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            issue = clickData['points'][0]['customdata']
+            ids = issue_response_id_map[day][issue]
+            dff = results_df[results_df['Response ID'].isin(ids)]
     else:
         return ''
 
+    #
+    # if len(sorting_settings):
+    #     dff = dff.sort_values(
+    #         [col['column_id'] for col in sorting_settings],
+    #         ascending=[
+    #             col['direction'] == 'asc'
+    #             for col in sorting_settings
+    #         ],
+    #         inplace=False
+    #     )
 
-@app.callback(
-    Output('bitch-div2', 'children'),
-    [Input('issue-graph', 'clickData')])
-def display_click_data(clickData):
-    if (len(clickData['points']) == 1):
-        day = clickData['points'][0]['x']
-        issue = clickData['points'][0]['customdata']
-        ids = issue_response_id_map[day][issue]
-        df = results_df[results_df['Response ID'].isin(ids)]
-        return df
-    else:
-        return ''
+    return dff.iloc[
+           pagination_settings['current_page'] * pagination_settings['page_size']:
+           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+           ].to_dict('rows')
 
 
 
+# Scatterplot Drilldown click
 @app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
                                          Input('close-modal', 'n_clicks_timestamp')])
 def display_modal(openm, closem):
