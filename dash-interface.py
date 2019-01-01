@@ -365,6 +365,11 @@ def updateIssuesMetricsGraph():
 fig_comp_metrics = updateCompMetricsGraph()
 fig_issue_metrics = updateIssuesMetricsGraph()
 
+#prep data for displaying in stacked binary sentiment graph over time
+#Grab unique dates from results_df
+results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
+unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
+common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -401,60 +406,27 @@ colors = {
     'text': '#7FDBFF'
 }
 
+app.config.suppress_callback_exceptions = True
 
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
-])
-
-
-list_page_children = []
-
-
-main_layout = html.Div(children=[
     html.H1(
         children='Mozilla Customer Analytics',
         id="header",
     ),
-    dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
+    dcc.Tabs(id="tabs-styled-with-inline", children=[
+        dcc.Tab(label='Overview', value='/overview', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Categories', value='/categories', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Sites', value='/sites', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Search', value='/search', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
-    html.Div(id='tabs-content-inline'),
-    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-    #     'textAlign': 'center',
-    #     'color': colors['text']
-    # })  # This is just a line at the bottom of each page..... Take it out?
-    html.Div(id="bitch-div"),
-    html.Div(id="bitch-div2")
+    html.Div(id='page-content')
 ])
 
-
-@app.callback(dash.dependencies.Output('page-content', 'children'),
-              [dash.dependencies.Input('url', 'pathname')])
-def display_page(pathname):
-    if pathname == '/list':
-        return main_layout
-    elif pathname == '/page-2':
-        return main_layout
-    else:
-        return main_layout
+list_page_children = []
 
 
-#prep data for displaying in stacked binary sentiment graph over time
-#Grab unique dates from results_df
-results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
-unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
-common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
-
-
-@app.callback(Output('tabs-content-inline', 'children'),
-              [Input('tabs-styled-with-inline', 'value')])
-def render_content(tab):
-    if tab == 'tab-1':
-        return html.Div([
+overview_layout = html.Div([
             html.H3('Overview & Recent Trends'),
             dcc.Graph(id='graph', figure=fig),
             dcc.RadioItems(
@@ -573,10 +545,11 @@ def render_content(tab):
                     className='six columns',
                     id='current-content'
                 )
-            ])
+            ]),
+            html.Div(id="bitch-div"),
+            html.Div(id="bitch-div2")
         ])
-    elif tab == 'tab-2':
-        return html.Div([
+categories_layout = html.Div([
             html.Div(id = 'comp_slider_output'),
             dcc.Slider(id='comp_time_slider',
                        min=toggle_time_params['min'], max=toggle_time_params['max'],
@@ -598,8 +571,7 @@ def render_content(tab):
                 ]),
             ])
         ])
-    elif tab == 'tab-3':
-        return html.Div([
+sites_layout = html.Div([
             html.H3('Sites'),
             dcc.Graph(
                 id='mentioned-site-graph',
@@ -658,8 +630,7 @@ def render_content(tab):
             ),
             html.H4('Similar graphs & reactive table for issue/feature categories')
         ])
-    elif tab == 'tab-4':
-        return html.Div([
+search_layout = html.Div([
             html.H3('Search Raw Comments'),
             html.Label('Enter Search Term:'),
             dcc.Input(id='searchrequest', type='text', value='Type here'),
@@ -672,6 +643,257 @@ def render_content(tab):
                 selected_row_indices=[],
             )
         ])
+
+
+
+
+@app.callback(dash.dependencies.Output('page-content', 'children'),
+              [dash.dependencies.Input('url', 'pathname')])
+def display_page(pathname):
+    print('current path', pathname)
+    if pathname == '/categories':
+        return categories_layout
+    elif pathname == '/sites':
+        return sites_layout
+    elif pathname == '/search':
+        return search_layout
+    elif pathname == '/overview':
+        return overview_layout
+    else:
+        return overview_layout
+
+
+
+
+@app.callback(Output('url', 'pathname'),
+              [Input('tabs-styled-with-inline', 'value')])
+def update_url(tab): # bit of a hacky way of updating URL for now.
+    print("clicked tab", tab)
+    return tab
+
+
+# @app.callback(Output('tabs-content-inline', 'children'),
+#               [Input('tabs-styled-with-inline', 'value')])
+# def render_content(tab):
+#     if tab == 'tab-1':
+#         return html.Div([
+#             html.H3('Overview & Recent Trends'),
+#             dcc.Graph(id='graph', figure=fig),
+#             dcc.RadioItems(
+#                 id='bin',
+#                 options=[{'label': i, 'value': i} for i in [
+#                     'Yearly', 'Monthly', 'Weekly', 'Daily'
+#                 ]],
+#                 value='Daily',
+#                 labelStyle={'display': 'inline'}
+#             ),
+#             html.Div([
+#                 html.Div(
+#                     className='six columns',
+#                     children=dcc.Graph(
+#                        id='binary-sentiment-ts',
+#                        figure={
+#                                 'data': [
+#                                     {
+#                                         'x': unique_dates,
+#                                         'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
+#                                             [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+#                                         'type': 'bar',
+#                                         'name': "Sad"
+#                                     },
+#                                     {
+#                                     'x': unique_dates,
+#                                     'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+#                                     'type': 'bar',
+#                                     'name': "Happy"
+#                                     }
+#                                 ],
+#                                 'layout': {
+#                                     'plot_bgcolor': colors['background'],
+#                                     'paper_bgcolor': colors['background'],
+#                                     'barmode': 'stack',
+#                                     'font': {
+#                                         'color': colors['text']
+#                                     }
+#                                 }
+#                             }
+#                         )
+#                     ),
+#                 html.Div(
+#                     className='six columns',
+#                     children=dcc.Graph(
+#                             id='trends-scatterplot',
+#                             figure={
+#                                 'data': [{
+#                                     'x': results_df['Date Submitted'],
+#                                     'y': results_df['compound'],
+#                                     'customdata': results_df['Response ID'],
+#                                     'type': 'line',
+#                                     'name': "Sentiment score",
+#                                     'mode': 'markers',
+#                                     'marker': {'size': 12}
+#                                 }],
+#                                 'layout': {
+#                                      'title': "Compound Sentiment Score Over Time"
+#                                 }
+#                             }
+#                     )
+#                 )
+#             ]),
+#             html.Div([
+#                 html.Div(
+#                     className='six columns',
+#                     children=[
+#                         # dcc.Graph(id='trend-data-histogram'),
+#                         html.Button('Display Selected Data', id='display_data', n_clicks_timestamp=0)
+#                     ]
+#                 ),
+#                 html.Div([ #entire modal
+#                         #modal content
+#                              html.Div([
+#                                     html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
+#                                     html.H2("Selected Feedback Data Points"),#Header
+#                                     dt.DataTable(
+#                                          id='modal-table',
+#                                          columns=[{"name": i, "id": i} for i in search_df.columns],
+#                                          pagination_settings={
+#                                              'current_page': 0,
+#                                              'page_size': PAGE_SIZE
+#                                          },
+#                                          pagination_mode='be',
+#                                          sorting='be',
+#                                          sorting_type='single',
+#                                          sorting_settings=[],
+#                                          n_fixed_rows=1,
+#                                          style_table={
+#                                              'overflowX': 'scroll',
+#                                              'maxHeight': '800',
+#                                              'overflowY': 'scroll'
+#                                          },
+#                                          style_cell={
+#                                              'minWidth': '50'
+#                                                          'px', 'maxWidth': '200px',
+#                                              'whiteSpace': 'no-wrap',
+#                                              'overflow': 'hidden',
+#                                              'textOverflow': 'ellipsis',
+#                                          },
+#                                          style_cell_conditional=[
+#                                              {
+#                                                  'if': {'column_id': 'Feedback'},
+#                                                  'textAlign': 'left'
+#                                              }
+#                                          ],
+#                                          css=[{
+#                                              'selector': '.dash-cell div.dash-cell-value',
+#                                              'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+#
+#                                          }],
+#                                     )
+#                              ], id='modal-content', className='modal-content')
+#                          ], id='modal', className='modal'),
+#                 html.Div(
+#                     className='six columns',
+#                     id='current-content'
+#                 )
+#             ])
+#         ])
+#     elif tab == 'tab-2':
+#         return html.Div([
+#             html.Div(id = 'comp_slider_output'),
+#             dcc.Slider(id='comp_time_slider',
+#                        min=toggle_time_params['min'], max=toggle_time_params['max'],
+#                        step=toggle_time_params['step'], value=toggle_time_params['default'],
+#                        marks=toggle_time_params['marks']),
+#             dcc.Graph(id='graph2', figure=fig_component),
+#
+#             html.Div(id='issue_slider_output'),
+#             dcc.Slider(id='issue_time_slider',
+#                        min=toggle_time_params['min'], max=toggle_time_params['max'],
+#                        step=toggle_time_params['step'], value=toggle_time_params['default'],
+#                        marks=toggle_time_params['marks']),
+#             dcc.Graph(id='graph3', figure=fig_issue),
+#             dcc.Graph(id='graph4', figure=fig_comp_metrics),
+#             dcc.Graph(id='graph5', figure=fig_issue_metrics),
+#             html.Div(className='row', children=[
+#                 html.Div([
+#                     html.Div(id='click-data'),  # Doesn't do anything right now
+#                 ]),
+#             ])
+#         ])
+#     elif tab == 'tab-3':
+#         return html.Div([
+#             html.H3('Sites'),
+#             dcc.Graph(
+#                 id='mentioned-site-graph',
+#                 figure={
+#                     'data': [{
+#                         'x': common_df[common_df.columns[0]],
+#                         'y': common_df[common_df.columns[1]],
+#                         'customdata': results_df['Sites'].unique()[1:],
+#                         'type': 'bar'
+#                     }],
+#                     'layout': {
+#                         'title': "Feedback by Mentioned Site(s)",
+#                         'xaxis': {
+#                             'title': 'Mentioned Site(s)'
+#                         },
+#                         'yaxis': {
+#                             'title': 'Number of Feedback'
+#                         }
+#                     }
+#                 }
+#             ),
+#             dt.DataTable(
+#                 id='common-site-table',
+#                 columns=[{"name": i, "id": i} for i in search_df.columns],
+#                 pagination_settings={
+#                     'current_page': 0,
+#                     'page_size': PAGE_SIZE
+#                 },
+#                 pagination_mode='be',
+#                 sorting='be',
+#                 sorting_type='single',
+#                 sorting_settings=[],
+#                 n_fixed_rows=1,
+#                 style_table={
+#                     'overflowX': 'scroll',
+#                     'maxHeight': '800',
+#                     'overflowY': 'scroll'
+#                 },
+#                 style_cell={
+#                     'minWidth': '50'
+#                                 'px', 'maxWidth': '200px',
+#                     'whiteSpace': 'no-wrap',
+#                     'overflow': 'hidden',
+#                     'textOverflow': 'ellipsis',
+#                 },
+#                 style_cell_conditional=[
+#                     {
+#                         'if': {'column_id': 'Feedback'},
+#                         'textAlign': 'left'
+#                     }
+#                 ],
+#                 css=[{
+#                     'selector': '.dash-cell div.dash-cell-value',
+#                     'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+#                 }],
+#             ),
+#             html.H4('Similar graphs & reactive table for issue/feature categories')
+#         ])
+#     elif tab == 'tab-4':
+#         return html.Div([
+#             html.H3('Search Raw Comments'),
+#             html.Label('Enter Search Term:'),
+#             dcc.Input(id='searchrequest', type='text', value='Type here'),
+#             dte.DataTable(  # Add fixed header row
+#                 id='searchtable',
+#                 rows=[{}],
+#                 row_selectable=True,
+#                 filterable=True,
+#                 sortable=True,
+#                 selected_row_indices=[],
+#             )
+#         ])
 
 
 @app.callback(
