@@ -6,7 +6,7 @@ import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-import clustering as clustering
+from clustering import runDrilldown
 import ast
 import json
 from datetime import datetime as datetime
@@ -20,6 +20,7 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 # Reading in data:
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
+sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
 # print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
@@ -77,20 +78,20 @@ fig = dict(data=data, layout=layout)
 
 
 # Hardcoded Fake Data
-# arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-# arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-# arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-# numClusters = 50
-# traces = []
-# clusterNames = list(df1)
-# clusterNames.pop(0)
-# print(clusterNames)
-# df1 = df1.set_index('Issue')
-# docs = df1.drop(arrayOfNamesWords, axis=0)
-# words = df1.drop(arrayOfNamesDocs, axis=0)
-# print(words.iloc[0].values[0])
-# clusters = df1.drop(['Words', 'Docs'], axis=0)
-# print(clusters)
+arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+numClusters = 50
+traces = []
+clusterNames = list(df1)
+clusterNames.pop(0)
+print(clusterNames)
+df1 = df1.set_index('Issue')
+docs = df1.drop(arrayOfNamesWords, axis=0)
+words = df1.drop(arrayOfNamesDocs, axis=0)
+print(words.iloc[0].values[0])
+clusters = df1.drop(['Words', 'Docs'], axis=0)
+print(clusters)
 
 
 # Dynamic Data
@@ -104,6 +105,8 @@ categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clust
 # df2 = df2[:-1]
 # clusters = df2
 # clusters = clusters.rename(index=categoryDict)
+
+
 
 
 # TIME CALCULATION
@@ -190,13 +193,13 @@ def initIssueDF(results2_df, num_days_range = 14):
     return issue_df, issue_response_id_map
 
 
-def updateComponentGraph(component_df, num_days_range = 7):
-    filtered_df = component_df.iloc[:, 0:num_days_range]
-    traces_component = []
+def updateGraph(df, title, num_days_range = 7):
+    filtered_df = df.iloc[:, 0:num_days_range]
+    traces = []
     # Checking df for values:
     for index, row in filtered_df.iterrows():
         # print(list(row.keys()))
-        traces_component.append(go.Bar(
+        traces.append(go.Bar(
             x=list(row.keys()),
             y=row.values,
             name=index,
@@ -206,9 +209,9 @@ def updateComponentGraph(component_df, num_days_range = 7):
             # customdata=docs.iloc[0].values
         ))
     # Stacked Bar Graph figure - components:
-    layout_component = go.Layout(
+    layout = go.Layout(
         barmode='stack',
-        title='Components Over Time',
+        title=title,
         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
         xaxis=dict(
             # showticklabels=False,
@@ -218,48 +221,15 @@ def updateComponentGraph(component_df, num_days_range = 7):
             title='Count of Docs'
         )
     )
-    fig_component = dict(data=traces_component, layout=layout_component)
-    return fig_component
-
-
-def updateIssuesGraph(issue_df, num_days_range = 7):
-    filtered_df = issue_df.iloc[:, 0:num_days_range]
-    traces_issue = []
-    # Checking df for values:
-    for index, row in filtered_df.iterrows():
-        # print(list(row.keys()))
-        traces_issue.append(go.Bar(
-            x=list(row.keys()),
-            y=row.values,
-            name=index,
-            customdata=[index] * len(list(row.keys())),
-            # hoverinfo='none',
-            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-            # customdata=docs.iloc[0].values
-        ))
-    # Stacked Bar Graph figure - issues:
-    layout_issue = go.Layout(
-        barmode='stack',
-        title='Issues Over Time',
-        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-        xaxis=dict(
-            # showticklabels=True,
-            title='Time'
-        ),
-        yaxis=dict(
-            title='Count of Docs'
-        )
-    )
-    fig_issue = dict(data=traces_issue, layout=layout_issue)
-    return fig_issue
-
+    fig = dict(data=traces, layout=layout)
+    return fig
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
 component_df, comp_response_id_map = initCompDF(results2_df, day_range)
 issue_df, issue_response_id_map = initIssueDF(results2_df, day_range)
-fig_component = updateComponentGraph(component_df, 7)
-fig_issue = updateIssuesGraph(issue_df, 7)
+fig_component = updateGraph(component_df, 'Components Over Time', 7)
+fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
 
 def mergedGraph():
@@ -352,8 +322,45 @@ def updateIssuesMetricsGraph():
     return fig_issue_metrics
 
 
-fig_comp_metrics = updateCompMetricsGraph()
-fig_issue_metrics = updateIssuesMetricsGraph()
+# fig_comp_metrics = updateCompMetricsGraph()
+# fig_issue_metrics = updateIssuesMetricsGraph()
+
+# DRILLDOWN FUNCTIONS
+
+def drilldownClustering(df):
+    results = runDrilldown(df)
+    results = results.transpose()
+    fig = clusteringBarGraph(results, 'Clustering Analysis')
+    return fig
+
+def clusteringBarGraph(df, title):
+    traces = []
+
+    # Get Count, Words, Phrases
+    count = list(df.loc['Count'].values)
+    words = list(df.loc['Words'].values)
+    phrases = list(df.loc['Phrases'].values)
+
+    traces = [go.Bar(
+            x=words,
+            y=count,
+            text = phrases,
+            hoverinfo='text',
+        )]
+
+    layout = go.Layout(
+        title=title,
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Time'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
+    )
+    fig = dict(data=traces, layout=layout)
+    return fig
 
 
 # Page styling - sample:
@@ -603,6 +610,7 @@ def render_content(tab):
                 html.Div([
                     html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),  # close button
                     html.H2("Selected Feedback Data Points"),  # Header
+                    dcc.Graph(id='modal-cluster-graph'), # Clustering Bar Graph
                     dt.DataTable(
                         id='modal-table-comp-issue',
                         columns=[{"name": i, "id": i} for i in search_df.columns],
@@ -735,14 +743,43 @@ def display_modal(compClickData, issueClickData):
     else:
         return {'display': 'none'}
 
-# Component Drilldown Click
+# Drilldown Clustering Bar Graph
+@app.callback(Output('modal-cluster-graph', 'figure'),
+              [Input('comp-graph', 'clickData'),
+               Input('issue-graph', 'clickData')])
+def display_modal(compClickData, issueClickData):
+    if compClickData:
+        clickData = compClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            ids = comp_response_id_map[day][component]
+            dff = sr_df[sr_df['Response ID'].isin(ids)]
+        else:
+            return
+    elif issueClickData:
+        clickData = issueClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            issue = clickData['points'][0]['customdata']
+            ids = issue_response_id_map[day][issue]
+            dff = sr_df[sr_df['Response ID'].isin(ids)]
+        else:
+            return
+
+    fig = drilldownClustering(dff)
+
+    return fig
+
+# Component Drilldown Data Table
 @app.callback(
     Output('modal-table-comp-issue', 'data'),
     [Input('comp-graph', 'clickData'),
      Input('issue-graph', 'clickData'),
-     Input('modal-table-comp-issue', "pagination_settings"),
-     Input('modal-table-comp-issue', "sorting_settings")])
-def display_click_data(compClickData, issueClickData, pagination_settings, sorting_settings):
+     Input('modal-table-comp-issue', "pagination_settings")])
+def display_click_data(compClickData, issueClickData, pagination_settings):
     #Set click data to whichever was clicked
     if (compClickData):
         clickData = compClickData
@@ -763,17 +800,6 @@ def display_click_data(compClickData, issueClickData, pagination_settings, sorti
             dff = results_df[results_df['Response ID'].isin(ids)]
     else:
         return ''
-
-    #
-    # if len(sorting_settings):
-    #     dff = dff.sort_values(
-    #         [col['column_id'] for col in sorting_settings],
-    #         ascending=[
-    #             col['direction'] == 'asc'
-    #             for col in sorting_settings
-    #         ],
-    #         inplace=False
-    #     )
 
     return dff.iloc[
            pagination_settings['current_page'] * pagination_settings['page_size']:
@@ -920,7 +946,7 @@ def update_output(value):
     dash.dependencies.Output('comp-graph', 'figure'),
     [dash.dependencies.Input('comp_time_slider', 'value')])
 def update_output(value):
-    fig_component = updateComponentGraph(component_df, value)
+    fig_component = updateGraph(component_df, 'Components Over Time', value)
     return fig_component
 
 
@@ -938,7 +964,7 @@ def update_output(value):
     dash.dependencies.Output('issue-graph', 'figure'),
     [dash.dependencies.Input('issue_time_slider', 'value')])
 def update_output(value):
-    fig_issue = updateComponentGraph(issue_df, value)
+    fig_issue = updateGraph(issue_df, 'Issues Over Time', value)
     return fig_issue
 
 
