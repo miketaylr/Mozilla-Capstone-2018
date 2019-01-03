@@ -362,6 +362,90 @@ def clusteringBarGraph(df, title):
     fig = dict(data=traces, layout=layout)
     return fig
 
+# Taken from https://gist.github.com/shawkinsl/22a0f4e0bf519330b92b7e99b3cfee8a#file-31_best-py
+
+hidden_style = {"display": "none"}
+hidden_inputs = html.Div(id="hidden-inputs", style=hidden_style, children=[])
+
+def last_clicked(*dash_input_keys):
+    """ Get the clickData of the most recently clicked graph in a list of graphs.
+    The `value` you will receive as a parameter in your callback will be a dict. The keys you will want to
+    pay attention to are:
+        - "last_clicked": the id of the graph that was last clicked
+        - "last_clicked_data": what clickData would usually return
+    This function working depends on a `hidden_inputs` variable existing in the global / file scope. It should be an
+    html.Div() input with styles applied to be hidden ({"display": "none"}).
+    but why, I hear you ask?
+    clickData does not get set back to None after you've used it. That means that if a callback needs the latest
+    clickData from two different potential clickData sources, if it uses them both, it will get two sets of clickData
+    and no indication which was the most recent.
+    :type dash_input_keys: list of strings representing dash components
+    :return: dash.dependencies.Input() to watch value of
+    """
+    dash_input_keys = sorted(list(dash_input_keys))
+    str_repr = str(dash_input_keys)
+    last_clicked_id = str_repr + "_last-clicked"
+    existing_child = None
+    for child in hidden_inputs.children:
+        if child.id == str_repr:
+            existing_child = child
+            break
+
+    if existing_child:
+        return Input(last_clicked_id, 'value')
+
+    # If we get to here, this is the first time calling this function with these inputs, so we need to do some setup
+    # make feeder input/outputs that will store the last time a graph was clicked in addition to it's clickdata
+    if existing_child is None:
+        existing_child = html.Div(id=str_repr, children=[])
+        hidden_inputs.children.append(existing_child)
+
+    input_clicktime_trackers = [str_repr + key + "_clicktime" for key in dash_input_keys]
+    existing_child.children.append(dcc.Input(id=last_clicked_id, style=hidden_style, value=None))
+    for hidden_input_key in input_clicktime_trackers:
+        existing_child.children.append(dcc.Input(id=hidden_input_key, style=hidden_style, value=None))
+
+    # set up simple callbacks that just append the time of click to clickData
+    for graph_key, clicktime_out_key in zip(dash_input_keys, input_clicktime_trackers):
+        @app.callback(Output(clicktime_out_key, 'value'),
+                      [Input(graph_key, 'clickData')],
+                      [State(graph_key, 'id')])
+        def update_clicktime(clickdata, graph_id):
+            result = {
+                "click_time": datetime.datetime.now().timestamp(),
+                "click_data": clickdata,
+                "id": graph_id
+            }
+            return result
+
+    cb_output = Output(last_clicked_id, 'value')
+    cb_inputs = [Input(clicktime_out_key, 'value') for clicktime_out_key in input_clicktime_trackers]
+    cb_current_state = State(last_clicked_id, 'value')
+
+    # use the outputs generated in the callbacks above _instead_ of clickData
+    @app.callback(cb_output, cb_inputs, [cb_current_state])
+    def last_clicked_callback(*inputs_and_state):
+        clicktime_inputs = inputs_and_state[:-1]
+        last_state = inputs_and_state[-1]
+        if last_state is None:
+            last_state = {
+                "last_clicked": None,
+                "last_clicked_data": None,
+            }
+        else:
+            largest_clicktime = -1
+            largest_clicktime_input = None
+            for clicktime_input in clicktime_inputs:
+                click_time = int(clicktime_input['click_time'])
+                if clicktime_input['click_data'] and click_time > largest_clicktime:
+                    largest_clicktime_input = clicktime_input
+                    largest_clicktime = click_time
+            if largest_clicktime:
+                last_state['last_clicked'] = largest_clicktime_input["id"]
+                last_state['last_clicked_data'] = largest_clicktime_input["click_data"]
+        return last_state
+
+    return Input(last_clicked_id, 'value')
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -735,22 +819,16 @@ def render_content(tab):
 
 # Show Comp/Issue Modal on click
 @app.callback(Output('modal-comp-issue', 'style'),
-              [Input('comp-graph', 'clickData'),
-               Input('issue-graph', 'clickData')])
-def display_modal(compClickData, issueClickData):
-    if compClickData or issueClickData:
+              [last_clicked('comp-graph', 'issue-graph')])
+def display_modal(last_clickdata):
         return {'display': 'block'}
-    else:
-        return {'display': 'none'}
 
 # Drilldown Clustering Bar Graph
 @app.callback(Output('modal-cluster-graph', 'figure'),
-              [Input('comp-graph', 'clickData'),
-               Input('issue-graph', 'clickData')])
-def display_modal(compClickData, issueClickData):
-    if compClickData:
-        clickData = compClickData
-
+              [last_clicked('comp-graph', 'issue-graph')])
+def display_modal(last_clickdata):
+    clickData = last_clickdata["last_clicked_data"]
+    if last_clickdata["last_clicked"] == 'comp-graph':
         if (len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             component = clickData['points'][0]['customdata']
@@ -758,9 +836,7 @@ def display_modal(compClickData, issueClickData):
             dff = sr_df[sr_df['Response ID'].isin(ids)]
         else:
             return
-    elif issueClickData:
-        clickData = issueClickData
-
+    elif last_clickdata["last_clicked"] == 'issue-graph':
         if (len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             issue = clickData['points'][0]['customdata']
@@ -768,6 +844,8 @@ def display_modal(compClickData, issueClickData):
             dff = sr_df[sr_df['Response ID'].isin(ids)]
         else:
             return
+    else:
+        return
 
     fig = drilldownClustering(dff)
 
@@ -776,23 +854,18 @@ def display_modal(compClickData, issueClickData):
 # Component Drilldown Data Table
 @app.callback(
     Output('modal-table-comp-issue', 'data'),
-    [Input('comp-graph', 'clickData'),
-     Input('issue-graph', 'clickData'),
+    [last_clicked('comp-graph', 'issue-graph'),
      Input('modal-table-comp-issue', "pagination_settings")])
-def display_click_data(compClickData, issueClickData, pagination_settings):
+def display_click_data(last_clickdata, pagination_settings):
     #Set click data to whichever was clicked
-    if (compClickData):
-        clickData = compClickData
-
+    clickData = last_clickdata['last_clicked_data']
+    if last_clickdata["last_clicked"] == 'comp-graph':
         if (len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             component = clickData['points'][0]['customdata']
             ids = comp_response_id_map[day][component]
             dff = results_df[results_df['Response ID'].isin(ids)]
-
-    elif(issueClickData):
-        clickData = issueClickData
-
+    elif last_clickdata["last_clicked"] == 'issue-graph':
         if (len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             issue = clickData['points'][0]['customdata']
