@@ -9,7 +9,7 @@ from dash.dependencies import Input, Output, State, Event
 import clustering as clustering
 import ast
 import json
-from datetime import datetime as datetime
+from datetime import datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 
 
@@ -369,7 +369,7 @@ fig_issue_metrics = updateIssuesMetricsGraph()
 #Grab unique dates from results_df
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
-common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -439,12 +439,9 @@ def display_page(pathname):
         return overview_layout
 
 
-
-
 @app.callback(Output('url', 'pathname'),
               [Input('tabs-styled-with-inline', 'value')])
 def update_url(tab): # bit of a hacky way of updating URL for now.
-    print("clicked tab", tab)
     return tab
 
 list_page_children = []
@@ -587,6 +584,7 @@ def display_click_data(clickData):
     else:
         return ''
 
+
 @app.callback(
     Output('bitch-div', 'children'),
     [Input('comp-graph', 'clickData')])
@@ -654,7 +652,6 @@ def update_modal_table(pagination_settings, sorting_settings, openm, closem, sel
                pagination_settings['current_page'] * pagination_settings['page_size']:
                (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
                ].to_dict('rows')
-
 
 
 @app.callback(
@@ -785,6 +782,8 @@ def update_output(value):
     return fig_issue
 
 
+common_df = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+
 sites_layout = html.Div([
             html.H2('Mentioned Sites'),
             html.Div([
@@ -804,7 +803,7 @@ sites_layout = html.Div([
                     'data': [{
                         'x': common_df[common_df.columns[0]],
                         'y': common_df[common_df.columns[1]],
-                        'customdata': results_df['Sites'].unique()[1:],
+                        # 'customdata': results_df['Sites'].unique()[1:],
                         'type': 'bar'
                     }],
                     'layout': {
@@ -856,23 +855,22 @@ sites_layout = html.Div([
         ])
 
 @app.callback(
-    dash.dependencies.Output('output-container-date-picker-range', 'children'),
+    dash.dependencies.Output('mentioned-site-graph', 'figure'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
-def update_output(start_date, end_date):
-    string_prefix = 'You have selected: '
-    if start_date is not None:
-        start_date = dt.strptime(start_date, '%Y-%m-%d')
-        start_date_string = start_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
-    if end_date is not None:
-        end_date = dt.strptime(end_date, '%Y-%m-%d')
-        end_date_string = end_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'End Date: ' + end_date_string
-    if len(string_prefix) == len('You have selected: '):
-        return 'Select a date to see it displayed here'
-    else:
-        return string_prefix
+def update_graph_data(start_date, end_date):    #update graph with values that are in the time range
+    print("swag")
+    # start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+    # end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+    # df = results_df[(results_df['Date Submitted'] >= start_date) & (results_df['Date Submitted'] <= end_date)].groupby('Sites')['Sites'].agg(['count']).reset_index()
+    # data = {
+    #     'x': df.columns[0],
+    #     'y': df.columns[1],
+    #   # 'customdata': results_df['Sites'].unique()[1:],
+    #     'type': 'bar'
+    # }
+
+    # return data
 
 # @app.callback(
 #     Output('common-site-table', "data"),
