@@ -794,9 +794,9 @@ sites_layout = html.Div([
                     max_date_allowed=results_df['Date Submitted'].max(),
                     start_date=results_df['Date Submitted'].min(),
                     end_date=results_df['Date Submitted'].max()
-                )
+                ),
+                html.Div(id='unique-site-count')
             ]),
-
             dcc.Graph(
                 id='mentioned-site-graph',
                 figure={
@@ -853,6 +853,15 @@ sites_layout = html.Div([
                 }],
             )
         ])
+
+@app.callback(
+    dash.dependencies.Output('unique-site-count', 'children'),
+    [dash.dependencies.Input('sites-date-range', 'start_date'),
+     dash.dependencies.Input('sites-date-range', 'end_date')])
+def update_site_count(start_date, end_date):    #update graph with values that are in the time range
+    count = len(common_df.index)
+    return 'There were {} unique site combinations mentioned in the user comments'.format(count)
+
 
 @app.callback(
     dash.dependencies.Output('mentioned-site-graph', 'figure'),
