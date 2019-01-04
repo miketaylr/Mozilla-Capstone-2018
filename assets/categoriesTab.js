@@ -4,4 +4,4 @@
 // Close modal
 $('body').on('click', '#close-modal-comp-issue',function () {
     $('#modal-comp-issue').css('display', 'none');
-})
+});
