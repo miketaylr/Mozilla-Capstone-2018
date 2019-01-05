@@ -34,6 +34,9 @@ issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 
+global_sites_list_df = results_df
+
+siteCloseCount=0
 
 # Getting components and issues in string:
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
@@ -429,7 +432,40 @@ def display_page(pathname):
     # set the data you need into a variable inside the click callback on the graph (the same place where you open the modal)
     # reference that variable here to build the page contents
     if pathname == '/list':
-        return 'hey'
+        # global_sites_list_df is the dataframe that contains the data that appears in the modal
+        # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
+        global global_sites_list_df
+        print(global_sites_list_df)
+        global_sites_list_df['Day Difference'] = (reference - pd.to_datetime(global_sites_list_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+        day_range_site_list = min(global_sites_list_df['Day Difference'].max(), toggle_time_params['max'])
+
+        # component_df_list, comp_response_id_map_list = initCompDF(global_sites_list_df, day_range_site_list)
+        # issue_df_list, issue_response_id_map_list = initIssueDF(global_sites_list_df, day_range_site_list)
+        fig_component_list = updateGraph(global_sites_list_df, 'Components Over Time', 7)
+        fig_issue_list = updateGraph(global_sites_list_df, 'Issues Over Time', 7)
+        return html.Div([
+            html.Div(id='comp_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='comp_slider_output'),
+                         dcc.Slider(id='comp_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='comp-graph', figure=fig_component_list),
+                     ]
+             ),
+            html.Div(id='issue_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='issue_slider_output'),
+                         dcc.Slider(id='issue_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='issue-graph', figure=fig_issue_list),
+            ]),
+        ])
     elif pathname == '/page-2':
         return main_layout
     else:
@@ -643,21 +679,12 @@ def render_content(tab):
                         },
                     },
                     'font': dict(family='Courier New, monospace', size=18, color='#7f7f7f'),
-                }
+                },
             ),
-            dte.DataTable(  # Add fixed header row
-                id='common-site-table',
-                rows=[{}],
-                row_selectable=True,
-                filterable=True,
-                sortable=True,
-                selected_row_indices=[],
-            ),
-            html.H4('Similar graphs & reactive table for issue/feature categories'),
             html.Div([  # entire modal
                 # modal content
                 html.Div([
-                    html.Button("Close", id="close-modal-site", className="close", n_clicks_timestamp=0), 
+                    html.Button("Close", id="close-modal-site", className="close", n_clicks=0), 
                     html.A("Link to external site", href='/list', target="_blank"), # close button
                     html.H2("Selected Feedback Data Points"),  # Header
                     dte.DataTable(  # Add fixed header row
@@ -702,7 +729,6 @@ def display_modal(compClickData, issueClickData):
               [Input('comp-graph', 'clickData'),
                Input('issue-graph', 'clickData')])
 def display_modal(compClickData, issueClickData):
-    print("HERE", compClickData)
     if compClickData:
         clickData = compClickData
 
@@ -829,13 +855,11 @@ def update_table(ns, nb, request_value):
             r_df = r_df.append(temp_df, ignore_index=True)
     return r_df.to_dict('rows')
 
-
 @app.callback(
-    Output('common-site-table', 'rows'),
-    [Input('common-site-table', 'pagination_settings'),
-     Input('common-site-table', 'sorting_settings'),
-     Input('mentioned-site-graph', 'selectedData')])
-def update_common_table(pagination_settings, sorting_settings, selectedData):
+    Output('modal-site-table', 'rows'),
+    [Input('mentioned-site-graph', 'selectedData')])
+def update_site_modal_table(selectedData):
+    print('here', selectedData)
     if(selectedData):
         # ids = list(d['customdata'] for d in selectedData['points'])
         sites = list(d['customdata'] for d in selectedData['points'])
@@ -846,59 +870,21 @@ def update_common_table(pagination_settings, sorting_settings, selectedData):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        print(dff)
-        print(selectedData)
-        return dff.to_dict('rows')
-    elif(pagination_settings):
-        print(pagination_settings)
-    elif(sorting_settings):
-        print(sorting_settings)
-
-    # dff = search_df[search_df['Sites'] == clickData['points'][0]['customdata']]
-    # print('CLICKED DATA', clickData['points'][0]['customdata'])
-    # if len(sorting_settings):
-    #     dff = dff.sort_values(
-    #         [col['column_id'] for col in sorting_settings],
-    #         ascending=[
-    #             col['direction'] == 'asc'
-    #             for col in sorting_settings
-    #         ],
-    #         inplace=False
-    #     )
-
-    # return dff.iloc[
-    #        pagination_settings['current_page'] * pagination_settings['page_size']:
-    #        (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-    #        ].to_dict('rows')
-    # print(ids)
-    return ''
-
-@app.callback(
-    Output('modal-site-table', 'rows'),
-    [Input('mentioned-site-graph', 'clickData')])
-def update_site_modal_table(clickData):
-    print(clickData)
-    if(clickData):
-        # ids = list(d['customdata'] for d in selectedData['points'])
-        site = clickData['points'][0]['customdata']
-        dff = search_df[search_df['Sites'] == site]
-        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-                  'Feedback', 'Components', 'Issues', 'Sites']
-        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-                  'Feedback', 'Components', 'Issues', 'Sites']
-        dff = dff[cnames]
-        dff.columns = cnamesnew
-        print(dff)
         return dff.to_dict('rows')
     return ''
 
-@app.callback(Output('modal-site', 'style'),
-              [Input('mentioned-site-graph', 'clickData')])
-def display_modal(clickData):
-    if clickData:
-        return {'display': 'block'}
-    else:
+
+@app.callback(Output('modal-site', 'style'), 
+              [Input('close-modal-site', 'n_clicks'),
+               Input('mentioned-site-graph', 'selectedData')])
+def display_modal(closeClicks, selectedData):
+    global siteCloseCount
+    print('herehere', closeClicks, siteCloseCount)
+    if closeClicks > siteCloseCount:
+        siteCloseCount = closeClicks
         return {'display': 'none'}
+    elif selectedData:
+        return {'display': 'block'}
 
 
 # Component DF Slider Callback

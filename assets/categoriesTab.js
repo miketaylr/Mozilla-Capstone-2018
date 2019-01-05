@@ -5,3 +5,7 @@
 $('body').on('click', '#close-modal-comp-issue',function () {
     $('#modal-comp-issue').css('display', 'none');
 });
+
+// $('body').on('click', '#close-modal-site',function () {
+//     $('#modal-site').css('display', 'none');
+// });
