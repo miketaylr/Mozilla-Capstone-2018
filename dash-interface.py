@@ -6,7 +6,7 @@ import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-from clustering import runDrilldown
+# from clustering import runDrilldown
 import ast
 import json
 from datetime import datetime as datetime
@@ -78,20 +78,20 @@ fig = dict(data=data, layout=layout)
 
 
 # Hardcoded Fake Data
-arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-numClusters = 50
-traces = []
-clusterNames = list(df1)
-clusterNames.pop(0)
-print(clusterNames)
-df1 = df1.set_index('Issue')
-docs = df1.drop(arrayOfNamesWords, axis=0)
-words = df1.drop(arrayOfNamesDocs, axis=0)
-print(words.iloc[0].values[0])
-clusters = df1.drop(['Words', 'Docs'], axis=0)
-print(clusters)
+# arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+# arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+# arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+# numClusters = 50
+# traces = []
+# clusterNames = list(df1)
+# clusterNames.pop(0)
+# print(clusterNames)
+# df1 = df1.set_index('Issue')
+# docs = df1.drop(arrayOfNamesWords, axis=0)
+# words = df1.drop(arrayOfNamesDocs, axis=0)
+# print(words.iloc[0].values[0])
+# clusters = df1.drop(['Words', 'Docs'], axis=0)
+# print(clusters)
 
 
 # Dynamic Data
@@ -606,11 +606,10 @@ def render_content(tab):
 
             # Drilldown Modal
             html.Div([  # entire modal
-                # modal content
-                html.Div([
+                html.Div([                 # modal content
                     html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),  # close button
                     html.H2("Selected Feedback Data Points"),  # Header
-                    dcc.Graph(id='modal-cluster-graph'), # Clustering Bar Graph
+                    # dcc.Graph(id='modal-cluster-graph'), # Clustering Bar Graph
                     dt.DataTable(
                         id='modal-table-comp-issue',
                         columns=[{"name": i, "id": i} for i in search_df.columns],
@@ -744,34 +743,34 @@ def display_modal(compClickData, issueClickData):
         return {'display': 'none'}
 
 # Drilldown Clustering Bar Graph
-@app.callback(Output('modal-cluster-graph', 'figure'),
-              [Input('comp-graph', 'clickData'),
-               Input('issue-graph', 'clickData')])
-def display_modal(compClickData, issueClickData):
-    if compClickData:
-        clickData = compClickData
-
-        if (len(clickData['points']) == 1):
-            day = clickData['points'][0]['x']
-            component = clickData['points'][0]['customdata']
-            ids = comp_response_id_map[day][component]
-            dff = sr_df[sr_df['Response ID'].isin(ids)]
-        else:
-            return
-    elif issueClickData:
-        clickData = issueClickData
-
-        if (len(clickData['points']) == 1):
-            day = clickData['points'][0]['x']
-            issue = clickData['points'][0]['customdata']
-            ids = issue_response_id_map[day][issue]
-            dff = sr_df[sr_df['Response ID'].isin(ids)]
-        else:
-            return
-
-    fig = drilldownClustering(dff)
-
-    return fig
+# @app.callback(Output('modal-cluster-graph', 'figure'),
+#               [Input('comp-graph', 'clickData'),
+#                Input('issue-graph', 'clickData')])
+# def display_modal(compClickData, issueClickData):
+#     if compClickData:
+#         clickData = compClickData
+#
+#         if (len(clickData['points']) == 1):
+#             day = clickData['points'][0]['x']
+#             component = clickData['points'][0]['customdata']
+#             ids = comp_response_id_map[day][component]
+#             dff = sr_df[sr_df['Response ID'].isin(ids)]
+#         else:
+#             return
+#     elif issueClickData:
+#         clickData = issueClickData
+#
+#         if (len(clickData['points']) == 1):
+#             day = clickData['points'][0]['x']
+#             issue = clickData['points'][0]['customdata']
+#             ids = issue_response_id_map[day][issue]
+#             dff = sr_df[sr_df['Response ID'].isin(ids)]
+#         else:
+#             return
+#
+#     fig = drilldownClustering(dff)
+#
+#     return fig
 
 # Component Drilldown Data Table
 @app.callback(
