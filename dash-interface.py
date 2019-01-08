@@ -11,7 +11,7 @@ import ast
 import json
 from datetime import datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
-
+from collections import Counter
 
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
@@ -782,7 +782,13 @@ def update_output(value):
     return fig_issue
 
 
-common_df = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+#compacted list of all sites mentioned in the comments
+sites_list = results_df['Sites'].apply(pd.Series).stack().reset_index(drop=True)
+sites_list = ','.join(sites_list).split(',')
+sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
+sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
+sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
+sites_df = sites_df.sort_values(by=['Count'], ascending=False)
 
 sites_layout = html.Div([
             html.H2('Mentioned Sites'),
@@ -801,8 +807,8 @@ sites_layout = html.Div([
                 id='mentioned-site-graph',
                 figure={
                     'data': [{
-                        'x': common_df[common_df.columns[0]],
-                        'y': common_df[common_df.columns[1]],
+                        'x': sites_df['Formatted'],
+                        'y': sites_df['Count'],
                         # 'customdata': results_df['Sites'].unique()[1:],
                         'type': 'bar'
                     }],
@@ -859,8 +865,9 @@ sites_layout = html.Div([
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
 def update_site_count(start_date, end_date):    #update graph with values that are in the time range
-    count = len(common_df.index)
-    return 'There were {} unique site combinations mentioned in the user comments'.format(count)
+    count = len(sites_df.index)
+    return 'Sites were mentioned {} times in the comments. There were {} unique sites mentioned.'\
+        .format(sites_df['Count'].sum(), count)
 
 
 @app.callback(
