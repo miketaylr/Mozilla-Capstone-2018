@@ -12,6 +12,12 @@ body {
 }
 
 #header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#title {
     color: orange;
     font-family: Helvetica;
     font-size: 1.75em;
