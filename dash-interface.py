@@ -15,12 +15,14 @@ from collections import Counter
 import numpy as np
 
 
-# external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 
 
 # Reading in data:
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
+sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
 # print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
@@ -36,7 +38,8 @@ component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
-
+global_sites_list_df = results_df
+siteCloseCount=0
 
 # Getting components and issues in string:
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
@@ -81,19 +84,19 @@ fig = dict(data=data, layout=layout)
 
 
 # Hardcoded Fake Data
-# arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-# arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-# arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-# numClusters = 50
-# traces = []
-# clusterNames = list(df1)
-# clusterNames.pop(0)
+arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
+arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
+arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
+numClusters = 50
+traces = []
+clusterNames = list(df1)
+clusterNames.pop(0)
 # print(clusterNames)
-# df1 = df1.set_index('Issue')
-# docs = df1.drop(arrayOfNamesWords, axis=0)
-# words = df1.drop(arrayOfNamesDocs, axis=0)
+df1 = df1.set_index('Issue')
+docs = df1.drop(arrayOfNamesWords, axis=0)
+words = df1.drop(arrayOfNamesDocs, axis=0)
 # print(words.iloc[0].values[0])
-# clusters = df1.drop(['Words', 'Docs'], axis=0)
+clusters = df1.drop(['Words', 'Docs'], axis=0)
 # print(clusters)
 
 
@@ -126,61 +129,18 @@ toggle_time_params = {
 reference = datetime(2016, 12, 30)
 # reference = datetime.now()
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
-num_days_range = 7  # week, set some way to toggle this instead of hardcoded
-date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
-date_filtered_df['Components'] = date_filtered_df['Components'].apply(
-    lambda x: ast.literal_eval(x))  # gives warning but works, fix later
-date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
-# print(date_filtered_df['Issues'])
-component_df = pd.Series([])
-issue_df = pd.Series([])
-comp_response_id_map = dict()
-issue_response_id_map = dict()
-for day in range(num_days_range):
-    day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
-    # count docs with components
-    new_comp_info = day_df['Components'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_comp_info = pd.concat([new_comp_info,
-                               date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
-                                   lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    comp_response_id_map['Day ' + str(day + 1)] = dict()
-    comps = new_comp_info.index.values
-    for comp in comps:
-        comp_response_id_map['Day ' + str(day + 1)][comp] = [];
-    for index, row in day_df.iterrows():
-        for comp in row['Components']:
-            comp_response_id_map['Day ' + str(day + 1)][comp].append(
-                row['Response ID'])  # TODO: can use map functions to make this faster
-        if len(row['Components']) == 0 and 'No Label' in comps:
-            comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
-    component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
-    new_issue_info = day_df['Issues'].apply(
-        lambda x: pd.Series(x).value_counts()).sum()
-    # count docs with no assigned components
-    new_issue_info = pd.concat([new_issue_info,
-                                date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
-                                    lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
-    issue_response_id_map['Day ' + str(day + 1)] = dict()
-    issues = new_issue_info.index.values
-    for issue in issues:
-        issue_response_id_map['Day ' + str(day + 1)][issue] = [];
-
-    for index, row in day_df.iterrows():
-        for issue in row['Issues']:
-            issue_response_id_map['Day ' + str(day + 1)][issue].append(row['Response ID'])
-        if len(row['Issues']) == 0 and 'No Label' in issues:
-            issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
-    issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
 
 
-def initCompDF(results_df, num_days_range = 7):
+def initCompDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Components'] = date_filtered_df['Components'].apply(
         lambda x: ast.literal_eval(x))  # gives warning but works, fix later
+
     component_df = pd.Series([])
+    comp_response_id_map = dict()
+
     for day in range(num_days_range):
+        day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
         # count docs with components
         new_comp_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
             lambda x: pd.Series(x).value_counts()).sum()
@@ -189,15 +149,32 @@ def initCompDF(results_df, num_days_range = 7):
                                    date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Components'].apply(
                                        lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
         component_df = pd.concat([component_df, new_comp_info.rename('Day ' + str(day + 1))], axis=1)
+
+        comp_response_id_map['Day ' + str(day + 1)] = dict()
+        comps = new_comp_info.index.values
+        for comp in comps:
+            comp_response_id_map['Day ' + str(day + 1)][comp] = []
+
+        for index, row in day_df.iterrows():
+            for comp in row['Components']:
+                comp_response_id_map['Day ' + str(day + 1)][comp].append(
+                    row['Response ID'])  # TODO: can use map functions to make this faster
+            if len(row['Components']) == 0 and 'No Label' in comps:
+                comp_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
+
     component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
-    return component_df
+    return component_df, comp_response_id_map
 
 
-def initIssueDF(results_df, num_days_range = 7):
+def initIssueDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
     date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
+
     issue_df = pd.Series([])
+    issue_response_id_map = dict()
+
     for day in range(num_days_range):
+        day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
         new_issue_info = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
             lambda x: pd.Series(x).value_counts()).sum()
         # count docs with no assigned components
@@ -205,28 +182,41 @@ def initIssueDF(results_df, num_days_range = 7):
                                     date_filtered_df[date_filtered_df['Day Difference'] == day + 1]['Issues'].apply(
                                         lambda x: len(x)).value_counts().loc[[0]].rename({0: 'No Label'})])
         issue_df = pd.concat([issue_df, new_issue_info.rename('Day ' + str(day + 1))], axis=1)
+
+        issue_response_id_map['Day ' + str(day + 1)] = dict()
+        issues = new_issue_info.index.values
+        for issue in issues:
+            issue_response_id_map['Day ' + str(day + 1)][issue] = [];
+
+        for index, row in day_df.iterrows():
+            for issue in row['Issues']:
+                issue_response_id_map['Day ' + str(day + 1)][issue].append(row['Response ID'])
+            if len(row['Issues']) == 0 and 'No Label' in issues:
+                issue_response_id_map['Day ' + str(day + 1)]['No Label'].append(row['Response ID'])
     # Fill in component and issue df with 0 for Nan (?)
     issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
-    return issue_df
+    return issue_df, issue_response_id_map
 
 
-def updateComponentGraph(component_df):
-    traces_component = []
+def updateGraph(df, title, num_days_range = 7):
+    filtered_df = df.iloc[:, 0:num_days_range]
+    traces = []
     # Checking df for values:
-    for index, row in component_df.iterrows():
+    for index, row in filtered_df.iterrows():
         # print(list(row.keys()))
-        traces_component.append(go.Bar(
+        traces.append(go.Bar(
             x=list(row.keys()),
             y=row.values,
             name=index,
+            customdata=[index] * len(list(row.keys())),
             # hoverinfo='none',
             # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
             # customdata=docs.iloc[0].values
         ))
     # Stacked Bar Graph figure - components:
-    layout_component = go.Layout(
+    layout = go.Layout(
         barmode='stack',
-        title='Components Over Time',
+        title=title,
         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
         xaxis=dict(
             # showticklabels=False,
@@ -236,45 +226,16 @@ def updateComponentGraph(component_df):
             title='Count of Docs'
         )
     )
-    fig_component = dict(data=traces_component, layout=layout_component)
-    return fig_component
-
-
-def updateIssuesGraph(issue_df):
-    traces_issue = []
-    # Checking df for values:
-    for index, row in issue_df.iterrows():
-        # print(list(row.keys()))
-        traces_issue.append(go.Bar(
-            x=list(row.keys()),
-            y=row.values,
-            name=index,
-            # hoverinfo='none',
-            # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-            # customdata=docs.iloc[0].values
-        ))
-    # Stacked Bar Graph figure - issues:
-    layout_issue = go.Layout(
-        barmode='stack',
-        title='Issues Over Time',
-        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-        xaxis=dict(
-            # showticklabels=True,
-            title='Time'
-        ),
-        yaxis=dict(
-            title='Count of Docs'
-        )
-    )
-    fig_issue = dict(data=traces_issue, layout=layout_issue)
-    return fig_issue
+    fig = dict(data=traces, layout=layout)
+    return fig
 
 
 # CREATE FIRST TWO GRAPHS
-component_df = initCompDF(results_df)
-issue_df = initIssueDF(results_df)
-fig_component = updateComponentGraph(component_df)
-fig_issue = updateIssuesGraph(issue_df)
+day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
+component_df, comp_response_id_map = initCompDF(results2_df, day_range)
+issue_df, issue_response_id_map = initIssueDF(results2_df, day_range)
+fig_component = updateGraph(component_df, 'Components Over Time', 7)
+fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
 
 def mergedGraph():
@@ -367,8 +328,40 @@ def updateIssuesMetricsGraph():
     return fig_issue_metrics
 
 
-fig_comp_metrics = updateCompMetricsGraph()
-fig_issue_metrics = updateIssuesMetricsGraph()
+# fig_comp_metrics = updateCompMetricsGraph()
+# fig_issue_metrics = updateIssuesMetricsGraph()
+# DRILLDOWN FUNCTIONS
+# def drilldownClustering(df):
+#     results = runDrilldown(df)
+#     results = results.transpose()
+#     fig = clusteringBarGraph(results, 'Clustering Analysis')
+#     return fig
+# def clusteringBarGraph(df, title):
+#     traces = []
+#     # Get Count, Words, Phrases
+#     count = list(df.loc['Count'].values)
+#     words = list(df.loc['Words'].values)
+#     phrases = list(df.loc['Phrases'].values)
+#     traces = [go.Bar(
+#             x=words,
+#             y=count,
+#             text = phrases,
+#             hoverinfo='text',
+#         )]
+#     layout = go.Layout(
+#         title=title,
+#         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+#         xaxis=dict(
+#             # showticklabels=False,
+#             title='Time'
+#         ),
+#         yaxis=dict(
+#             title='Count of Docs'
+#         )
+#     )
+#     fig = dict(data=traces, layout=layout)
+#     return fig
+
 
 #prep data for displaying in stacked binary sentiment graph over time
 #Grab unique dates from results_df
@@ -387,8 +380,7 @@ sites_df = sites_df.sort_values(by=['Count'], ascending=False)
 
 # Page styling - sample:
 PAGE_SIZE = 40
-# app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
-app = dash.Dash(__name__)
+app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
 # suppress exception of assigning callbacks to components that are genererated
 # by other callbacks
 app.config['suppress_callback_exceptions'] = True
@@ -453,7 +445,46 @@ app.layout = html.Div([
               [dash.dependencies.Input('url', 'pathname')])
 def display_page(pathname):
     print('current path', pathname)
-    if pathname == '/sites':
+    # this is where you put the stuff
+    # set the data you need into a variable inside the click callback on the graph (the same place where you open the modal)
+    # reference that variable here to build the page contents
+    if pathname == '/list':
+        # global_sites_list_df is the dataframe that contains the data that appears in the modal
+        # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
+        global global_sites_list_df
+        print(global_sites_list_df)
+        global_sites_list_df['Day Difference'] = (reference - pd.to_datetime(global_sites_list_df['Date Submitted'],
+                                                                             format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+        day_range_site_list = min(global_sites_list_df['Day Difference'].max(), toggle_time_params['max'])
+
+        # component_df_list, comp_response_id_map_list = initCompDF(global_sites_list_df, day_range_site_list)
+        # issue_df_list, issue_response_id_map_list = initIssueDF(global_sites_list_df, day_range_site_list)
+        fig_component_list = updateGraph(global_sites_list_df, 'Components Over Time', 7)
+        fig_issue_list = updateGraph(global_sites_list_df, 'Issues Over Time', 7)
+        return html.Div([
+            html.Div(id='comp_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='comp_slider_output'),
+                         dcc.Slider(id='comp_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='comp-graph', figure=fig_component_list),
+                     ]
+                     ),
+            html.Div(id='issue_container',
+                     className='one-half column',
+                     children=[
+                         html.Div(id='issue_slider_output'),
+                         dcc.Slider(id='issue_time_slider',
+                                    min=toggle_time_params['min'], max=toggle_time_params['max'],
+                                    step=toggle_time_params['step'], value=toggle_time_params['default'],
+                                    marks=toggle_time_params['marks']),
+                         dcc.Graph(id='issue-graph', figure=fig_issue_list),
+                     ]),
+        ])
+    elif pathname == '/sites':
         return sites_layout
     elif pathname == '/sentiment':
         return sentiment_layout
@@ -467,6 +498,14 @@ def display_page(pathname):
         return search_layout
     else:
         return sites_layout
+
+
+#prep data for displaying in stacked binary sentiment graph over time
+#Grab unique dates from results_df
+results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
+unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
+common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+common_df = common_df.sort_values(by=['count'], ascending=False)
 
 
 @app.callback(Output('url', 'pathname'),
@@ -549,7 +588,7 @@ list_page_children = []
 #     )
 # ])
 sites_layout = html.Div([
-    html.H2('Mentioned Sites'),
+    html.H3('Sites'),
     html.Div([
         html.Label('Choose Date Range:'),
         dcc.DatePickerRange(
@@ -565,6 +604,8 @@ sites_layout = html.Div([
         id='mentioned-site-graph',
         figure={
             'data': [{
+                # 'x': common_df[common_df.columns[0]],
+                # 'y': common_df[common_df.columns[1]],
                 'x': sites_df['Formatted'],
                 'y': sites_df['Count'],
                 # 'customdata': results_df['Sites'].unique()[1:],
@@ -577,7 +618,8 @@ sites_layout = html.Div([
                 },
                 'yaxis': {
                     'title': 'Number of Feedback'
-                }
+                },
+            'font': dict(family='Courier New, monospace', size=18, color='#7f7f7f'),
             }
         }
     ),
@@ -615,7 +657,23 @@ sites_layout = html.Div([
             'selector': '.dash-cell div.dash-cell-value',
             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
         }],
-    )
+    ),
+    html.Div([  # entire modal
+        # modal content
+        html.Div([
+            html.Button("Close", id="close-modal-site", className="close", n_clicks=0),
+            html.A("Link to external site", href='/list', target="_blank"), # close button
+            html.H2("Selected Feedback Data Points"),  # Header
+            dte.DataTable(  # Add fixed header row
+                id='modal-site-table',
+                rows=[{}],
+                row_selectable=True,
+                filterable=True,
+                sortable=True,
+                selected_row_indices=[],
+            ),
+        ], id='modal-content-site', className='modal-content')
+    ], id='modal-site', className='modal'),
 ])
 
 
@@ -737,46 +795,106 @@ sentiment_layout = html.Div([
             className='six columns',
             id='current-content'
         )
-    ]),
-    html.Div(id="bitch-div"),
-    html.Div(id="bitch-div2")
+    ])
+    # html.Div(id="bitch-div"),
+    # html.Div(id="bitch-div2")
 ])
 
 
 geoview_layout = html.Div([
     html.H2('Geographical View'),
-    dcc.Graph(id='graph', figure=fig),
+    dcc.Graph(id='country-graph', figure=fig),
     # html.Div(id="bitch-div"),
     # html.Div(id="bitch-div2")
 ])
 
 
 components_layout = html.Div([
-    html.H2('Components'),
-    html.Div(id = 'comp_slider_output'),
-    dcc.Slider(id='comp_time_slider',
-               min=toggle_time_params['min'], max=toggle_time_params['max'],
-               step=toggle_time_params['step'], value=toggle_time_params['default'],
-               marks=toggle_time_params['marks']),
-    dcc.Graph(id='graph2', figure=fig_component),
+    # html.H2('Components'),
+    # html.Div(id = 'comp_slider_output'),
+    # dcc.Slider(id='comp_time_slider',
+    #            min=toggle_time_params['min'], max=toggle_time_params['max'],
+    #            step=toggle_time_params['step'], value=toggle_time_params['default'],
+    #            marks=toggle_time_params['marks']),
+    # dcc.Graph(id='graph2', figure=fig_component),
+    html.Div(id='comp_container',
+             className='one-half column',
+             children=[
+                 html.Div(id='comp_slider_output'),
+                 dcc.Slider(id='comp_time_slider',
+                            min=toggle_time_params['min'], max=toggle_time_params['max'],
+                            step=toggle_time_params['step'], value=toggle_time_params['default'],
+                            marks=toggle_time_params['marks']),
+                 dcc.Graph(id='comp-graph', figure=fig_component),
+             ]
+    ),
+    html.Div(className='row', children=[
+        html.Div([
+            html.Div(id='click-data'),  # Doesn't do anything right now
+        ]),
+    ]),
+    html.Div([  # entire modal
+        # modal content
+        html.Div([
+            html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),
+            html.A("Link to external site", href='/list', target="_blank"),  # close button
+            html.H2("Selected Feedback Data Points"),  # Header
+            dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
+            dte.DataTable(  # Add fixed header row
+                id='modal-comp-issue-table',
+                rows=[{}],
+                row_selectable=True,
+                filterable=True,
+                sortable=True,
+                selected_row_indices=[],
+            ),
+        ], id='modal-content-comp-issue', className='modal-content')
+    ], id='modal-comp-issue', className='modal'),
 ])
 
 
 issues_layout = html.Div([
-    html.H2('Issues'),
-    html.Div(id='issue_slider_output'),
-    dcc.Slider(id='issue_time_slider',
-               min=toggle_time_params['min'], max=toggle_time_params['max'],
-               step=toggle_time_params['step'], value=toggle_time_params['default'],
-               marks=toggle_time_params['marks']),
-    dcc.Graph(id='graph3', figure=fig_issue),
+    # html.H2('Issues'),
+    # html.Div(id='issue_slider_output'),
+    # dcc.Slider(id='issue_time_slider',
+    #            min=toggle_time_params['min'], max=toggle_time_params['max'],
+    #            step=toggle_time_params['step'], value=toggle_time_params['default'],
+    #            marks=toggle_time_params['marks']),
+    # dcc.Graph(id='graph3', figure=fig_issue),
+    html.Div(id='issue_container',
+             className='one-half column',
+             children=[
+                 html.Div(id='issue_slider_output'),
+                 dcc.Slider(id='issue_time_slider',
+                            min=toggle_time_params['min'], max=toggle_time_params['max'],
+                            step=toggle_time_params['step'], value=toggle_time_params['default'],
+                            marks=toggle_time_params['marks']),
+                 dcc.Graph(id='issue-graph', figure=fig_issue),
+    ]),
     # dcc.Graph(id='graph4', figure=fig_comp_metrics),
     # dcc.Graph(id='graph5', figure=fig_issue_metrics),
-    # html.Div(className='row', children=[
-    #     html.Div([
-    #         html.Div(id='click-data'),  # Doesn't do anything right now
-    #     ]),
-    # ])
+    html.Div(className='row', children=[
+        html.Div([
+            html.Div(id='click-data'),  # Doesn't do anything right now
+        ]),
+    ]),
+    html.Div([  # entire modal
+        # modal content
+        html.Div([
+            html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),
+            html.A("Link to external site", href='/list', target="_blank"),  # close button
+            html.H2("Selected Feedback Data Points"),  # Header
+            dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
+            dte.DataTable(  # Add fixed header row
+                id='modal-comp-issue-table',
+                rows=[{}],
+                row_selectable=True,
+                filterable=True,
+                sortable=True,
+                selected_row_indices=[],
+            ),
+        ], id='modal-content-comp-issue', className='modal-content')
+    ], id='modal-comp-issue', className='modal'),
 ])
 
 
@@ -796,52 +914,62 @@ search_layout = html.Div([
 ])
 
 
-@app.callback(
-    Output('bitch-div2', 'children'),
-    [Input('issue-graph', 'clickData')])
-def display_click_data(clickData):
-    if (len(clickData['points']) == 1):
-        day = clickData['points'][0]['x']
-        issue = clickData['points'][0]['customdata']
-        ids = issue_response_id_map[day][issue]
-        df = results_df[results_df['Response ID'].isin(ids)]
-        return df
+# @app.callback(
+#     Output('bitch-div2', 'children'),
+#     [Input('issue-graph', 'clickData')])
+# def display_click_data(clickData):
+#     if (len(clickData['points']) == 1):
+#         day = clickData['points'][0]['x']
+#         issue = clickData['points'][0]['customdata']
+#         ids = issue_response_id_map[day][issue]
+#         df = results_df[results_df['Response ID'].isin(ids)]
+#         return df
+#     else:
+#         return ''
+
+
+# Show Comp/Issue Modal on click
+@app.callback(Output('modal-comp-issue', 'style'),
+              [Input('comp-graph', 'clickData'),
+               Input('issue-graph', 'clickData')])
+def display_modal(compClickData, issueClickData):
+    if compClickData or issueClickData:
+        print('block')
+        return {'display': 'block'}
     else:
-        return ''
+        return {'display': 'none'}
 
 
-@app.callback(
-    Output('bitch-div', 'children'),
-    [Input('comp-graph', 'clickData')])
-def display_click_data(clickData):
-    if (len(clickData['points']) == 1):
-        day = clickData['points'][0]['x']
-        component = clickData['points'][0]['customdata']
-        ids = comp_response_id_map[day][component]
-        df = results_df[results_df['Response ID'].isin(ids)]
-        return df
-    else:
-        return ''
-    # print(clickData['points'][0])
-    # print(comp_response_id_map)
-    # if (clickData):
-    #     htmlArr = []
-    #     data = clickData['points'][0]['customdata']
-    #     docData = json.loads(json.dumps(ast.literal_eval(data)))
-    #     for key, value in docData.items():
-    #         docArray = []
-    #         for doc in value:
-    #             docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-    #         htmlArr.append(
-    #             html.Div([
-    #                 html.H4(key),
-    #                 html.Div(children=docArray)
-    #             ])
-    #         )
-    #     return htmlArr
-    # return ''
+# Drilldown Clustering Bar Graph
+@app.callback(Output('modal-cluster-graph', 'figure'),
+              [Input('comp-graph', 'clickData'),
+               Input('issue-graph', 'clickData')])
+def display_modal(compClickData, issueClickData):
+    if compClickData:
+        clickData = compClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            ids = comp_response_id_map[day][component]
+            dff = sr_df[sr_df['Response ID'].isin(ids)]
+        else:
+            return
+    elif issueClickData:
+        clickData = issueClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            issue = clickData['points'][0]['customdata']
+            ids = issue_response_id_map[day][issue]
+            dff = sr_df[sr_df['Response ID'].isin(ids)]
+        else:
+            return
+    # fig = drilldownClustering(dff)
+    return
 
 
+# Scatterplot Drilldown click
 @app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
                                          Input('close-modal', 'n_clicks_timestamp')])
 def display_modal(openm, closem):
@@ -883,19 +1011,19 @@ def update_modal_table(pagination_settings, sorting_settings, openm, closem, sel
     Output('current-content', 'children'),
     [Input('trends-scatterplot', 'hoverData')])
 def display_hover_data(hoverData):
-    # get the row from the results
-    try:
-        r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
-        return html.H4(
-            "The comment from {} is '{}'. The user was {}.".format(
-                r.iloc[0]['Date Submitted'],
-                r.iloc[0]['Feedback'],
-                r.iloc[0]['Binary Sentiment']
-            )
-        )
-    except TypeError:
-        print('no hover data selected yet')
+    # try: # Get the row from the results
+    #     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+    #     return html.H4(
+    #         "The comment from {} is '{}'. The user was {}.".format(
+    #             r.iloc[0]['Date Submitted'],
+    #             r.iloc[0]['Feedback'],
+    #             r.iloc[0]['Binary Sentiment']
+    #         )
+    #     )
+    # except TypeError:
+    #     print('no hover data selected yet')
     # return ''
+    return
 
 
 @app.callback(
@@ -921,6 +1049,38 @@ def display_selected_trend_data(selectedData):
     }
 
 
+@app.callback(
+    Output('modal-site-table', 'rows'),
+    [Input('mentioned-site-graph', 'selectedData')])
+def update_site_modal_table(selectedData):
+    print('here', selectedData)
+    if(selectedData):
+        # ids = list(d['customdata'] for d in selectedData['points'])
+        sites = list(d['customdata'] for d in selectedData['points'])
+        dff = search_df[search_df['Sites'].isin(sites)]
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        dff.columns = cnamesnew
+        return dff.to_dict('rows')
+    return ''
+
+
+@app.callback(Output('modal-site', 'style'),
+              [Input('close-modal-site', 'n_clicks'),
+               Input('mentioned-site-graph', 'selectedData')])
+def display_modal(closeClicks, selectedData):
+    global siteCloseCount
+    print('herehere', closeClicks, siteCloseCount)
+    if closeClicks > siteCloseCount:
+        siteCloseCount = closeClicks
+        return {'display': 'none'}
+    elif selectedData:
+        return {'display': 'block'}
+
+
 # Component DF Slider Callback
 @app.callback(
     dash.dependencies.Output('comp_slider_output', 'children'),
@@ -931,11 +1091,10 @@ def update_output(value):
 
 # Component DF Time Toggle Callback
 @app.callback(
-    dash.dependencies.Output('graph2', 'figure'),
+    dash.dependencies.Output('comp-graph', 'figure'),
     [dash.dependencies.Input('comp_time_slider', 'value')])
 def update_output(value):
-    component_df = initCompDF(results_df, value)
-    fig_component = updateComponentGraph(component_df)
+    fig_component = updateGraph(component_df, 'Components Over Time', value)
     return fig_component
 
 
@@ -943,26 +1102,26 @@ divs = []
 
 
 # Component DF Slider Callback
-@app.callback(
-    Output('click-data', 'children'),
-    [Input('graph2', 'clickData')])
-def display_click_data(clickData):
-    if (clickData):
-        htmlArr = []
-        data = clickData['points'][0]['customdata']
-        docData = json.loads(json.dumps(ast.literal_eval(data)))
-        for key, value in docData.items():
-            docArray = []
-            for doc in value:
-                docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
-            htmlArr.append(
-                html.Div([
-                    html.H4(key),
-                    html.Div(children=docArray)
-                ])
-            )
-        return htmlArr
-    return ''
+# @app.callback(
+#     Output('click-data', 'children'),
+#     [Input('graph2', 'clickData')])
+# def display_click_data(clickData):
+#     if (clickData):
+#         htmlArr = []
+#         data = clickData['points'][0]['customdata']
+#         docData = json.loads(json.dumps(ast.literal_eval(data)))
+#         for key, value in docData.items():
+#             docArray = []
+#             for doc in value:
+#                 docArray.append(html.Div(doc, style={'outline': '1px dotted green'}))
+#             htmlArr.append(
+#                 html.Div([
+#                     html.H4(key),
+#                     html.Div(children=docArray)
+#                 ])
+#             )
+#         return htmlArr
+#     return ''
 
 
 @app.callback(
@@ -974,11 +1133,10 @@ def update_output(value):
 
 # Component DF Time Toggle Callback
 @app.callback(
-    dash.dependencies.Output('graph3', 'figure'),
+    dash.dependencies.Output('issue-graph', 'figure'),
     [dash.dependencies.Input('issue_time_slider', 'value')])
 def update_output(value):
-    issue_df = initIssueDF(results_df, value)
-    fig_issue = updateComponentGraph(issue_df)
+    fig_issue = updateGraph(issue_df, 'Issues Over Time', value)
     return fig_issue
 
 

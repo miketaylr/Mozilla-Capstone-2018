@@ -48,14 +48,14 @@ def text_preparation(filename):
 
 def text_preparation_unlabelled(filename):
     num_records = 5000
-    survey_cols = ["Response ID", "Time Started", "Date Submitted",
-                   "Status", "Language", "Referer", "Extended Referer", "User Agent",
-                   "Extended User Agent", "Longitude", "Latitude",
-                   "Country", "City", "State/Region", "Postal",
-                   "Binary Sentiment", "OS", "Positive Feedback",
-                   "Negative Feedback", "Relevant Site", "compound", "neg",
-                   "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback"]
-    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+    # survey_cols = ["Response ID", "Time Started", "Date Submitted",
+    #                "Status", "Language", "Referer", "Extended Referer", "User Agent",
+    #                "Extended User Agent", "Longitude", "Latitude",
+    #                "Country", "City", "State/Region", "Postal",
+    #                "Binary Sentiment", "OS", "Feedback",
+    #                "Relevant Site", "compound", "Sites", "Issues", "Components"]
+    # Read All Columns
+    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records)
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
@@ -72,8 +72,7 @@ def text_preparation_unlabelled(filename):
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
     stemmer = StemFilter()
-    combined = row['Positive Feedback'] + row['Negative Feedback']  # Feedback will either be positive or negative
-                                                                    # can filter for negative only later on
+    combined = row['Feedback']
     lemmList = [word.decode('utf-8').split('/')[0] for word in lemmatize(combined)]
     tokenWords = [token.text for token in tokenizer(combined)]
     stemWords = [stemmer.stemfn(word) for word in tokenWords]
