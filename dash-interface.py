@@ -11,6 +11,7 @@ import ast
 import json
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
+import numpy as np
 
 
 # external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -25,6 +26,9 @@ results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
 #                         , "Negative Feedback", "Relevant Site", "compound"\
 #                         , "Sites", "Issues", "Components"]]
 search_df = results_df
+for index, row in search_df.iterrows():
+    if pd.isnull(row['Sites']):
+        search_df.at[index, 'Sites'] = 'None Found'
 df = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 component_df = pd.read_csv('./data/component_graph_data.csv')
@@ -365,6 +369,11 @@ def updateIssuesMetricsGraph():
 fig_comp_metrics = updateCompMetricsGraph()
 fig_issue_metrics = updateIssuesMetricsGraph()
 
+#prep data for displaying in stacked binary sentiment graph over time
+#Grab unique dates from results_df
+results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
+unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
+common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -380,14 +389,24 @@ The 2nd part describes the interactivty of the app
 '''
 tabs_styles = {
     'height': '44px',
-    'width': '350px',
+    'width': '600px',
     'display': 'inline-block'
 }
 tab_style = {
     # 'borderBottom': '1px solid #d6d6d6',
+    'margin': '5px 0px 5px 0px',
     'padding': '11px',
     'backgroundColor': 'rgb(30,30,30)',
     'border': 'none',
+}
+sites_tab_style = {
+    # 'borderBottom': '1px solid #d6d6d6',
+    'margin': '5px 0px 5px 0px',
+    'padding': '11px 14px 11px 14px',
+    'backgroundColor': 'rgb(30,30,30)',
+    'font-weight': 'bold',
+    'border-style': 'solid',
+    'border-width': '1px',
 }
 tab_selected_style = {
     'border': 'none',
@@ -400,279 +419,316 @@ colors = {
     'background': '#111111',
     'text': '#7FDBFF'
 }
-
-
+app.config.suppress_callback_exceptions = True
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
-])
-
-
-list_page_children = []
-
-
-main_layout = html.Div(children=[
     html.H1(
         children='Mozilla Customer Analytics',
         id="header",
     ),
-    dcc.Tabs(id="tabs-styled-with-inline", value='tab-1', children=[
-        dcc.Tab(label='Overview', value='tab-1', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Categories', value='tab-2', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Sites', value='tab-3', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='tab-4', style=tab_style, selected_style=tab_selected_style),
+    dcc.Tabs(id="tabs-styled-with-inline", value='/sites', children=[
+        dcc.Tab(label='Sentiment', value='/sentiment', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Geo-View', value='/geoview', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Components', value='/components', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Issues', value='/issues', style=tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='SITES', value='/sites', style=sites_tab_style, selected_style=tab_selected_style),
+        dcc.Tab(label='Search', value='/search', style=tab_style, selected_style=tab_selected_style),
     ], style=tabs_styles),
-    html.Div(id='tabs-content-inline'),
-    # html.Div(children='Sentiment Breakdown using Dash/Plotly', style={
-    #     'textAlign': 'center',
-    #     'color': colors['text']
-    # })  # This is just a line at the bottom of each page..... Take it out?
-    html.Div(id="bitch-div"),
-    html.Div(id="bitch-div2")
+    html.H3('   '),  # Need vertical space for the tabs to not be overlapped by the page content
+    html.Div(id='page-content')
 ])
 
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
               [dash.dependencies.Input('url', 'pathname')])
 def display_page(pathname):
-    if pathname == '/list':
-        return main_layout
-    elif pathname == '/page-2':
-        return main_layout
+    print('current path', pathname)
+    if pathname == '/sites':
+        return sites_layout
+    elif pathname == '/sentiment':
+        return sentiment_layout
+    elif pathname == '/geoview':
+        return geoview_layout
+    elif pathname == '/components':
+        return components_layout
+    elif pathname == '/issues':
+        return issues_layout
+    elif pathname == '/search':
+        return search_layout
     else:
-        return main_layout
+        return sites_layout
 
 
-#prep data for displaying in stacked binary sentiment graph over time
-#Grab unique dates from results_df
-results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
-unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
-common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
-
-
-@app.callback(Output('tabs-content-inline', 'children'),
+@app.callback(Output('url', 'pathname'),
               [Input('tabs-styled-with-inline', 'value')])
-def render_content(tab):
-    if tab == 'tab-1':
-        return html.Div([
-            html.H3('Overview & Recent Trends'),
-            dcc.Graph(id='graph', figure=fig),
-            dcc.RadioItems(
-                id='bin',
-                options=[{'label': i, 'value': i} for i in [
-                    'Yearly', 'Monthly', 'Weekly', 'Daily'
-                ]],
-                value='Daily',
-                labelStyle={'display': 'inline'}
-            ),
-            html.Div([
-                html.Div(
-                    className='six columns',
-                    children=dcc.Graph(
-                       id='binary-sentiment-ts',
-                       figure={
-                                'data': [
-                                    {
-                                        'x': unique_dates,
-                                        'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
-                                            [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                                        'type': 'bar',
-                                        'name': "Sad"
-                                    },
-                                    {
-                                    'x': unique_dates,
-                                    'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                                    'type': 'bar',
-                                    'name': "Happy"
-                                    }
-                                ],
-                                'layout': {
-                                    'plot_bgcolor': colors['background'],
-                                    'paper_bgcolor': colors['background'],
-                                    'barmode': 'stack',
-                                    'font': {
-                                        'color': colors['text']
-                                    }
-                                }
-                            }
-                        )
-                    ),
-                html.Div(
-                    className='six columns',
-                    children=dcc.Graph(
-                            id='trends-scatterplot',
-                            figure={
-                                'data': [{
-                                    'x': results_df['Date Submitted'],
-                                    'y': results_df['compound'],
-                                    'customdata': results_df['Response ID'],
-                                    'type': 'line',
-                                    'name': "Sentiment score",
-                                    'mode': 'markers',
-                                    'marker': {'size': 12}
-                                }],
-                                'layout': {
-                                     'title': "Compound Sentiment Score Over Time"
-                                }
-                            }
-                    )
-                )
-            ]),
-            html.Div([
-                html.Div(
-                    className='six columns',
-                    children=[
-                        # dcc.Graph(id='trend-data-histogram'),
-                        html.Button('Display Selected Data', id='display_data', n_clicks_timestamp=0)
-                    ]
-                ),
-                html.Div([ #entire modal
-                        #modal content
-                             html.Div([
-                                    html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
-                                    html.H2("Selected Feedback Data Points"),#Header
-                                    dt.DataTable(
-                                         id='modal-table',
-                                         columns=[{"name": i, "id": i} for i in search_df.columns],
-                                         pagination_settings={
-                                             'current_page': 0,
-                                             'page_size': PAGE_SIZE
-                                         },
-                                         pagination_mode='be',
-                                         sorting='be',
-                                         sorting_type='single',
-                                         sorting_settings=[],
-                                         n_fixed_rows=1,
-                                         style_table={
-                                             'overflowX': 'scroll',
-                                             'maxHeight': '800',
-                                             'overflowY': 'scroll'
-                                         },
-                                         style_cell={
-                                             'minWidth': '50'
-                                                         'px', 'maxWidth': '200px',
-                                             'whiteSpace': 'no-wrap',
-                                             'overflow': 'hidden',
-                                             'textOverflow': 'ellipsis',
-                                         },
-                                         style_cell_conditional=[
-                                             {
-                                                 'if': {'column_id': 'Feedback'},
-                                                 'textAlign': 'left'
-                                             }
-                                         ],
-                                         css=[{
-                                             'selector': '.dash-cell div.dash-cell-value',
-                                             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+def update_url(tab):  # bit of a hacky way of updating URL for now.
+    print("clicked tab", tab)
+    return tab
 
-                                         }],
-                                    )
-                             ], id='modal-content', className='modal-content')
-                         ], id='modal', className='modal'),
-                html.Div(
-                    className='six columns',
-                    id='current-content'
-                )
-            ])
-        ])
-    elif tab == 'tab-2':
-        return html.Div([
-            html.Div(id = 'comp_slider_output'),
-            dcc.Slider(id='comp_time_slider',
-                       min=toggle_time_params['min'], max=toggle_time_params['max'],
-                       step=toggle_time_params['step'], value=toggle_time_params['default'],
-                       marks=toggle_time_params['marks']),
-            dcc.Graph(id='graph2', figure=fig_component),
 
-            html.Div(id='issue_slider_output'),
-            dcc.Slider(id='issue_time_slider',
-                       min=toggle_time_params['min'], max=toggle_time_params['max'],
-                       step=toggle_time_params['step'], value=toggle_time_params['default'],
-                       marks=toggle_time_params['marks']),
-            dcc.Graph(id='graph3', figure=fig_issue),
-            dcc.Graph(id='graph4', figure=fig_comp_metrics),
-            dcc.Graph(id='graph5', figure=fig_issue_metrics),
-            html.Div(className='row', children=[
-                html.Div([
-                    html.Div(id='click-data'),  # Doesn't do anything right now
-                ]),
-            ])
-        ])
-    elif tab == 'tab-3':
-        return html.Div([
-            html.H3('Sites'),
-            dcc.Graph(
-                id='mentioned-site-graph',
-                figure={
-                    'data': [{
-                        'x': common_df[common_df.columns[0]],
-                        'y': common_df[common_df.columns[1]],
-                        'customdata': results_df['Sites'].unique()[1:],
-                        'type': 'bar'
-                    }],
-                    'layout': {
-                        'title': "Feedback by Mentioned Site(s)",
-                        'xaxis': {
-                            'title': 'Mentioned Site(s)'
-                        },
-                        'yaxis': {
-                            'title': 'Number of Feedback'
+list_page_children = []
+
+
+sites_layout = html.Div([
+    html.H2('Sites'),
+    html.Div([
+        html.Label('Choose Date Range:'),
+        dcc.DatePickerRange(
+            id='sites-date-range',
+            min_date_allowed=results_df['Date Submitted'].min(),
+            max_date_allowed=results_df['Date Submitted'].max(),
+            start_date=results_df['Date Submitted'].min(),
+            end_date=results_df['Date Submitted'].max()
+        )
+    ]),
+
+    dcc.Graph(
+        id='mentioned-site-graph',
+        figure={
+            'data': [{
+                'x': common_df[common_df.columns[0]],
+                'y': common_df[common_df.columns[1]],
+                'customdata': results_df['Sites'].unique()[1:],
+                'type': 'bar'
+            }],
+            'layout': {
+                'title': "Feedback by Mentioned Site(s)",
+                'xaxis': {
+                    'title': 'Mentioned Site(s)'
+                },
+                'yaxis': {
+                    'title': 'Number of Feedback'
+                }
+            }
+        }
+    ),
+    dt.DataTable(
+        id='common-site-table',
+        columns=[{"name": i, "id": i} for i in search_df.columns],
+        pagination_settings={
+            'current_page': 0,
+            'page_size': PAGE_SIZE
+        },
+        pagination_mode='be',
+        sorting='be',
+        sorting_type='single',
+        sorting_settings=[],
+        n_fixed_rows=1,
+        style_table={
+            'overflowX': 'scroll',
+            'maxHeight': '800',
+            'overflowY': 'scroll'
+        },
+        style_cell={
+            'minWidth': '50'
+                        'px', 'maxWidth': '200px',
+            'whiteSpace': 'no-wrap',
+            'overflow': 'hidden',
+            'textOverflow': 'ellipsis',
+        },
+        style_cell_conditional=[
+            {
+                'if': {'column_id': 'Feedback'},
+                'textAlign': 'left'
+            }
+        ],
+        css=[{
+            'selector': '.dash-cell div.dash-cell-value',
+            'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+        }],
+    )
+])
+
+
+sentiment_layout = html.Div([
+    html.H2('Sentiment'),
+    # dcc.RadioItems(
+    #     id='bin',
+    #     options=[{'label': i, 'value': i} for i in [
+    #         'Yearly', 'Monthly', 'Weekly', 'Daily'
+    #     ]],
+    #     value='Daily',
+    #     labelStyle={'display': 'inline'}
+    # ),
+    html.Div([
+        html.Div(
+            className='six columns',
+            children=dcc.Graph(
+               id='binary-sentiment-ts',
+               figure={
+                        'data': [
+                            {
+                                'x': unique_dates,
+                                'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
+                                    [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                                'type': 'bar',
+                                'name': "Sad"
+                            },
+                            {
+                            'x': unique_dates,
+                            'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
+                            'type': 'bar',
+                            'name': "Happy"
+                            }
+                        ],
+                        'layout': {
+                            'plot_bgcolor': colors['background'],
+                            'paper_bgcolor': colors['background'],
+                            'barmode': 'stack',
+                            'font': {
+                                'color': colors['text']
+                            }
                         }
                     }
-                }
+                )
             ),
-            dt.DataTable(
-                id='common-site-table',
-                columns=[{"name": i, "id": i} for i in search_df.columns],
-                pagination_settings={
-                    'current_page': 0,
-                    'page_size': PAGE_SIZE
-                },
-                pagination_mode='be',
-                sorting='be',
-                sorting_type='single',
-                sorting_settings=[],
-                n_fixed_rows=1,
-                style_table={
-                    'overflowX': 'scroll',
-                    'maxHeight': '800',
-                    'overflowY': 'scroll'
-                },
-                style_cell={
-                    'minWidth': '50'
-                                'px', 'maxWidth': '200px',
-                    'whiteSpace': 'no-wrap',
-                    'overflow': 'hidden',
-                    'textOverflow': 'ellipsis',
-                },
-                style_cell_conditional=[
-                    {
-                        'if': {'column_id': 'Feedback'},
-                        'textAlign': 'left'
+        html.Div(
+            className='six columns',
+            children=dcc.Graph(
+                    id='trends-scatterplot',
+                    figure={
+                        'data': [{
+                            'x': results_df['Date Submitted'],
+                            'y': results_df['compound'],
+                            'customdata': results_df['Response ID'],
+                            'type': 'line',
+                            'name': "Sentiment score",
+                            'mode': 'markers',
+                            'marker': {'size': 12}
+                        }],
+                        'layout': {
+                             'title': "Compound Sentiment Score Over Time"
+                        }
                     }
-                ],
-                css=[{
-                    'selector': '.dash-cell div.dash-cell-value',
-                    'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-                }],
-            ),
-            html.H4('Similar graphs & reactive table for issue/feature categories')
-        ])
-    elif tab == 'tab-4':
-        return html.Div([
-            html.H3('Search Raw Comments'),
-            html.Label('Enter Search Term:'),
-            dcc.Input(id='searchrequest', type='text', value='Type here'),
-            dte.DataTable(  # Add fixed header row
-                id='searchtable',
-                rows=[{}],
-                row_selectable=True,
-                filterable=True,
-                sortable=True,
-                selected_row_indices=[],
             )
-        ])
+        )
+    ]),
+    html.Div([
+        html.Div(
+            className='six columns',
+            children=[
+                # dcc.Graph(id='trend-data-histogram'),
+                html.Button('Display Selected Data', id='display_data', n_clicks_timestamp=0)
+            ]
+        ),
+        html.Div([ #entire modal
+                #modal content
+                     html.Div([
+                            html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
+                            html.H2("Selected Feedback Data Points"),#Header
+                            dt.DataTable(
+                                 id='modal-table',
+                                 columns=[{"name": i, "id": i} for i in search_df.columns],
+                                 pagination_settings={
+                                     'current_page': 0,
+                                     'page_size': PAGE_SIZE
+                                 },
+                                 pagination_mode='be',
+                                 sorting='be',
+                                 sorting_type='single',
+                                 sorting_settings=[],
+                                 n_fixed_rows=1,
+                                 style_table={
+                                     'overflowX': 'scroll',
+                                     'maxHeight': '800',
+                                     'overflowY': 'scroll'
+                                 },
+                                 style_cell={
+                                     'minWidth': '50'
+                                                 'px', 'maxWidth': '200px',
+                                     'whiteSpace': 'no-wrap',
+                                     'overflow': 'hidden',
+                                     'textOverflow': 'ellipsis',
+                                 },
+                                 style_cell_conditional=[
+                                     {
+                                         'if': {'column_id': 'Feedback'},
+                                         'textAlign': 'left'
+                                     }
+                                 ],
+                                 css=[{
+                                     'selector': '.dash-cell div.dash-cell-value',
+                                     'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
 
+                                 }],
+                            )
+                     ], id='modal-content', className='modal-content')
+                 ], id='modal', className='modal'),
+        html.Div(
+            className='six columns',
+            id='current-content'
+        )
+    ]),
+    html.Div(id="bitch-div"),
+    html.Div(id="bitch-div2")
+])
+
+
+geoview_layout = html.Div([
+    html.H2('Geographical View'),
+    dcc.Graph(id='graph', figure=fig),
+    # html.Div(id="bitch-div"),
+    # html.Div(id="bitch-div2")
+])
+
+
+components_layout = html.Div([
+    html.H2('Components'),
+    html.Div(id = 'comp_slider_output'),
+    dcc.Slider(id='comp_time_slider',
+               min=toggle_time_params['min'], max=toggle_time_params['max'],
+               step=toggle_time_params['step'], value=toggle_time_params['default'],
+               marks=toggle_time_params['marks']),
+    dcc.Graph(id='graph2', figure=fig_component),
+])
+
+
+issues_layout = html.Div([
+    html.H2('Issues'),
+    html.Div(id='issue_slider_output'),
+    dcc.Slider(id='issue_time_slider',
+               min=toggle_time_params['min'], max=toggle_time_params['max'],
+               step=toggle_time_params['step'], value=toggle_time_params['default'],
+               marks=toggle_time_params['marks']),
+    dcc.Graph(id='graph3', figure=fig_issue),
+    # dcc.Graph(id='graph4', figure=fig_comp_metrics),
+    # dcc.Graph(id='graph5', figure=fig_issue_metrics),
+    # html.Div(className='row', children=[
+    #     html.Div([
+    #         html.Div(id='click-data'),  # Doesn't do anything right now
+    #     ]),
+    # ])
+])
+
+
+search_layout = html.Div([
+    html.H3('Search Feedback'),
+    html.Label('Enter Search Request:'),
+    dcc.Input(id='searchrequest', type='text', value='Type here'),
+    dte.DataTable(  # Add fixed header row
+        id='searchtable',
+        rows=[{}],
+        row_selectable=True,
+        filterable=True,
+        sortable=True,
+        selected_row_indices=[],
+    ),
+    html.Div(id='search-count-reveal')
+])
+
+
+@app.callback(
+    Output('bitch-div2', 'children'),
+    [Input('issue-graph', 'clickData')])
+def display_click_data(clickData):
+    if (len(clickData['points']) == 1):
+        day = clickData['points'][0]['x']
+        issue = clickData['points'][0]['customdata']
+        ids = issue_response_id_map[day][issue]
+        df = results_df[results_df['Response ID'].isin(ids)]
+        return df
+    else:
+        return ''
 
 @app.callback(
     Output('bitch-div', 'children'),
@@ -704,21 +760,6 @@ def display_click_data(clickData):
     #         )
     #     return htmlArr
     # return ''
-
-
-@app.callback(
-    Output('bitch-div2', 'children'),
-    [Input('issue-graph', 'clickData')])
-def display_click_data(clickData):
-    if (len(clickData['points']) == 1):
-        day = clickData['points'][0]['x']
-        issue = clickData['points'][0]['customdata']
-        ids = issue_response_id_map[day][issue]
-        df = results_df[results_df['Response ID'].isin(ids)]
-        return df
-    else:
-        return ''
-
 
 
 @app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
@@ -758,20 +799,22 @@ def update_modal_table(pagination_settings, sorting_settings, openm, closem, sel
                ].to_dict('rows')
 
 
-
 @app.callback(
     Output('current-content', 'children'),
     [Input('trends-scatterplot', 'hoverData')])
 def display_hover_data(hoverData):
     # get the row from the results
-    r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
-    return html.H4(
-        "The comment from {} is '{}'. The user was {}.".format(
-            r.iloc[0]['Date Submitted'],
-            r.iloc[0]['Feedback'],
-            r.iloc[0]['Binary Sentiment']
+    try:
+        r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
+        return html.H4(
+            "The comment from {} is '{}'. The user was {}.".format(
+                r.iloc[0]['Date Submitted'],
+                r.iloc[0]['Feedback'],
+                r.iloc[0]['Binary Sentiment']
+            )
         )
-    )
+    except TypeError:
+        print('no hover data selected yet')
     # return ''
 
 
@@ -796,53 +839,6 @@ def display_selected_trend_data(selectedData):
             'margin': {'l': 40, 'r': 20, 't': 0, 'b': 30}
         }
     }
-
-
-@app.callback(
-    Output('searchtable', 'rows'),
-    [Input('searchrequest', 'n_submit'), Input('searchrequest', 'n_blur'),],
-    [State('searchrequest', 'value')])
-def update_table(ns, nb, request_value):
-    df = search_df
-    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites']
-    r_df = pd.DataFrame()
-    # r_df = pd.DataFrame([cnames], columns=cnames)
-    for index, row in df.iterrows():
-        fb = str(row['Feedback'])
-        rv = str(request_value)
-        isit = rv in fb
-        if isit:
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
-            temp_df = pd.DataFrame([temp], columns=cnames)
-            r_df = r_df.append(temp_df, ignore_index=True)
-    return r_df.to_dict('rows')
-
-
-@app.callback(
-    Output('common-site-table', "data"),
-    [Input('common-site-table', "pagination_settings"),
-     Input('common-site-table', "sorting_settings"),
-     Input('mentioned-site-graph', "clickData")])
-def update_common_table(pagination_settings, sorting_settings, clickData):
-    # print(clickData)
-    dff = search_df[search_df['Sites'] == clickData['points'][0]['customdata']]
-    print('CLICKED DATA', clickData['points'][0]['customdata'])
-    if len(sorting_settings):
-        dff = dff.sort_values(
-            [col['column_id'] for col in sorting_settings],
-            ascending=[
-                col['direction'] == 'asc'
-                for col in sorting_settings
-            ],
-            inplace=False
-        )
-
-    return dff.iloc[
-           pagination_settings['current_page'] * pagination_settings['page_size']:
-           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-           ].to_dict('rows')
 
 
 # Component DF Slider Callback
@@ -904,6 +900,85 @@ def update_output(value):
     issue_df = initIssueDF(results_df, value)
     fig_issue = updateComponentGraph(issue_df)
     return fig_issue
+
+
+@app.callback(
+    dash.dependencies.Output('output-container-date-picker-range', 'children'),
+    [dash.dependencies.Input('sites-date-range', 'start_date'),
+     dash.dependencies.Input('sites-date-range', 'end_date')])
+def update_output(start_date, end_date):
+    string_prefix = 'You have selected: '
+    if start_date is not None:
+        start_date = dt.strptime(start_date, '%Y-%m-%d')
+        start_date_string = start_date.strftime('%B %d, %Y')
+        string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
+    if end_date is not None:
+        end_date = dt.strptime(end_date, '%Y-%m-%d')
+        end_date_string = end_date.strftime('%B %d, %Y')
+        string_prefix = string_prefix + 'End Date: ' + end_date_string
+    if len(string_prefix) == len('You have selected: '):
+        return 'Select a date to see it displayed here'
+    else:
+        return string_prefix
+
+
+# @app.callback(
+#     Output('common-site-table', "data"),
+#     [Input('common-site-table', "pagination_settings"),
+#      Input('common-site-table', "sorting_settings"),
+#      Input('mentioned-site-graph', "clickData")])
+# def update_common_table(pagination_settings, sorting_settings, clickData):
+#     # print(clickData)
+#     dff = search_df[search_df['Sites'] == clickData['points'][0]['customdata']]
+#     print('CLICKED DATA', clickData['points'][0]['customdata'])
+#     if len(sorting_settings):
+#         dff = dff.sort_values(
+#             [col['column_id'] for col in sorting_settings],
+#             ascending=[
+#                 col['direction'] == 'asc'
+#                 for col in sorting_settings
+#             ],
+#             inplace=False
+#         )
+#
+#     return dff.iloc[
+#            pagination_settings['current_page'] * pagination_settings['page_size']:
+#            (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+#            ].to_dict('rows')
+
+
+@app.callback(
+    Output('searchtable', 'rows'),
+    [Input('searchrequest', 'n_submit'), Input('searchrequest', 'n_blur'),],
+    [State('searchrequest', 'value')])
+def update_table(ns, nb, request_value):
+    df = search_df
+    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+              'Feedback', 'Components', 'Issues', 'Sites']
+    r_df = pd.DataFrame()
+    # r_df = pd.DataFrame([cnames], columns=cnames)
+    for index, row in df.iterrows():
+        together = [str(row['Feedback']), str(row['Country']),
+                    str(row['Components']), str(row['Issues']), str(row['Sites'])]
+        fb = ''.join(together).lower()
+        rv = str(request_value).lower()
+        isit = rv in fb
+        if isit:
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            temp_df = pd.DataFrame([temp], columns=cnames)
+            r_df = r_df.append(temp_df, ignore_index=True)
+    return r_df.to_dict('rows')
+
+
+# NEED TO FIX THIS
+@app.callback(
+    Output('search-count-reveal','value'),
+    [Input('searchtable', 'rows')])
+def set_search_count(dict_of_returned_df):
+    df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
+    count = len(df_to_use.index)
+    return u'Search returned {} results.'.format(count)
 
 
 if __name__ == '__main__':
