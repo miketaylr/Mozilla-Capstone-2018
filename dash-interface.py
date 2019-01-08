@@ -330,37 +330,39 @@ def updateIssuesMetricsGraph():
 
 # fig_comp_metrics = updateCompMetricsGraph()
 # fig_issue_metrics = updateIssuesMetricsGraph()
+
+
 # DRILLDOWN FUNCTIONS
-# def drilldownClustering(df):
-#     results = runDrilldown(df)
-#     results = results.transpose()
-#     fig = clusteringBarGraph(results, 'Clustering Analysis')
-#     return fig
-# def clusteringBarGraph(df, title):
-#     traces = []
-#     # Get Count, Words, Phrases
-#     count = list(df.loc['Count'].values)
-#     words = list(df.loc['Words'].values)
-#     phrases = list(df.loc['Phrases'].values)
-#     traces = [go.Bar(
-#             x=words,
-#             y=count,
-#             text = phrases,
-#             hoverinfo='text',
-#         )]
-#     layout = go.Layout(
-#         title=title,
-#         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#         xaxis=dict(
-#             # showticklabels=False,
-#             title='Time'
-#         ),
-#         yaxis=dict(
-#             title='Count of Docs'
-#         )
-#     )
-#     fig = dict(data=traces, layout=layout)
-#     return fig
+def drilldownClustering(df):
+    results = clustering.runDrilldown(df)
+    results = results.transpose()
+    fig = clusteringBarGraph(results, 'Clustering Analysis')
+    return fig
+def clusteringBarGraph(df, title):
+    traces = []
+    # Get Count, Words, Phrases
+    count = list(df.loc['Count'].values)
+    words = list(df.loc['Words'].values)
+    phrases = list(df.loc['Phrases'].values)
+    traces = [go.Bar(
+            x=words,
+            y=count,
+            text = phrases,
+            hoverinfo='text',
+        )]
+    layout = go.Layout(
+        title=title,
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Time'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
+    )
+    fig = dict(data=traces, layout=layout)
+    return fig
 
 
 #prep data for displaying in stacked binary sentiment graph over time
@@ -967,6 +969,68 @@ def display_modal(compClickData, issueClickData):
             return
     # fig = drilldownClustering(dff)
     return
+# @app.callback(Output('modal-cluster-graph', 'figure'),
+#               [Input('comp-graph', 'clickData'),
+#                Input('issue-graph', 'clickData')])
+# def display_modal(compClickData, issueClickData):
+#     if compClickData:
+#         clickData = compClickData
+#
+#         if (len(clickData['points']) == 1):
+#             day = clickData['points'][0]['x']
+#             component = clickData['points'][0]['customdata']
+#             ids = comp_response_id_map[day][component]
+#             dff = sr_df[sr_df['Response ID'].isin(ids)]
+#         else:
+#             return
+#     elif issueClickData:
+#         clickData = issueClickData
+#
+#         if (len(clickData['points']) == 1):
+#             day = clickData['points'][0]['x']
+#             issue = clickData['points'][0]['customdata']
+#             ids = issue_response_id_map[day][issue]
+#             dff = sr_df[sr_df['Response ID'].isin(ids)]
+#         else:
+#             return
+#
+#     fig = drilldownClustering(dff)
+#
+#     return fig
+
+# Component Drilldown Data Table
+@app.callback(
+    Output('modal-table-comp-issue', 'data'),
+    [Input('comp-graph', 'clickData'),
+     Input('issue-graph', 'clickData'),
+     Input('modal-table-comp-issue', "pagination_settings")])
+def display_click_data(compClickData, issueClickData, pagination_settings):
+    #Set click data to whichever was clicked
+    if (compClickData):
+        clickData = compClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            ids = comp_response_id_map[day][component]
+            dff = results_df[results_df['Response ID'].isin(ids)]
+
+    elif(issueClickData):
+        clickData = issueClickData
+
+        if (len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            issue = clickData['points'][0]['customdata']
+            ids = issue_response_id_map[day][issue]
+            dff = results_df[results_df['Response ID'].isin(ids)]
+    else:
+        return ''
+
+    return dff.iloc[
+           pagination_settings['current_page'] * pagination_settings['page_size']:
+           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
+           ].to_dict('rows')
+
 
 
 # Scatterplot Drilldown click
