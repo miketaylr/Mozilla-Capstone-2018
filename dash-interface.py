@@ -11,6 +11,7 @@ import ast
 import json
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
+from collections import Counter
 import numpy as np
 
 
@@ -373,7 +374,16 @@ fig_issue_metrics = updateIssuesMetricsGraph()
 #Grab unique dates from results_df
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
-common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
+
+
+#compacted list of all sites mentioned in the comments
+sites_list = results_df['Sites'].apply(pd.Series).stack().reset_index(drop=True)
+sites_list = ','.join(sites_list).split(',')
+sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
+sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
+sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
+sites_df = sites_df.sort_values(by=['Count'], ascending=False)
+
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -462,15 +472,84 @@ def display_page(pathname):
 @app.callback(Output('url', 'pathname'),
               [Input('tabs-styled-with-inline', 'value')])
 def update_url(tab):  # bit of a hacky way of updating URL for now.
-    print("clicked tab", tab)
+    # print("clicked tab", tab)
     return tab
 
 
 list_page_children = []
 
 
+# sites_layout = html.Div([
+#     html.H2('Sites'),
+#     html.Div([
+#         html.Label('Choose Date Range:'),
+#         dcc.DatePickerRange(
+#             id='sites-date-range',
+#             min_date_allowed=results_df['Date Submitted'].min(),
+#             max_date_allowed=results_df['Date Submitted'].max(),
+#             start_date=results_df['Date Submitted'].min(),
+#             end_date=results_df['Date Submitted'].max()
+#         )
+#     ]),
+#
+#     dcc.Graph(
+#         id='mentioned-site-graph',
+#         figure={
+#             'data': [{
+#                 'x': common_df[common_df.columns[0]],
+#                 'y': common_df[common_df.columns[1]],
+#                 'customdata': results_df['Sites'].unique()[1:],
+#                 'type': 'bar'
+#             }],
+#             'layout': {
+#                 'title': "Feedback by Mentioned Site(s)",
+#                 'xaxis': {
+#                     'title': 'Mentioned Site(s)'
+#                 },
+#                 'yaxis': {
+#                     'title': 'Number of Feedback'
+#                 }
+#             }
+#         }
+#     ),
+#     dt.DataTable(
+#         id='common-site-table',
+#         columns=[{"name": i, "id": i} for i in search_df.columns],
+#         pagination_settings={
+#             'current_page': 0,
+#             'page_size': PAGE_SIZE
+#         },
+#         pagination_mode='be',
+#         sorting='be',
+#         sorting_type='single',
+#         sorting_settings=[],
+#         n_fixed_rows=1,
+#         style_table={
+#             'overflowX': 'scroll',
+#             'maxHeight': '800',
+#             'overflowY': 'scroll'
+#         },
+#         style_cell={
+#             'minWidth': '50'
+#                         'px', 'maxWidth': '200px',
+#             'whiteSpace': 'no-wrap',
+#             'overflow': 'hidden',
+#             'textOverflow': 'ellipsis',
+#         },
+#         style_cell_conditional=[
+#             {
+#                 'if': {'column_id': 'Feedback'},
+#                 'textAlign': 'left'
+#             }
+#         ],
+#         css=[{
+#             'selector': '.dash-cell div.dash-cell-value',
+#             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+#         }],
+#     )
+# ])
 sites_layout = html.Div([
-    html.H2('Sites'),
+    html.H2('Mentioned Sites'),
     html.Div([
         html.Label('Choose Date Range:'),
         dcc.DatePickerRange(
@@ -479,16 +558,16 @@ sites_layout = html.Div([
             max_date_allowed=results_df['Date Submitted'].max(),
             start_date=results_df['Date Submitted'].min(),
             end_date=results_df['Date Submitted'].max()
-        )
+        ),
+        html.Div(id='unique-site-count')
     ]),
-
     dcc.Graph(
         id='mentioned-site-graph',
         figure={
             'data': [{
-                'x': common_df[common_df.columns[0]],
-                'y': common_df[common_df.columns[1]],
-                'customdata': results_df['Sites'].unique()[1:],
+                'x': sites_df['Formatted'],
+                'y': sites_df['Count'],
+                # 'customdata': results_df['Sites'].unique()[1:],
                 'type': 'bar'
             }],
             'layout': {
@@ -730,6 +809,7 @@ def display_click_data(clickData):
     else:
         return ''
 
+
 @app.callback(
     Output('bitch-div', 'children'),
     [Input('comp-graph', 'clickData')])
@@ -903,23 +983,32 @@ def update_output(value):
 
 
 @app.callback(
-    dash.dependencies.Output('output-container-date-picker-range', 'children'),
+    dash.dependencies.Output('unique-site-count', 'children'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
-def update_output(start_date, end_date):
-    string_prefix = 'You have selected: '
-    if start_date is not None:
-        start_date = dt.strptime(start_date, '%Y-%m-%d')
-        start_date_string = start_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'Start Date: ' + start_date_string + ' | '
-    if end_date is not None:
-        end_date = dt.strptime(end_date, '%Y-%m-%d')
-        end_date_string = end_date.strftime('%B %d, %Y')
-        string_prefix = string_prefix + 'End Date: ' + end_date_string
-    if len(string_prefix) == len('You have selected: '):
-        return 'Select a date to see it displayed here'
-    else:
-        return string_prefix
+def update_site_count(start_date, end_date):    #update graph with values that are in the time range
+    count = len(sites_df.index)
+    return 'Sites were mentioned {} times in the comments. There were {} unique sites mentioned.'\
+        .format(sites_df['Count'].sum(), count)
+
+
+@app.callback(
+    dash.dependencies.Output('mentioned-site-graph', 'figure'),
+    [dash.dependencies.Input('sites-date-range', 'start_date'),
+     dash.dependencies.Input('sites-date-range', 'end_date')])
+def update_graph_data(start_date, end_date):    #update graph with values that are in the time range
+    print("swag")
+    # start_date = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+    # end_date = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+    # df = results_df[(results_df['Date Submitted'] >= start_date) & (results_df['Date Submitted'] <= end_date)].groupby('Sites')['Sites'].agg(['count']).reset_index()
+    # data = {
+    #     'x': df.columns[0],
+    #     'y': df.columns[1],
+    #   # 'customdata': results_df['Sites'].unique()[1:],
+    #     'type': 'bar'
+    # }
+
+    # return data
 
 
 # @app.callback(
