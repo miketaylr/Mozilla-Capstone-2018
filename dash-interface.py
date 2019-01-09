@@ -6,9 +6,9 @@ import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
-import clustering as clustering
 import ast
 import json
+from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
@@ -64,23 +64,34 @@ data = [ dict(
         colorbar = dict(
             autotick = False,
             tickprefix = '',
-            title = 'Global Sentiment'),
+            title = 'Global Sentiment Score'),
+            # color = '#D3D3D3'
       )]
 
 
 layout = dict(
-    title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+    # title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
     geo = dict(
         showframe = False,
         showcoastlines = False,
         projection = dict(
             type = 'Mercator'
-        )
-    )
+        ),
+        bgcolor='rgba(0,0,0,0)',
+    ),
+    legend = dict (
+        font = dict(
+            family='Helvetica Neue, Helvetica, sans-serif',
+            size=12,
+            color='#D3D3D3'
+        ),
+    ),
+    paper_bgcolor='rgba(0,0,0,0)',
+    plot_bgcolor='rgba(0,0,0,0)'
 )
 
 
-fig = dict(data=data, layout=layout)
+fig_geo = dict(data=data, layout=layout)
 
 
 # Hardcoded Fake Data
@@ -334,7 +345,7 @@ def updateIssuesMetricsGraph():
 
 # DRILLDOWN FUNCTIONS
 def drilldownClustering(df):
-    results = clustering.runDrilldown(df)
+    results = runDrilldown(df)
     results = results.transpose()
     fig = clusteringBarGraph(results, 'Clustering Analysis')
     return fig
@@ -426,18 +437,26 @@ colors = {
 app.config.suppress_callback_exceptions = True
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
-    html.H1(
-        children='Mozilla Customer Analytics',
-        id="header",
-    ),
-    dcc.Tabs(id="tabs-styled-with-inline", value='/sites', children=[
-        dcc.Tab(label='Sentiment', value='/sentiment', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Geo-View', value='/geoview', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Components', value='/components', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Issues', value='/issues', style=tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='SITES', value='/sites', style=sites_tab_style, selected_style=tab_selected_style),
-        dcc.Tab(label='Search', value='/search', style=tab_style, selected_style=tab_selected_style),
-    ], style=tabs_styles),
+    html.Div(id='header',
+             children=[
+                 html.Div(id='left-header-container',
+                          children=[
+                              html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
+                              html.H1(
+                                  children='Mozilla Customer Analytics',
+                                  id="title",
+                              ),
+                          ]),
+                 dcc.Tabs(id="tabs-styled-with-inline", value='/sites', children=[
+                     dcc.Tab(label='Sentiment', value='/sentiment', style=tab_style, selected_style=tab_selected_style),
+                     dcc.Tab(label='Geo-View', value='/geoview', style=tab_style, selected_style=tab_selected_style),
+                     dcc.Tab(label='Components', value='/components', style=tab_style,
+                             selected_style=tab_selected_style),
+                     dcc.Tab(label='Issues', value='/issues', style=tab_style, selected_style=tab_selected_style),
+                     dcc.Tab(label='SITES', value='/sites', style=sites_tab_style, selected_style=tab_selected_style),
+                     dcc.Tab(label='Search', value='/search', style=tab_style, selected_style=tab_selected_style),
+                 ], style=tabs_styles),
+             ]),
     html.H3('   '),  # Need vertical space for the tabs to not be overlapped by the page content
     html.Div(id='page-content')
 ])
@@ -805,7 +824,7 @@ sentiment_layout = html.Div([
 
 geoview_layout = html.Div([
     html.H2('Geographical View'),
-    dcc.Graph(id='country-graph', figure=fig),
+    dcc.Graph(id='country-graph', figure=fig_geo),
     # html.Div(id="bitch-div"),
     # html.Div(id="bitch-div2")
 ])
@@ -902,16 +921,20 @@ issues_layout = html.Div([
 
 search_layout = html.Div([
     html.H3('Search Feedback'),
-    html.Label('Enter Search Request:'),
-    dcc.Input(id='searchrequest', type='text', value='Type here'),
-    dte.DataTable(  # Add fixed header row
-        id='searchtable',
-        rows=[{}],
-        row_selectable=True,
-        filterable=True,
-        sortable=True,
-        selected_row_indices=[],
-    ),
+    # html.Label('Enter Search Request:'),
+    dcc.Input(id='searchrequest', type='text', placeholder='Search'),
+    html.Div(id='search-table-container',
+             children=[
+                 dte.DataTable(  # Add fixed header row
+                     id='searchtable',
+                     rows=[{}],
+                     row_selectable=True,
+                     filterable=True,
+                     sortable=True,
+                     selected_row_indices=[],
+                 ),
+             ],
+             style={'display': 'none'}),
     html.Div(id='search-count-reveal')
 ])
 
@@ -1284,7 +1307,7 @@ def update_table(ns, nb, request_value):
 
 # NEED TO FIX THIS
 @app.callback(
-    Output('search-count-reveal','value'),
+    Output('search-count-reveal','children'),
     [Input('searchtable', 'rows')])
 def set_search_count(dict_of_returned_df):
     df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
@@ -1293,5 +1316,5 @@ def set_search_count(dict_of_returned_df):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
