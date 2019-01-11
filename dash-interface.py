@@ -54,23 +54,54 @@ data = [ dict(
         text = df['COUNTRY'],
         colorscale = [[0,"rgb(5, 10, 172)"],[0.35,"rgb(40, 60, 190)"],[0.5,"rgb(70, 100, 245)"],\
             [0.6,"rgb(90, 120, 245)"],[0.7,"rgb(106, 137, 247)"],[1,"rgb(220, 220, 220)"]],
+        cauto = False,
+        cmin = -1,
+        cmax = 1,
         autocolorscale = False,
         reversescale = True,
         marker = dict(
             line = dict (
                 color = 'rgb(180,180,180)',
                 width = 0.7
-            ) ),
-        colorbar = dict(
-            autotick = False,
-            tickprefix = '',
-            title = 'Global Sentiment Score'),
-            # color = '#D3D3D3'
+            ),
+            # colorbar = dict(
+            #     title = 'Global Sentiment Score'),
+            #     tickmode='array',
+            #     tickvals=[-1, 0, 1],
+            # )
+        ),
+        colorbar=dict(
+            title='Global Sentiment Score',
+            tickmode='array',
+            # tickvals=[-1, 0, 1],
+            # tickmode = 'Global Sentiment Score'),
+            ticktext=['Sad', 'Neutral', 'Happy']
+        )
+        # colorbar = dict(
+        #     # cmin=-1,
+        #     # cmax=1,
+        #
+        #
+        #     title = dict (
+        #         text='Global Sentiment Score',
+        #         family = 'Helvetica Neue, Helvetica, sans-serif',
+        #         color = '#BCBCBC'
+        #     ),
+        #     tickfont=dict(
+        #         family='Helvetica Neue, Helvetica, sans-serif',
+        #         color='#BCBCBC'
+        #     ),
+        #     ticktext = ['Sad', 'Neutral', 'Happy']
+        # )
       )]
 
 
 layout = dict(
-    # title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+    title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+    titlefont=dict(
+        family='Helvetica Neue, Helvetica, sans-serif',
+        color='#BCBCBC'
+    ),
     geo = dict(
         showframe = False,
         showcoastlines = False,
@@ -83,7 +114,7 @@ layout = dict(
         font = dict(
             family='Helvetica Neue, Helvetica, sans-serif',
             size=12,
-            color='#D3D3D3'
+            color='white'
         ),
     ),
     paper_bgcolor='rgba(0,0,0,0)',
@@ -609,7 +640,7 @@ list_page_children = []
 #     )
 # ])
 sites_layout = html.Div([
-    html.H3('Sites'),
+    html.H3('Sites', className='page-title'),
     html.Div([
         html.Label('Choose Date Range:'),
         dcc.DatePickerRange(
@@ -625,11 +656,11 @@ sites_layout = html.Div([
         id='mentioned-site-graph',
         figure={
             'data': [{
-                # 'x': common_df[common_df.columns[0]],
-                # 'y': common_df[common_df.columns[1]],
-                'x': sites_df['Formatted'],
-                'y': sites_df['Count'],
-                # 'customdata': results_df['Sites'].unique()[1:],
+                'x': common_df[common_df.columns[0]],
+                'y': common_df[common_df.columns[1]],
+                # 'x': sites_df['Formatted'],
+                # 'y': sites_df['Count'],
+                'customdata': results_df['Sites'].unique()[1:],
                 'type': 'bar'
             }],
             'layout': {
@@ -644,41 +675,41 @@ sites_layout = html.Div([
             }
         }
     ),
-    dt.DataTable(
-        id='common-site-table',
-        columns=[{"name": i, "id": i} for i in search_df.columns],
-        pagination_settings={
-            'current_page': 0,
-            'page_size': PAGE_SIZE
-        },
-        pagination_mode='be',
-        sorting='be',
-        sorting_type='single',
-        sorting_settings=[],
-        n_fixed_rows=1,
-        style_table={
-            'overflowX': 'scroll',
-            'maxHeight': '800',
-            'overflowY': 'scroll'
-        },
-        style_cell={
-            'minWidth': '50'
-                        'px', 'maxWidth': '200px',
-            'whiteSpace': 'no-wrap',
-            'overflow': 'hidden',
-            'textOverflow': 'ellipsis',
-        },
-        style_cell_conditional=[
-            {
-                'if': {'column_id': 'Feedback'},
-                'textAlign': 'left'
-            }
-        ],
-        css=[{
-            'selector': '.dash-cell div.dash-cell-value',
-            'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-        }],
-    ),
+    # dt.DataTable(
+    #     id='common-site-table',
+    #     columns=[{"name": i, "id": i} for i in search_df.columns],
+    #     pagination_settings={
+    #         'current_page': 0,
+    #         'page_size': PAGE_SIZE
+    #     },
+    #     pagination_mode='be',
+    #     sorting='be',
+    #     sorting_type='single',
+    #     sorting_settings=[],
+    #     n_fixed_rows=1,
+    #     style_table={
+    #         'overflowX': 'scroll',
+    #         'maxHeight': '800',
+    #         'overflowY': 'scroll'
+    #     },
+    #     style_cell={
+    #         'minWidth': '50'
+    #                     'px', 'maxWidth': '200px',
+    #         'whiteSpace': 'no-wrap',
+    #         'overflow': 'hidden',
+    #         'textOverflow': 'ellipsis',
+    #     },
+    #     style_cell_conditional=[
+    #         {
+    #             'if': {'column_id': 'Feedback'},
+    #             'textAlign': 'left'
+    #         }
+    #     ],
+    #     css=[{
+    #         'selector': '.dash-cell div.dash-cell-value',
+    #         'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+    #     }],
+    # ),
     html.Div([  # entire modal
         # modal content
         html.Div([
@@ -699,7 +730,7 @@ sites_layout = html.Div([
 
 
 sentiment_layout = html.Div([
-    html.H2('Sentiment'),
+    html.H3('Sentiment', className='page-title'),
     # dcc.RadioItems(
     #     id='bin',
     #     options=[{'label': i, 'value': i} for i in [
@@ -823,7 +854,7 @@ sentiment_layout = html.Div([
 
 
 geoview_layout = html.Div([
-    html.H2('Geographical View'),
+    html.H3('Global Happiness Index', className='page-title'),
     dcc.Graph(id='country-graph', figure=fig_geo),
     # html.Div(id="bitch-div"),
     # html.Div(id="bitch-div2")
@@ -857,20 +888,20 @@ components_layout = html.Div([
     html.Div([  # entire modal
         # modal content
         html.Div([
-            html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),
+            html.Button("Close", id="close-modal-comp", className="close", n_clicks_timestamp=0),
             html.A("Link to external site", href='/list', target="_blank"),  # close button
             html.H2("Selected Feedback Data Points"),  # Header
-            dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
+            # dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
             dte.DataTable(  # Add fixed header row
-                id='modal-comp-issue-table',
+                id='modal-comp-table',
                 rows=[{}],
                 row_selectable=True,
                 filterable=True,
                 sortable=True,
                 selected_row_indices=[],
             ),
-        ], id='modal-content-comp-issue', className='modal-content')
-    ], id='modal-comp-issue', className='modal'),
+        ], id='modal-content-comp', className='modal-content')
+    ], id='modal-comp', className='modal'),
 ])
 
 
@@ -902,25 +933,25 @@ issues_layout = html.Div([
     html.Div([  # entire modal
         # modal content
         html.Div([
-            html.Button("Close", id="close-modal-comp-issue", className="close", n_clicks_timestamp=0),
+            html.Button("Close", id="close-modal-issue", className="close", n_clicks_timestamp=0),
             html.A("Link to external site", href='/list', target="_blank"),  # close button
             html.H2("Selected Feedback Data Points"),  # Header
-            dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
+            # dcc.Graph(id='modal-cluster-graph'),  # Clustering Bar Graph
             dte.DataTable(  # Add fixed header row
-                id='modal-comp-issue-table',
+                id='modal-issue-table',
                 rows=[{}],
                 row_selectable=True,
                 filterable=True,
                 sortable=True,
                 selected_row_indices=[],
             ),
-        ], id='modal-content-comp-issue', className='modal-content')
-    ], id='modal-comp-issue', className='modal'),
+        ], id='modal-content-issue', className='modal-content')
+    ], id='modal-issue', className='modal'),
 ])
 
 
 search_layout = html.Div([
-    html.H3('Search Feedback'),
+    html.H3('Search Feedback', className='page-title'),
     # html.Label('Enter Search Request:'),
     dcc.Input(id='searchrequest', type='text', placeholder='Search'),
     html.Div(id='search-table-container',
@@ -938,60 +969,24 @@ search_layout = html.Div([
     html.Div(id='search-count-reveal')
 ])
 
-
-# @app.callback(
-#     Output('bitch-div2', 'children'),
-#     [Input('issue-graph', 'clickData')])
-# def display_click_data(clickData):
-#     if (len(clickData['points']) == 1):
-#         day = clickData['points'][0]['x']
-#         issue = clickData['points'][0]['customdata']
-#         ids = issue_response_id_map[day][issue]
-#         df = results_df[results_df['Response ID'].isin(ids)]
-#         return df
-#     else:
-#         return ''
-
-
-# Show Comp/Issue Modal on click
-@app.callback(Output('modal-comp-issue', 'style'),
-              [Input('comp-graph', 'clickData'),
-               Input('issue-graph', 'clickData')])
-def display_modal(compClickData, issueClickData):
-    if compClickData or issueClickData:
-        print('block')
+# Show Comp Modal on click
+@app.callback(Output('modal-comp', 'style'),
+              [Input('comp-graph', 'clickData')])
+def display_modal(compClickData):
+    if compClickData:
         return {'display': 'block'}
-    else:
-        return {'display': 'none'}
+
+
+# Show Issue Modal on click
+@app.callback(Output('modal-issue', 'style'),
+              [Input('issue-graph', 'clickData')])
+def display_modal(issueClickData):
+    if issueClickData:
+        return {'display': 'block'}
+
 
 
 # Drilldown Clustering Bar Graph
-@app.callback(Output('modal-cluster-graph', 'figure'),
-              [Input('comp-graph', 'clickData'),
-               Input('issue-graph', 'clickData')])
-def display_modal(compClickData, issueClickData):
-    if compClickData:
-        clickData = compClickData
-
-        if (len(clickData['points']) == 1):
-            day = clickData['points'][0]['x']
-            component = clickData['points'][0]['customdata']
-            ids = comp_response_id_map[day][component]
-            dff = sr_df[sr_df['Response ID'].isin(ids)]
-        else:
-            return
-    elif issueClickData:
-        clickData = issueClickData
-
-        if (len(clickData['points']) == 1):
-            day = clickData['points'][0]['x']
-            issue = clickData['points'][0]['customdata']
-            ids = issue_response_id_map[day][issue]
-            dff = sr_df[sr_df['Response ID'].isin(ids)]
-        else:
-            return
-    # fig = drilldownClustering(dff)
-    return
 # @app.callback(Output('modal-cluster-graph', 'figure'),
 #               [Input('comp-graph', 'clickData'),
 #                Input('issue-graph', 'clickData')])
@@ -1016,18 +1011,14 @@ def display_modal(compClickData, issueClickData):
 #             dff = sr_df[sr_df['Response ID'].isin(ids)]
 #         else:
 #             return
-#
-#     fig = drilldownClustering(dff)
-#
-#     return fig
+#     # fig = drilldownClustering(dff)
+#     return
 
 # Component Drilldown Data Table
 @app.callback(
-    Output('modal-table-comp-issue', 'data'),
-    [Input('comp-graph', 'clickData'),
-     Input('issue-graph', 'clickData'),
-     Input('modal-table-comp-issue', "pagination_settings")])
-def display_click_data(compClickData, issueClickData, pagination_settings):
+    Output('modal-comp-table', 'rows'),
+    [Input('comp-graph', 'clickData')])
+def display_click_data(compClickData):
     #Set click data to whichever was clicked
     if (compClickData):
         clickData = compClickData
@@ -1037,8 +1028,18 @@ def display_click_data(compClickData, issueClickData, pagination_settings):
             component = clickData['points'][0]['customdata']
             ids = comp_response_id_map[day][component]
             dff = results_df[results_df['Response ID'].isin(ids)]
+            return dff.to_dict('rows')
+        else:
+            return ''
+    else:
+        return ''
 
-    elif(issueClickData):
+@app.callback(
+    Output('modal-issue-table', 'rows'),
+    [Input('issue-graph', 'clickData')])
+def display_click_data(issueClickData):
+    #Set click data to whichever was clicked
+    if(issueClickData):
         clickData = issueClickData
 
         if (len(clickData['points']) == 1):
@@ -1046,15 +1047,11 @@ def display_click_data(compClickData, issueClickData, pagination_settings):
             issue = clickData['points'][0]['customdata']
             ids = issue_response_id_map[day][issue]
             dff = results_df[results_df['Response ID'].isin(ids)]
+            return dff.to_dict('rows')
+        else:
+            return ''
     else:
         return ''
-
-    return dff.iloc[
-           pagination_settings['current_page'] * pagination_settings['page_size']:
-           (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-           ].to_dict('rows')
-
-
 
 # Scatterplot Drilldown click
 @app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
@@ -1283,9 +1280,9 @@ def update_graph_data(start_date, end_date):    #update graph with values that a
 
 @app.callback(
     Output('searchtable', 'rows'),
-    [Input('searchrequest', 'n_submit'), Input('searchrequest', 'n_blur'),],
+    [Input('searchrequest', 'n_submit')], # [Input('searchrequest', 'n_submit')],
     [State('searchrequest', 'value')])
-def update_table(ns, nb, request_value):
+def update_table(ns, request_value):
     df = search_df
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
               'Feedback', 'Components', 'Issues', 'Sites']
@@ -1313,6 +1310,12 @@ def set_search_count(dict_of_returned_df):
     df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
     count = len(df_to_use.index)
     return u'Search returned {} results.'.format(count)
+
+@app.callback(
+    Output('search-table-container','style'),
+    [Input('searchtable', 'rows')])
+def set_search_count(rows):
+    return {'display': 'block'}
 
 
 if __name__ == '__main__':
