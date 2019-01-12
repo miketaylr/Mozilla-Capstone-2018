@@ -42,3 +42,7 @@ body {
     float: right;
     margin: 1.75em 0;
 }
+
+._dash-undo-redo {
+    display: none;
+}
