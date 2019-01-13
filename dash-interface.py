@@ -13,7 +13,7 @@ from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
 import numpy as np
-
+import urllib.parse
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
@@ -403,8 +403,6 @@ sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "
 sites_df = sites_df.sort_values(by=['Count'], ascending=False)
 sites_df = sites_df[sites_df['Site'] != 'None Found']
 
-print('outside callback', sites_df)
-
 
 # Page styling - sample:
 PAGE_SIZE = 40
@@ -582,8 +580,8 @@ list_page_children = []
 #         }],
 #     )
 # ])
-sites_layout = html.Div([
-    html.H3('Sites'),
+sites_layout = html.Div(className='sites-layout', children=[
+    html.H3('Sites', className='page-title'),
     html.Div([
         html.Label('Choose Date Range:'),
         dcc.DatePickerRange(
@@ -603,34 +601,56 @@ sites_layout = html.Div([
                     'x': sites_df['Formatted'],
                     'y': sites_df['Count'],
                     'customdata': sites_df['Site'],
-                    'type': 'bar'
+                    'type': 'bar',
+                    'marker': {
+                        'color': '#E3D0FF'
+                    },
                 }],
                 'layout': {
                     'title': "Feedback by Mentioned Site(s)",
+                    'titlefont': {
+                        'family': 'Helvetica Neue, Helvetica, sans-serif',
+                        'color': '#BCBCBC',
+                    },
                     'xaxis': {
                         'title': ''
                     },
                     'yaxis': {
                         'title': 'Number of Feedback'
                     },
-                }
-            }
+                    'font': {
+                        'family': 'Helvetica Neue, Helvetica, sans-serif',
+                        'size': 12,
+                        'color': '#BCBCBC',
+                    },
+                    'paper_bgcolor': 'rgba(0,0,0,0)',
+                    'plot_bgcolor': 'rgba(0,0,0,0)',
+                },
+            },
         ),
     ),
     html.Div([  # entire modal
         # modal content
         html.Div([
-            html.Button("Close", id="close-modal-site", className="close", n_clicks=0),
-            html.A("Drill-down", href='/list', target="_blank"), # close button
-            html.H2("Selected Feedback Data Points"),  # Header
-            dte.DataTable(  # Add fixed header row
-                id='modal-site-table',
-                rows=[{}],
-                row_selectable=True,
-                filterable=True,
-                sortable=True,
-                selected_row_indices=[],
-            ),
+            html.Div(className="close-button-container", children=[
+                html.Button("Close", id="close-modal-site", className="close", n_clicks=0),
+            ]),
+            html.P(""),
+            html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
+            html.Div(className='drill-down-container', children=[
+                html.A("Drill-down", className='drill-down-link', href='/list', target="_blank"), # close button
+                html.A("Download CSV", id='download-link', className='download-link', href='', target="_blank"),
+            ]),
+            html.Div(className='modal-table-container', children=[
+                dte.DataTable(  # Add fixed header row
+                    id='modal-site-table',
+                    rows=[{}],
+                    row_selectable=True,
+                    filterable=True,
+                    sortable=True,
+                    selected_row_indices=[],
+                ),
+            ]),
         ], id='modal-content-site', className='modal-content')
     ], id='modal-site', className='modal'),
 ])
@@ -1257,6 +1277,26 @@ def display_modal(closeClicks, selectedData):
         return {'display': 'none'}
 
 
+@app.callback(
+    Output('download-link', 'href'),
+    [Input('mentioned-site-graph', 'selectedData')])
+def update_download_link(selectedData):
+    if selectedData:
+        sites = list(d['customdata'] for d in selectedData['points'])
+        dff = search_df[search_df['Sites'].isin(sites)]
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        csv_string = dff.to_csv(index=False, encoding='utf-8')
+        csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+        print(csv_string)
+        return csv_string
+    else: 
+        return ''
+
+
 # Component DF Slider Callback
 @app.callback(
     dash.dependencies.Output('comp_slider_output', 'children'),
@@ -1352,10 +1392,29 @@ def update_output(value):
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
 def update_site_count(start_date, end_date):    #update graph with values that are in the time range
-    print('here', start_date, end_date)
+    global results_df
+    if(start_date is None or end_date is None):
+        filtered_results = results_df
+    else:
+        filtered_results = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
+
+    sites_list = filtered_results['Sites'].apply(pd.Series).stack().reset_index(drop=True)
+    sites_list = ','.join(sites_list).split(',')
+    sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
+    sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
+    sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
+    sites_df = sites_df.sort_values(by=['Count'], ascending=False)
+    no_sites_df = sites_df[sites_df['Site'] == 'None Found']
+    sites_df = sites_df[sites_df['Site'] != 'None Found']
     count = len(sites_df.index)
-    return 'Sites were mentioned {} times in the comments. There were {} unique sites mentioned.'\
-        .format(sites_df['Count'].sum(), count)
+
+    print('here in updateSiteCount', no_sites_df)
+
+    return html.Div([
+        html.P(['Sites were mentioned {} times in the raw feeback.'.format(sites_df['Count'].sum())]),
+        html.P(['There were {} unique sites mentioned.'.format(count)]),
+        html.P(['There were {} raw feedback with no mentions of sites.'.format(no_sites_df['Count'].sum())]),
+    ])
 
 
 @app.callback(
@@ -1388,17 +1447,31 @@ def update_site_graph(start_date, end_date):    #update graph with values that a
         x=sites_df['Formatted'],
         y=sites_df['Count'],
         customdata=sites_df['Site'],
+        marker=dict(
+            color='#E3D0FF'
+        ),
     )]
 
     layout = go.Layout(
         title='Feedback by Mentioned Site(s)',
+        titlefont=dict(
+            family='Helvetica Neue, Helvetica, sans-serif',
+            color='#BCBCBC'
+        ),
         xaxis=dict(
             # showticklabels=False,
             title=''
         ),
         yaxis=dict(
             title='Number of Feedback'
-        )
+        ),
+        font=dict(
+            family='Helvetica Neue, Helvetica, sans-serif',
+            size=12,
+            color='#BCBCBC'
+        ),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)', 
     )
 
     fig = dict(data=data, layout=layout)
@@ -1481,6 +1554,7 @@ def set_search_count(dict_of_returned_df):
     df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
     count = len(df_to_use.index)
     return u'Search returned {} results.'.format(count)
+
 
 
 if __name__ == '__main__':

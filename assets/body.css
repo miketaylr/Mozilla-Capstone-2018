@@ -46,3 +46,14 @@ body {
 ._dash-undo-redo {
     display: none;
 }
+
+.sites-layout {
+    text-align: center;
+    color: white;
+}
+
+.page-title {
+    text-align: center;
+    color: white;
+    letter-spacing: 0.5px;
+}
