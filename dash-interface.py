@@ -421,6 +421,7 @@ sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
 sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
 sites_df = sites_df.sort_values(by=['Count'], ascending=False)
 sites_df = sites_df[sites_df['Site'] != 'None Found']
+init_count = len(sites_df.index)
 
 
 # Page styling - sample:
@@ -573,6 +574,9 @@ list_page_children = []
 #         }],
 #     )
 # ])
+
+
+
 sites_layout = html.Div(className='sites-layout', children=[
     html.H3('Sites', className='page-title'),
     html.Div([
@@ -584,7 +588,17 @@ sites_layout = html.Div(className='sites-layout', children=[
             start_date=results_df['Date Submitted'].min(),
             end_date=results_df['Date Submitted'].max()
         ),
-        html.Div(id='unique-site-count')
+        html.Div(id='unique-site-count'),
+        html.Div(id='slider-container', className='slider-container', children=[
+            html.Div(dcc.Slider(
+                id='sites-slider',
+                min=0,
+                max=init_count,
+                value=init_count,
+                marks={i: '{} sites'.format(i) for i in range(init_count) if (i % 30 == 0) or (i == init_count)}),
+                style={'height': '50px', 'width': '100%', 'display': 'inline-block'}),
+            html.Div(id='sites-slider-output')
+        ]),
     ]),
     html.Div([
         dcc.Graph(
@@ -1349,6 +1363,39 @@ def update_list_issue_graph_slider(value):
 
 
 @app.callback(
+    dash.dependencies.Output('slider-container', 'children'),
+    [dash.dependencies.Input('sites-date-range', 'start_date'),
+     dash.dependencies.Input('sites-date-range', 'end_date')])
+def update_site_count(start_date, end_date):    #update graph with values that are in the time range
+    global results_df
+    if(start_date is None or end_date is None):
+        filtered_results = results_df
+    else:
+        filtered_results = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
+
+    sites_list = filtered_results['Sites'].apply(pd.Series).stack().reset_index(drop=True)
+    sites_list = ','.join(sites_list).split(',')
+    sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
+    sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
+    sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
+    sites_df = sites_df.sort_values(by=['Count'], ascending=False)
+    no_sites_df = sites_df[sites_df['Site'] == 'None Found']
+    sites_df = sites_df[sites_df['Site'] != 'None Found']
+    count = len(sites_df.index)
+
+    return html.Div([
+        html.Div(dcc.Slider(
+            id='sites-slider',
+            min=0,
+            max=count,
+            value=count,
+            marks={i: '{} sites'.format(i) for i in range(count) if (i % 30 == 0) or (i == count)}),
+            style={'height': '50px', 'width': '100%', 'display': 'inline-block'}),
+        html.Div(id='sites-slider-output')
+    ])
+
+
+@app.callback(
     dash.dependencies.Output('unique-site-count', 'children'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
@@ -1372,15 +1419,25 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     return html.Div([
         html.P(['Sites were mentioned {} times in the raw feeback.'.format(sites_df['Count'].sum())]),
         html.P(['There were {} unique sites mentioned.'.format(count)]),
-        html.P(['There were {} raw feedback with no mentions of sites.'.format(no_sites_df['Count'].sum())]),
+        html.P(['There were {} raw feedback with no mentions of sites.'.format(no_sites_df['Count'].sum())])
     ])
+
+
+
+
+@app.callback(
+    dash.dependencies.Output('sites-slider-output', 'children'),
+    [dash.dependencies.Input('sites-slider', 'value')])
+def update_output(value):
+    return 'Displaying {} most frequent sites.'.format(value)
 
 
 @app.callback(
     dash.dependencies.Output('mentioned-site-graph', 'figure'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
-     dash.dependencies.Input('sites-date-range', 'end_date')])
-def update_site_graph(start_date, end_date):    #update graph with values that are in the time range
+     dash.dependencies.Input('sites-date-range', 'end_date'),
+     dash.dependencies.Input('sites-slider', 'value')])
+def update_site_graph(start_date, end_date, max):    #update graph with values that are in the time range
     global results_df
 
     if(start_date is None or end_date is None):
@@ -1396,6 +1453,7 @@ def update_site_graph(start_date, end_date):    #update graph with values that a
     sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
     sites_df = sites_df.sort_values(by=['Count'], ascending=False)
     sites_df = sites_df[sites_df['Site'] != 'None Found']
+    sites_df = sites_df.head(max)
 
     data = [go.Bar(
         x=sites_df['Formatted'],
