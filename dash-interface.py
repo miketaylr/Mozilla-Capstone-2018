@@ -15,6 +15,7 @@ from collections import Counter
 import numpy as np
 import urllib.parse
 
+
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 
@@ -281,12 +282,12 @@ list_issue_df = issue_df
 fig_component = updateGraph(component_df, 'Components Over Time', 7)
 fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
+
 # def mergedGraph():
 #     # merge output_pipeline with output_clusters_defined
 #     merged = pd.merge(results_df, clusters_df, on='Response ID')
 #     merged = merged[merged['manual_clusters'].notna()]
 #     return merged
-# 
 # def updateCompMetricsGraph():
 #     # CATEGORIZATION VISUALIZATION
 #     merged = mergedGraph()
@@ -328,8 +329,6 @@ fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 #     )
 #     fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
 #     return fig_comp_metrics
-
-
 # def updateIssuesMetricsGraph():
 #     # ISSUES VISUALIZATION
 #     merged = mergedGraph()
@@ -368,12 +367,8 @@ fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 #     )
 #     fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
 #     return fig_issue_metrics
-
-
 # fig_comp_metrics = updateCompMetricsGraph()
 # fig_issue_metrics = updateIssuesMetricsGraph()
-
-
 # DRILLDOWN FUNCTIONS
 # def drilldownClustering(df):
 #     results = runDrilldown(df)
@@ -467,12 +462,10 @@ colors = {
     'text': '#7FDBFF'
 }
 app.config.suppress_callback_exceptions = True
-
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
-
 main_layout = html.Div(children=[
     html.Div(id="header",
              children=[
@@ -493,88 +486,15 @@ main_layout = html.Div(children=[
 ])
 
 
-#prep data for displaying in stacked binary sentiment graph over time
-#Grab unique dates from results_df
+# prep data for displaying in stacked binary sentiment graph over time
+# Grab unique dates from results_df
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
 common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
 common_df = common_df.sort_values(by=['count'], ascending=False)
 
 
-
 list_page_children = []
-
-
-# sites_layout = html.Div([
-#     html.H2('Sites'),
-#     html.Div([
-#         html.Label('Choose Date Range:'),
-#         dcc.DatePickerRange(
-#             id='sites-date-range',
-#             min_date_allowed=results_df['Date Submitted'].min(),
-#             max_date_allowed=results_df['Date Submitted'].max(),
-#             start_date=results_df['Date Submitted'].min(),
-#             end_date=results_df['Date Submitted'].max()
-#         )
-#     ]),
-#
-#     dcc.Graph(
-#         id='mentioned-site-graph',
-#         figure={
-#             'data': [{
-#                 'x': common_df[common_df.columns[0]],
-#                 'y': common_df[common_df.columns[1]],
-#                 'customdata': results_df['Sites'].unique()[1:],
-#                 'type': 'bar'
-#             }],
-#             'layout': {
-#                 'title': "Feedback by Mentioned Site(s)",
-#                 'xaxis': {
-#                     'title': 'Mentioned Site(s)'
-#                 },
-#                 'yaxis': {
-#                     'title': 'Number of Feedback'
-#                 }
-#             }
-#         }
-#     ),
-#     dt.DataTable(
-#         id='common-site-table',
-#         columns=[{"name": i, "id": i} for i in search_df.columns],
-#         pagination_settings={
-#             'current_page': 0,
-#             'page_size': PAGE_SIZE
-#         },
-#         pagination_mode='be',
-#         sorting='be',
-#         sorting_type='single',
-#         sorting_settings=[],
-#         n_fixed_rows=1,
-#         style_table={
-#             'overflowX': 'scroll',
-#             'maxHeight': '800',
-#             'overflowY': 'scroll'
-#         },
-#         style_cell={
-#             'minWidth': '50'
-#                         'px', 'maxWidth': '200px',
-#             'whiteSpace': 'no-wrap',
-#             'overflow': 'hidden',
-#             'textOverflow': 'ellipsis',
-#         },
-#         style_cell_conditional=[
-#             {
-#                 'if': {'column_id': 'Feedback'},
-#                 'textAlign': 'left'
-#             }
-#         ],
-#         css=[{
-#             'selector': '.dash-cell div.dash-cell-value',
-#             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-#         }],
-#     )
-# ])
-
 
 
 sites_layout = html.Div(className='sites-layout', children=[
@@ -709,61 +629,103 @@ sentiment_layout = html.Div([
             )
         ),
     ]),
-    html.Div([
-        html.Div([ #entire modal
-                #modal content
-            html.Div([
-                html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
-                html.H2("Selected Feedback Data Points"),#Header
-                dt.DataTable(
-                    id='modal-table',
-                    columns=[{"name": i, "id": i} for i in search_df.columns],
-                    pagination_settings={
-                        'current_page': 0,
-                        'page_size': PAGE_SIZE
-                    },
-                    pagination_mode='be',
-                    sorting='be',
-                    sorting_type='single',
-                    sorting_settings=[],
-                    n_fixed_rows=1,
-                    style_table={
-                     'overflowX': 'scroll',
-                     'maxHeight': '800',
-                     'overflowY': 'scroll'
-                    },
-                    style_cell={
-                        'minWidth': '50'
-                                 'px', 'maxWidth': '200px',
-                        'whiteSpace': 'no-wrap',
-                        'overflow': 'hidden',
-                        'textOverflow': 'ellipsis',
-                    },
-                    style_cell_conditional=[{
-                        'if': {'column_id': 'Feedback'},
-                        'textAlign': 'left'
-                    }],
-                    css=[{
-                     'selector': '.dash-cell div.dash-cell-value',
-                     'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-
-                    }],
-                )
-             ], id='modal-content', className='modal-content')
-         ], id='modal', className='modal'),
-        html.Div(
-            className='six columns',
-            id='current-content'
-        )
-    ])
+    # html.Div([
+    #     html.Div([ #entire modal
+    #             #modal content
+    #         html.Div([
+    #             html.Button("Close", id="close-modal", className="close", n_clicks_timestamp=0), #close button
+    #             html.H2("Selected Feedback Data Points"),#Header
+    #             dt.DataTable(
+    #                 id='modal-table',
+    #                 columns=[{"name": i, "id": i} for i in search_df.columns],
+    #                 pagination_settings={
+    #                     'current_page': 0,
+    #                     'page_size': PAGE_SIZE
+    #                 },
+    #                 pagination_mode='be',
+    #                 sorting='be',
+    #                 sorting_type='single',
+    #                 sorting_settings=[],
+    #                 n_fixed_rows=1,
+    #                 style_table={
+    #                  'overflowX': 'scroll',
+    #                  'maxHeight': '800',
+    #                  'overflowY': 'scroll'
+    #                 },
+    #                 style_cell={
+    #                     'minWidth': '50'
+    #                              'px', 'maxWidth': '200px',
+    #                     'whiteSpace': 'no-wrap',
+    #                     'overflow': 'hidden',
+    #                     'textOverflow': 'ellipsis',
+    #                 },
+    #                 style_cell_conditional=[{
+    #                     'if': {'column_id': 'Feedback'},
+    #                     'textAlign': 'left'
+    #                 }],
+    #                 css=[{
+    #                  'selector': '.dash-cell div.dash-cell-value',
+    #                  'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
+    #
+    #                 }],
+    #             )
+    #          ], id='modal-content', className='modal-content')
+    #      ], id='modal', className='modal'),
+    #     html.Div(
+    #         className='six columns',
+    #         id='current-content'
+    #     )
+    # ])
+    html.Div([  # entire modal
+        html.Div([  # modal content
+            html.Div(className="close-button-container", children=[
+                html.Button("Close", id="close-sentiment-modal", className="close", n_clicks=0),
+            ]),
+            html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
+            html.Div(className='drill-down-container', children=[
+                # html.A("Drill-down", className='drill-down-link', href='/comp-issues-list', target="_blank"), # close button
+                html.A("Download CSV", id='download-comp-link', className='download-link', href='', target="_blank"),
+            ]),
+            html.Div(className='modal-table-container', children=[
+                dte.DataTable(  # Add fixed header row
+                    id='modal-sentiment-table',
+                    rows=[{}],
+                    row_selectable=True,
+                    filterable=True,
+                    sortable=True,
+                    selected_row_indices=[],
+                ),
+            ]),
+        ], id='modal-content-sentiment', className='modal-content')
+    ], id='modal-sentiment', className='modal'),
 ])
 
 
 geoview_layout = html.Div([
     html.H3('Global Happiness Index', className='page-title'),
     dcc.Graph(id='country-graph', figure=fig_geo),
-    # html.Div(id="bitch-div"),
-    # html.Div(id="bitch-div2")
+    html.Div([  # entire modal
+        html.Div([  # modal content
+            html.Div(className="close-button-container", children=[
+                html.Button("Close", id="close-geo-modal", className="close", n_clicks=0),
+            ]),
+            html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
+            html.Div(className='drill-down-container', children=[
+                # html.A("Drill-down", className='drill-down-link', href='/comp-issues-list', target="_blank"), # close button
+                html.A("Download CSV", id='download-geo-link', className='download-link', href='', target="_blank"),
+            ]),
+            html.Div(className='modal-table-container', children=[
+                dte.DataTable(  # Add fixed header row
+                    id='modal-geo-table',
+                    rows=[{}],
+                    row_selectable=True,
+                    filterable=True,
+                    sortable=True,
+                    selected_row_indices=[],
+                ),
+            ]),
+        ], id='modal-content-geo', className='modal-content')
+    ], id='modal-geo', className='modal'),
 ])
 
 
@@ -859,6 +821,9 @@ search_layout = html.Div([
     html.H3('Search Feedback', className='page-title'),
     # html.Label('Enter Search Request:'),
     dcc.Input(id='searchrequest', type='text', placeholder='Search'),
+    html.Div(className='drill-down-container', children=[
+        html.A("Download CSV", id='download-search-link', className='download-link', href='', target="_blank"),
+    ]),
     html.Div(id='search-table-container',
              children=[
                  dte.DataTable(  # Add fixed header row
@@ -1009,6 +974,159 @@ def render_content(tab):
         return search_layout
     else:
         return sites_layout
+
+
+@app.callback(
+    Output('modal-sentiment', 'style'),
+    [Input('close-sentiment-modal', 'n_clicks'),
+     Input('binary-sentiment-ts', 'clickData')])
+def display_senti_modal(closeClicks, clickData):
+    global sentiCloseCount
+    print('here in sentiment', closeClicks, sentiCloseCount)  # clickData exists, but running into an exception here....
+    if closeClicks > sentiCloseCount:
+        sentiCloseCount = closeClicks
+        return {'display': 'none'}
+    elif clickData:
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
+
+
+@app.callback(
+    Output('modal-sentiment-table', 'rows'),
+    [Input('binary-sentiment-ts', 'clickData')])
+def display_senti_click_data(clickData):
+    #Set click data to whichever was clicked
+    print('here in sentiment', clickData)
+    if (clickData):
+        global global_senti_modal_ids
+        if(len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            global senti_response_id_map
+            ids = senti_response_id_map[day][component]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+        else:
+            day = clickData['points'][0]['x']
+            global senti_day_response_id_map
+            ids = senti_day_response_id_map[day]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        dff.columns = cnamesnew
+        global_senti_modal_ids = ids
+        return dff.to_dict('rows')
+    else:
+        return []
+
+
+@app.callback(
+    Output('download-senti-link', 'href'),
+    [Input('binary-sentiment-ts', 'clickData')])
+def update_senti_download_link(clickData):
+    if clickData:
+        if(len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            comp = clickData['points'][0]['customdata']
+            global senti_response_id_map
+            ids = senti_response_id_map[day][comp]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+        else:
+            day = clickData['points'][0]['x']
+            global senti_day_response_id_map
+            ids = senti_day_response_id_map[day]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        csv_string = dff.to_csv(index=False, encoding='utf-8')
+        csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+        return csv_string
+    else:
+        return ''
+
+
+@app.callback(
+    Output('modal-geo', 'style'),
+    [Input('close-geo-modal', 'n_clicks'),
+     Input('country-graph', 'clickData')])
+def display_senti_modal(closeClicks, clickData):
+    global geoCloseCount
+    print('here in geo', closeClicks, geoCloseCount)
+    if closeClicks > geoCloseCount:  # running into exception here...
+        geoCloseCount = closeClicks
+        return {'display': 'none'}
+    elif clickData:
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
+
+
+@app.callback(
+    Output('modal-geo-table', 'rows'),
+    [Input('country-graph', 'clickData')])
+def display_senti_click_data(clickData):
+    #Set click data to whichever was clicked
+    print('here in geo', clickData)
+    if (clickData):
+        global global_geo_modal_ids
+        if(len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            component = clickData['points'][0]['customdata']
+            global geo_response_id_map
+            ids = geo_response_id_map[day][component]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+        else:
+            day = clickData['points'][0]['x']
+            global geo_day_response_id_map
+            ids = geo_day_response_id_map[day]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        dff.columns = cnamesnew
+        global_geo_modal_ids = ids
+        return dff.to_dict('rows')
+    else:
+        return []
+
+
+@app.callback(
+    Output('download-geo-link', 'href'),
+    [Input('country-graph', 'clickData')])
+def update_senti_download_link(clickData):
+    if clickData:
+        if(len(clickData['points']) == 1):
+            day = clickData['points'][0]['x']
+            comp = clickData['points'][0]['customdata']
+            global geo_response_id_map
+            ids = geo_response_id_map[day][comp]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+        else:
+            day = clickData['points'][0]['x']
+            global geo_day_response_id_map
+            ids = geo_day_response_id_map[day]
+            dff = search_df[search_df['Response ID'].isin(ids)]
+
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        csv_string = dff.to_csv(index=False, encoding='utf-8')
+        csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+        return csv_string
+    else:
+        return ''
 
 
 @app.callback(
@@ -1174,8 +1292,6 @@ def update_issue_download_link(clickData):
 #         return {'display': 'block'}
 #     else:
 #         return {}
-
-
 # @app.callback(
 #     Output('modal-table', "data"),
 #     [Input('modal-table', "pagination_settings"),
@@ -1204,8 +1320,6 @@ def update_issue_download_link(clickData):
 #                ].to_dict('rows')
 #     else:
 #         return {}
-
-
 # @app.callback(
 #     Output('current-content', 'children'),
 #     [Input('trends-scatterplot', 'hoverData')])
@@ -1223,8 +1337,6 @@ def update_issue_download_link(clickData):
 #     #     print('no hover data selected yet')
 #     # return ''
 #     return
-
-
 # @app.callback(
 #     Output('trend-data-histogram', 'figure'),
 #     [Input('trends-scatterplot', 'selectedData')])
@@ -1313,6 +1425,7 @@ def update_sites_download_link(selectedData):
 def update_comp_output_slider(value):
     return 'Past {} days of data'.format(value)
 
+
 @app.callback(
     dash.dependencies.Output('comp-graph', 'figure'),
     [dash.dependencies.Input('comp_time_slider', 'value')])
@@ -1320,11 +1433,13 @@ def update_comp_graph_slider(value):
     fig_component = updateGraph(component_df, 'Components Over Time', value)
     return fig_component
 
+
 @app.callback(
     dash.dependencies.Output('list_comp_slider_output', 'children'),
     [dash.dependencies.Input('list_comp_time_slider', 'value')])
 def update_list_comp_output_slider(value):
     return 'Past {} days of data'.format(value)
+
 
 @app.callback(
     dash.dependencies.Output('list-comp-graph', 'figure'),
@@ -1340,6 +1455,7 @@ def update_list_comp_graph_slider(value):
 def update_issue_output_slider(value):
     return 'Past {} days of data'.format(value)
 
+
 @app.callback(
     dash.dependencies.Output('issue-graph', 'figure'),
     [dash.dependencies.Input('issue_time_slider', 'value')])
@@ -1347,12 +1463,14 @@ def update_issue_graph_slider(value):
     fig_issue = updateGraph(issue_df, 'Issues Over Time', value)
     return fig_issue
 
+
 @app.callback(
     dash.dependencies.Output('list_issue_slider_output', 'children'),
     [dash.dependencies.Input('list_issue_time_slider', 'value')])
 def update_list_issue_output_slider(value):
     print('he')
     return 'Past {} days of data'.format(value)
+
 
 @app.callback(
     dash.dependencies.Output('list-issue-graph', 'figure'),
@@ -1423,8 +1541,6 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     ])
 
 
-
-
 @app.callback(
     dash.dependencies.Output('sites-slider-output', 'children'),
     [dash.dependencies.Input('sites-slider', 'value')])
@@ -1489,6 +1605,7 @@ def update_site_graph(start_date, end_date, max):    #update graph with values t
     fig = dict(data=data, layout=layout)
     return fig
 
+
 @app.callback(
     Output('searchtable', 'rows'),
     [Input('searchrequest', 'n_submit')], # [Input('searchrequest', 'n_submit')],
@@ -1522,12 +1639,32 @@ def set_search_count(dict_of_returned_df):
     count = len(df_to_use.index)
     return u'Search returned {} results.'.format(count)
 
+
 @app.callback(
     Output('search-table-container','style'),
     [Input('searchtable', 'rows')])
 def set_search_count(rows):
     return {'display': 'block'}
 
+
+@app.callback(
+    Output('download-search-link', 'href'),
+    [Input('searchtable', 'selected_rows')])  #  https://github.com/plotly/dash-table/blob/master/dash_table/DataTable.py
+def update_senti_download_link(selected_rows):
+    if selected_rows:
+        sites = list(d['customdata'] for d in selected_rows['points'])
+        dff = search_df[search_df['Sites'].isin(sites)]
+        cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+                  'Feedback', 'Components', 'Issues', 'Sites']
+        cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                     'Feedback', 'Components', 'Issues', 'Sites']
+        dff = dff[cnames]
+        csv_string = dff.to_csv(index=False, encoding='utf-8')
+        csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
+        print(csv_string)
+        return csv_string
+    else:
+        return ''
 
 
 if __name__ == '__main__':
