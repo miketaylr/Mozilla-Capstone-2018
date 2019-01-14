@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
 import ast
 import json
-from clustering import runDrilldown
+#from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
