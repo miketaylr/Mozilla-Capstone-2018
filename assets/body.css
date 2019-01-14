@@ -12,6 +12,14 @@ body {
     left: 50%;
 }
 
+._dash-undo-redo {
+  display: none;
+}
+
+.modebar {
+    background-color: transparent;
+}
+
 #header {
     display: flex;
     justify-content: space-between;
@@ -43,10 +51,6 @@ body {
     margin: 1.75em 0;
 }
 
-._dash-undo-redo {
-    display: none;
-}
-
 .sites-layout {
     text-align: center;
     color: white;
@@ -56,4 +60,19 @@ body {
     text-align: center;
     color: white;
     letter-spacing: 0.5px;
+}
+
+.page-title {
+    text-align: center;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
+.list-slider-container {
+    text-align: center;
+}
+
+.list-page-slider{
+    width: 75% !important;
+    margin: auto;
 }
