@@ -879,9 +879,9 @@ def display_page(pathname):
         results_modal_df = results2_df[results2_df['Response ID'].isin(global_site_modal_ids)]
         day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
 
-        component_df_list, comp_response_id_map_list = initCompDF(results_modal_df, day_range_site_list)
+        component_df_list, comp_response_id_map_list, comp_day_response_id_map_list = initCompDF(results_modal_df, day_range_site_list)
         list_component_df = component_df_list
-        issue_df_list, issue_response_id_map_list = initIssueDF(results_modal_df, day_range_site_list)
+        issue_df_list, issue_response_id_map_list, issue_day_response_id_map_list = initIssueDF(results_modal_df, day_range_site_list)
         list_issue_df = issue_df_list
         fig_component_list = updateGraph(component_df_list, 'Components Over Time', 7)
         fig_issue_list = updateGraph(issue_df_list, 'Issues Over Time', 7)
@@ -894,25 +894,29 @@ def display_page(pathname):
             ]),
             html.Div([
                 html.Div(id='list_comp_container',
-                         className='one-half column',
+                         className='one-half column list-slider-container',
                          children=[
-                             html.Div(id='list_comp_slider_output'),
-                             dcc.Slider(id='list_comp_time_slider',
+                            html.H3('Components', className='page-title'),
+                            html.Div(id='list_comp_slider_output'),
+                            dcc.Slider(id='list_comp_time_slider',
+                                        className='list-page-slider',
                                         min=toggle_time_params['min'], max=toggle_time_params['max'],
                                         step=toggle_time_params['step'], value=toggle_time_params['default'],
                                         marks=toggle_time_params['marks']),
-                             dcc.Graph(id='list-comp-graph', figure=fig_component_list),
+                            dcc.Graph(id='list-comp-graph', figure=fig_component_list),
                          ]
                  ),
                 html.Div(id='list_issue_container',
-                         className='one-half column',
+                         className='one-half column list-slider-container',
                          children=[
-                             html.Div(id='list_issue_slider_output'),
-                             dcc.Slider(id='list_issue_time_slider',
+                            html.H3('Issues', className='page-title'),
+                            html.Div(id='list_issue_slider_output'),
+                            dcc.Slider(id='list_issue_time_slider',
+                                        className='list-page-slider',
                                         min=toggle_time_params['min'], max=toggle_time_params['max'],
                                         step=toggle_time_params['step'], value=toggle_time_params['default'],
                                         marks=toggle_time_params['marks']),
-                             dcc.Graph(id='list-issue-graph', figure=fig_issue_list),
+                            dcc.Graph(id='list-issue-graph', figure=fig_issue_list),
                 ]),
                 ]),
             html.Ul([html.Li(x) for x in global_selected_sites])
@@ -938,10 +942,12 @@ def display_page(pathname):
             ]),
             html.Div([
                 html.Div(id='list_comp_container',
-                         className='one-half column',
+                         className='one-half column list-slider-container',
                          children=[
+                            html.H3('Components', className='page-title'),
                              html.Div(id='list_comp_slider_output'),
                              dcc.Slider(id='list_comp_time_slider',
+                                        className='list-page-slider',
                                         min=toggle_time_params['min'], max=toggle_time_params['max'],
                                         step=toggle_time_params['step'], value=toggle_time_params['default'],
                                         marks=toggle_time_params['marks']),
@@ -949,10 +955,12 @@ def display_page(pathname):
                          ]
                  ),
                 html.Div(id='list_issue_container',
-                         className='one-half column',
+                         className='one-half column list-slider-container',
                          children=[
+                            html.H3('Issues', className='page-title'),
                              html.Div(id='list_issue_slider_output'),
                              dcc.Slider(id='list_issue_time_slider',
+                                        className='list-page-slider',
                                         min=toggle_time_params['min'], max=toggle_time_params['max'],
                                         step=toggle_time_params['step'], value=toggle_time_params['default'],
                                         marks=toggle_time_params['marks']),

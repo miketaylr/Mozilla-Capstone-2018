@@ -67,3 +67,12 @@ body {
     color: white;
     letter-spacing: 0.5px;
 }
+
+.list-slider-container {
+    text-align: center;
+}
+
+.list-page-slider{
+    width: 75% !important;
+    margin: auto;
+}
