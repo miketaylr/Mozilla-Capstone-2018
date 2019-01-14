@@ -1,15 +1,15 @@
 // Test if file has loaded
 //alert('If you see this alert, then your custom JavaScript script has run!')
 
-// Close Comp modal
-$('body').on('click', '#close-modal-comp',function () {
-    $('#modal-comp').css('display', 'none');
-});
+// // Close Comp modal
+// $('body').on('click', '#close-modal-comp',function () {
+//     $('#modal-comp').css('display', 'none');
+// });
 
-// Close Issue Modal
-$('body').on('click', '#close-modal-issue',function () {
-    $('#modal-issue').css('display', 'none');
-});
+// // Close Issue Modal
+// $('body').on('click', '#close-modal-issue',function () {
+//     $('#modal-issue').css('display', 'none');
+// });
 
 // $('body').on('click', '#close-modal-site',function () {
 //     $('#modal-site').css('display', 'none');

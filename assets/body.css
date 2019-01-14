@@ -51,6 +51,17 @@ body {
     margin: 1.75em 0;
 }
 
+.sites-layout {
+    text-align: center;
+    color: white;
+}
+
+.page-title {
+    text-align: center;
+    color: white;
+    letter-spacing: 0.5px;
+}
+
 .page-title {
     text-align: center;
     color: white;
