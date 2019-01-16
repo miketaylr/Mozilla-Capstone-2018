@@ -14,6 +14,7 @@ from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
 import numpy as np
 import urllib.parse
+import os
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
@@ -489,7 +490,7 @@ main_layout = html.Div(children=[
             dcc.Tab(label='Search', value='search', style=tab_style, selected_style=tab_selected_style),
         ], style=tabs_styles),
     ]),
-    html.Div(id='tabs-content-inline'),
+    html.Div(id='tabs-content-inline')
 ])
 
 
@@ -856,9 +857,11 @@ issues_layout = html.Div(className='sites-layout', children=[
 
 
 search_layout = html.Div([
+    html.Img(src='https://i.ibb.co/yXR1ttT/loading.gif', id = 'search-loading', style={'display': 'none'}),
     html.H3('Search Feedback', className='page-title'),
     # html.Label('Enter Search Request:'),
     dcc.Input(id='searchrequest', type='text', placeholder='Search'),
+    html.Div(id='search-count-reveal'),
     html.Div(id='search-table-container',
              children=[
                  dte.DataTable(  # Add fixed header row
@@ -870,9 +873,9 @@ search_layout = html.Div([
                      selected_row_indices=[],
                  ),
              ],
-             style={'display': 'none'}),
-    html.Div(id='search-count-reveal')
-])
+             style={'display': 'none'})
+],
+style={'text-align': 'center'})
 
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -1511,24 +1514,29 @@ def update_table(ns, request_value):
             r_df = r_df.append(temp_df, ignore_index=True)
     return r_df.to_dict('rows')
 
-
 # NEED TO FIX THIS
 @app.callback(
     Output('search-count-reveal','children'),
     [Input('searchtable', 'rows')])
 def set_search_count(dict_of_returned_df):
-    df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
-    count = len(df_to_use.index)
-    return u'Search returned {} results.'.format(count)
+    if (len(dict_of_returned_df[0]) > 0):
+        df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
+        count = len(df_to_use.index)
+        return u'Search returned {} results.'.format(count)
+    else:
+        return ''
 
 @app.callback(
     Output('search-table-container','style'),
-    [Input('searchtable', 'rows')])
-def set_search_count(rows):
-    return {'display': 'block'}
-
+    [Input('search-count-reveal', 'children'),
+     Input('searchtable', 'rows')])
+def set_search_count(sentence, dict):
+    if (len(dict[0]) > 0):
+        return {'display': 'block'}
+    else:
+        return {'display': 'none'}
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 

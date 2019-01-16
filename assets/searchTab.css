@@ -2,3 +2,11 @@
     background-color: transparent;
     color: #afb1b3;
 }
+
+#search-loading {
+    position: absolute;
+    left: 50%;
+    top: 60%;
+    transform: translate(-50%, -50%);
+    width: 75px;
+}
