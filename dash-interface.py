@@ -15,6 +15,7 @@ from collections import Counter
 import numpy as np
 import urllib.parse
 import os
+import ast
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -43,6 +44,8 @@ clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Resp
 global_site_modal_ids = []
 global_selected_sites = []
 global_comp_issue_modal_ids = []
+sentiCloseCount=0
+geoCloseCount=0
 siteCloseCount=0
 compCloseCount=0
 issueCloseCount=0
@@ -1633,7 +1636,6 @@ def update_table(ns, request_value):
     return r_df.to_dict('rows')
 
 
-# NEED TO FIX THIS
 @app.callback(
     Output('search-count-reveal','children'),
     [Input('searchtable', 'rows')])
@@ -1659,10 +1661,20 @@ def set_search_count(sentence, dict):
 
 @app.callback(
     Output('download-search-link', 'href'),
-    [Input('searchtable', 'selected_rows')])  #  https://github.com/plotly/dash-table/blob/master/dash_table/DataTable.py
-def update_senti_download_link(selected_rows):
-    if selected_rows:
-        sites = list(d['customdata'] for d in selected_rows['points'])
+    [Input('searchtable', 'rows')])  #  https://github.com/plotly/dash-table/blob/master/dash_table/DataTable.py
+def update_search_download_link(rows):
+    dicttouse = dict()
+    print('we are doing this callback whoo')
+    print(type(rows))
+    print(len(rows))
+    print(rows)
+    for row in rows:
+        sampledict = ast.literal_eval(row)
+        dicttouse.update(sampledict)
+    print('we are doing this callback whoo')
+    print(dicttouse)
+    if rows:
+        sites = list(d['customdata'] for d in rows['points'])
         dff = search_df[search_df['Sites'].isin(sites)]
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
                   'Feedback', 'Components', 'Issues', 'Sites']
