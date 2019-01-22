@@ -117,8 +117,10 @@ def createNormalizedMatrix(file):
 
     wordVectorList = mostDistinctiveWords
     # wordVectorList = [x for x in wordVectorList if x not in siteList]
-    wordVectorList.remove('mozilla')
-    wordVectorList.remove('firefox')
+    if 'mozilla' in wordVectorList:
+        wordVectorList.remove('mozilla')
+    if 'firefox' in wordVectorList:
+        wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
@@ -645,7 +647,7 @@ def runDrilldown(df):
     # Create index based off of csv
     X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(filename)
 
-    # Delete temp csv
+    # Delete temp csv FIX
     os.remove(filename)
 
     # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
@@ -659,9 +661,13 @@ def runDrilldown(df):
     counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
     counts.name = 'Count'
 
+    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
+    ids.name = 'Response IDs'
+
     top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
-    final = pd.concat([counts, top_words_combined, top_phrases_combined], axis=1)
+    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
     return final
 
 
 # runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
+# run()
