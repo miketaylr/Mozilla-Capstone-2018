@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
 import ast
 import json
-#from clustering import runDrilldown
+from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
@@ -40,8 +40,9 @@ issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 global_site_modal_ids = []
+global_comp_modal_ids = []
+global_issue_modal_ids = []
 global_selected_sites = []
-global_comp_issue_modal_ids = []
 siteCloseCount=0
 compCloseCount=0
 issueCloseCount=0
@@ -376,36 +377,38 @@ fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
 
 # DRILLDOWN FUNCTIONS
-# def drilldownClustering(df):
-#     results = runDrilldown(df)
-#     results = results.transpose()
-#     fig = clusteringBarGraph(results, 'Clustering Analysis')
-#     return fig
-# def clusteringBarGraph(df, title):
-#     traces = []
-#     # Get Count, Words, Phrases
-#     count = list(df.loc['Count'].values)
-#     words = list(df.loc['Words'].values)
-#     phrases = list(df.loc['Phrases'].values)
-#     traces = [go.Bar(
-#             x=words,
-#             y=count,
-#             text = phrases,
-#             hoverinfo='text',
-#         )]
-#     layout = go.Layout(
-#         title=title,
-#         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#         xaxis=dict(
-#             # showticklabels=False,
-#             title='Time'
-#         ),
-#         yaxis=dict(
-#             title='Count of Docs'
-#         )
-#     )
-#     fig = dict(data=traces, layout=layout)
-#     return fig
+def drilldownClustering(df):
+    results = runDrilldown(df)
+    results = results.transpose()
+    fig = clusteringBarGraph(results, 'Clustering Analysis')
+    return fig
+def clusteringBarGraph(df, title):
+    traces = []
+    # Get Count, Words, Phrases
+    count = list(df.loc['Count'].values)
+    ids = list(df.loc['Response IDs'].values)
+    words = list(df.loc['Words'].values)
+    phrases = list(df.loc['Phrases'].values)
+    traces = [go.Bar(
+            x=words,
+            y=count,
+            text = phrases,
+            customdata=ids,
+            hoverinfo='text',
+        )]
+    layout = go.Layout(
+        title=title,
+        font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
+        xaxis=dict(
+            # showticklabels=False,
+            title='Time'
+        ),
+        yaxis=dict(
+            title='Count of Docs'
+        )
+    )
+    fig = dict(data=traces, layout=layout)
+    return fig
 
 
 #prep data for displaying in stacked binary sentiment graph over time
@@ -574,7 +577,8 @@ sites_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/sites-list', target="_blank"), # close button
+                html.A("Drill-down", className='drill-down-link', href='/sites-classification', target="_blank"), # close button
+                html.A("Learn", className='drill-down-link', href='/sites-clustering', target="_blank"),
                 html.A("Download CSV", id='download-sites-link', className='download-link', href='', target="_blank"),
             ]),
             html.Div(className='modal-table-container', children=[
@@ -723,7 +727,8 @@ components_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/comp-issues-list', target="_blank"), # close button
+                html.A("Drill-down", className='drill-down-link', href='/comp-classification', target="_blank"), # close button
+                html.A("Learn", className='drill-down-link', href='/comp-clustering', target="_blank"),
                 html.A("Download CSV", id='download-comp-link', className='download-link', href='', target="_blank"),
             ]),
             html.Div(className='modal-table-container', children=[
@@ -767,7 +772,8 @@ issues_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/comp-issues-list', target="_blank"), # close button
+                html.A("Drill-down", className='drill-down-link', href='/issues-classification', target="_blank"), # close button
+                html.A("Learn", className='drill-down-link', href='/issues-clustering', target="_blank"),
                 html.A("Download CSV", id='download-issues-link', className='download-link', href='', target="_blank"),
             ]),
             html.Div(className='modal-table-container', children=[
@@ -819,10 +825,18 @@ def display_page(pathname):
     global list_issue_df
     global global_selected_sites
 
-    if pathname == '/sites-list':
+    ids = []
+    if 'sites' in pathname:
+        ids = global_site_modal_ids
+    elif 'comp' in pathname:
+        ids = global_comp_modal_ids
+    elif 'issues' in pathname:
+        ids = global_issue_modal_ids
+
+    if 'classification' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
-        results_modal_df = results2_df[results2_df['Response ID'].isin(global_site_modal_ids)]
+        results_modal_df = results2_df[results2_df['Response ID'].isin(ids)]
         day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
 
         component_df_list, comp_response_id_map_list, comp_day_response_id_map_list = initCompDF(results_modal_df, day_range_site_list)
@@ -867,18 +881,13 @@ def display_page(pathname):
                 ]),
             html.Ul([html.Li(x) for x in global_selected_sites])
         ])
-    elif pathname == '/comp-issues-list':
+    elif 'clustering' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
-        results_modal_df = results2_df[results2_df['Response ID'].isin(global_comp_issue_modal_ids)]
-        day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
+        results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
+        # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
 
-        component_df_list, comp_response_id_map_list, comp_day_response_id_map_list = initCompDF(results_modal_df, day_range_site_list)
-        list_component_df = component_df_list
-        issue_df_list, issue_response_id_map_list, issue_day_response_id_map_list = initIssueDF(results_modal_df, day_range_site_list)
-        list_issue_df = issue_df_list
-        fig_component_list = updateGraph(component_df_list, 'Components Over Time', 7)
-        fig_issue_list = updateGraph(issue_df_list, 'Issues Over Time', 7)
+        fig = drilldownClustering(results_modal_df)
         return html.Div([
             html.Div([
                 html.H1(
@@ -888,31 +897,25 @@ def display_page(pathname):
             ]),
             html.Div([
                 html.Div(id='list_comp_container',
-                         className='one-half column list-slider-container',
+                         className='list-slider-container',
                          children=[
-                            html.H3('Components', className='page-title'),
-                             html.Div(id='list_comp_slider_output'),
-                             dcc.Slider(id='list_comp_time_slider',
-                                        className='list-page-slider',
-                                        min=toggle_time_params['min'], max=toggle_time_params['max'],
-                                        step=toggle_time_params['step'], value=toggle_time_params['default'],
-                                        marks=toggle_time_params['marks']),
-                             dcc.Graph(id='list-comp-graph', figure=fig_component_list),
+                            html.H3('Clustered Data', className='page-title'),
+                             dcc.Graph(id='cluster-graph', figure=fig),
                          ]
                  ),
-                html.Div(id='list_issue_container',
-                         className='one-half column list-slider-container',
-                         children=[
-                            html.H3('Issues', className='page-title'),
-                             html.Div(id='list_issue_slider_output'),
-                             dcc.Slider(id='list_issue_time_slider',
-                                        className='list-page-slider',
-                                        min=toggle_time_params['min'], max=toggle_time_params['max'],
-                                        step=toggle_time_params['step'], value=toggle_time_params['default'],
-                                        marks=toggle_time_params['marks']),
-                             dcc.Graph(id='list-issue-graph', figure=fig_issue_list),
                 ]),
-                ]),
+            html.Div(id='cluster-table-container',
+                     children=[
+                         dte.DataTable(  # Add fixed header row
+                             id='cluster-table',
+                             rows=[{}],
+                             row_selectable=True,
+                             filterable=True,
+                             sortable=True,
+                             selected_row_indices=[],
+                         ),
+                     ]),
+            html.Ul([html.Li(x) for x in global_selected_sites])
         ])
     else:
         return main_layout
@@ -923,6 +926,20 @@ def display_page(pathname):
 # def update_url(tab):  # bit of a hacky way of updating URL for now.
 #     print("clicked tab", tab)
 #     return tab
+
+@app.callback(Output('cluster-table', 'rows'),
+              [Input('cluster-graph', 'clickData')])
+def update_table(clickData):
+    ids = clickData['points'][0]['customdata']
+    dff = search_df[search_df['Response ID'].isin(ids)]
+    cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
+              'Feedback', 'Components', 'Issues', 'Sites']
+    cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+                 'Feedback', 'Components', 'Issues', 'Sites']
+    dff = dff[cnames]
+    dff.columns = cnamesnew
+    return dff.to_dict('rows')
+
 
 @app.callback(Output('tabs-content-inline', 'children'),
               [Input('tabs-styled-with-inline', 'value')])
@@ -966,7 +983,6 @@ def display_comp_click_data(clickData):
     #Set click data to whichever was clicked
     print('here in comp', clickData)
     if (clickData):
-        global global_comp_issue_modal_ids
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             component = clickData['points'][0]['customdata']
@@ -985,7 +1001,8 @@ def display_comp_click_data(clickData):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global_comp_issue_modal_ids = ids
+        global global_comp_modal_ids
+        global_comp_modal_ids = list(dff['Response ID'])
         return dff.to_dict('rows')
     else:
         return []
@@ -1043,7 +1060,6 @@ def display_issue_click_data(clickData):
     #Set click data to whichever was clicked
     print('here in issue', clickData)
     if (clickData):
-        global global_comp_issue_modal_ids
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             issue = clickData['points'][0]['customdata']
@@ -1062,7 +1078,8 @@ def display_issue_click_data(clickData):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global_comp_issue_modal_ids = ids
+        global global_issue_modal_ids
+        global_issue_modal_ids = list(dff['Response ID'])
         return dff.to_dict('rows')
     else:
         return []
