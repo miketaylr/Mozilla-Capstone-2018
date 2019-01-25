@@ -420,7 +420,7 @@ sites_list = ','.join(sites_list).split(',')
 sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
 sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
 sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
-sites_df = sites_df.sort_values(by=['Count'], ascending=False)
+sites_df = sites_df.sort_values(by=['Count'])
 sites_df = sites_df[sites_df['Site'] != 'None Found']
 init_count = len(sites_df.index)
 
@@ -499,83 +499,11 @@ main_layout = html.Div(children=[
 results_df["Date Submitted"] = pd.to_datetime(results_df["Date Submitted"])
 unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
 common_df = test2 = results_df.groupby('Sites')['Sites'].agg(['count']).reset_index()
-common_df = common_df.sort_values(by=['count'], ascending=False)
+common_df = common_df.sort_values(by=['count'])
 
 
 
 list_page_children = []
-
-
-# sites_layout = html.Div([
-#     html.H2('Sites'),
-#     html.Div([
-#         html.Label('Choose Date Range:'),
-#         dcc.DatePickerRange(
-#             id='sites-date-range',
-#             min_date_allowed=results_df['Date Submitted'].min(),
-#             max_date_allowed=results_df['Date Submitted'].max(),
-#             start_date=results_df['Date Submitted'].min(),
-#             end_date=results_df['Date Submitted'].max()
-#         )
-#     ]),
-#
-#     dcc.Graph(
-#         id='mentioned-site-graph',
-#         figure={
-#             'data': [{
-#                 'x': common_df[common_df.columns[0]],
-#                 'y': common_df[common_df.columns[1]],
-#                 'customdata': results_df['Sites'].unique()[1:],
-#                 'type': 'bar'
-#             }],
-#             'layout': {
-#                 'title': "Feedback by Mentioned Site(s)",
-#                 'xaxis': {
-#                     'title': 'Mentioned Site(s)'
-#                 },
-#                 'yaxis': {
-#                     'title': 'Number of Feedback'
-#                 }
-#             }
-#         }
-#     ),
-#     dt.DataTable(
-#         id='common-site-table',
-#         columns=[{"name": i, "id": i} for i in search_df.columns],
-#         pagination_settings={
-#             'current_page': 0,
-#             'page_size': PAGE_SIZE
-#         },
-#         pagination_mode='be',
-#         sorting='be',
-#         sorting_type='single',
-#         sorting_settings=[],
-#         n_fixed_rows=1,
-#         style_table={
-#             'overflowX': 'scroll',
-#             'maxHeight': '800',
-#             'overflowY': 'scroll'
-#         },
-#         style_cell={
-#             'minWidth': '50'
-#                         'px', 'maxWidth': '200px',
-#             'whiteSpace': 'no-wrap',
-#             'overflow': 'hidden',
-#             'textOverflow': 'ellipsis',
-#         },
-#         style_cell_conditional=[
-#             {
-#                 'if': {'column_id': 'Feedback'},
-#                 'textAlign': 'left'
-#             }
-#         ],
-#         css=[{
-#             'selector': '.dash-cell div.dash-cell-value',
-#             'rule': 'display: inline; white-space: inherit; overflow: inherit; text-overflow: inherit;',
-#         }],
-#     )
-# ])
-
 
 
 sites_layout = html.Div(className='sites-layout', children=[
@@ -606,8 +534,9 @@ sites_layout = html.Div(className='sites-layout', children=[
             id='mentioned-site-graph',
             figure={
                 'data': [{
-                    'x': sites_df['Formatted'],
-                    'y': sites_df['Count'],
+                    'x': sites_df['Count'],
+                    'y': sites_df['Formatted'],
+                    'orientation': 'h',
                     'customdata': sites_df['Site'],
                     'type': 'bar',
                     'marker': {
@@ -621,10 +550,10 @@ sites_layout = html.Div(className='sites-layout', children=[
                         'color': '#BCBCBC',
                     },
                     'xaxis': {
-                        'title': ''
+                        'title': 'Number of Feedback'
                     },
                     'yaxis': {
-                        'title': 'Number of Feedback'
+                        'title': 'Website'
                     },
                     'font': {
                         'family': 'Helvetica Neue, Helvetica, sans-serif',
@@ -1380,9 +1309,6 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     sites_list = ','.join(sites_list).split(',')
     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
-    sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
-    sites_df = sites_df.sort_values(by=['Count'], ascending=False)
-    no_sites_df = sites_df[sites_df['Site'] == 'None Found']
     sites_df = sites_df[sites_df['Site'] != 'None Found']
     count = len(sites_df.index)
 
@@ -1413,8 +1339,6 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     sites_list = ','.join(sites_list).split(',')
     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
-    sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
-    sites_df = sites_df.sort_values(by=['Count'], ascending=False)
     no_sites_df = sites_df[sites_df['Site'] == 'None Found']
     sites_df = sites_df[sites_df['Site'] != 'None Found']
     count = len(sites_df.index)
@@ -1455,11 +1379,12 @@ def update_site_graph(start_date, end_date, max):    #update graph with values t
     sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
     sites_df = sites_df.sort_values(by=['Count'], ascending=False)
     sites_df = sites_df[sites_df['Site'] != 'None Found']
-    sites_df = sites_df.head(max)
+    sites_df = sites_df.head(max).sort_values(by='Count')
 
     data = [go.Bar(
-        x=sites_df['Formatted'],
-        y=sites_df['Count'],
+        x=sites_df['Count'],
+        y=sites_df['Formatted'],
+        orientation='h',
         customdata=sites_df['Site'],
         marker=dict(
             color='#E3D0FF'
@@ -1474,10 +1399,10 @@ def update_site_graph(start_date, end_date, max):    #update graph with values t
         ),
         xaxis=dict(
             # showticklabels=False,
-            title=''
+            title='Number of Feedback'
         ),
         yaxis=dict(
-            title='Number of Feedback'
+            title='Website'
         ),
         font=dict(
             family='Helvetica Neue, Helvetica, sans-serif',
@@ -1538,5 +1463,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
 
