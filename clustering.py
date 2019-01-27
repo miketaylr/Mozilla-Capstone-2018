@@ -88,7 +88,7 @@ def getSitesList():
     return siteList
 
 
-def createNormalizedMatrix(file):
+def createNormalizedMatrix(file): #not the most efficient. we index everything in feedback column and pull out all unique words and put it into a corpus
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -109,6 +109,7 @@ def createNormalizedMatrix(file):
     # Get term freq for specific term i.e. android
     # print(myReader.frequency("cell_content", "android"))
     # 1000 most distinctive terms according by TF-IDF score
+    # play with below, see which one does better, myReader auto assesses performance for you, they have done both but there's not difference
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
                             myReader.most_distinctive_terms("sf_output", 1000) if term not in ENGLISH_STOP_WORDS]
     # 1000 most frequent words
@@ -132,7 +133,7 @@ def createNormalizedMatrix(file):
     time_difference = []
     word_list = wordVectorList
 
-    # TODO: redundant code, remove this
+    # while loop below is indexing, goes through all feedback, binary ecnoding (should we switch to freq enc?), does it contain this feature? (1 or 0)
     with codecs.open(file, "r", "ISO-8859-1") as csvfile:
         csvreader = csv.DictReader(csvfile)
         for i, row in enumerate(csvreader):
@@ -590,7 +591,7 @@ def runVis(num_clusters):
     return visDf
 
 
-def run():
+def run(): # don't delete this, but we're not using it, use run drilldown()
     # run
     print('We startin')
     siteList = getSitesList()
@@ -639,12 +640,12 @@ def run():
     print('We done.')
     return
 
-def runDrilldown(df):
+def runDrilldown(df): #this is integrated into dash interface, everything that isn't called here we don't use START HERE, but if we swap to hierarchical/spectral, uncomment the functions related to those DONT DELETE ANYTHING
     # Create temp csv using timestamp as name
-    filename = 'data/' + str(round(time.time())) + '.csv'
+    filename = 'data/' + str(round(time.time())) + '.csv' #the file that nicole is passing through, she names them based on time (in the data folder you see the seconds.csv)
     df.to_csv(filename)
 
-    # Create index based off of csv
+    # Create index based off of csv -- this takes a long time, so we just pass in the reader
     X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(filename)
 
     # Delete temp csv FIX
@@ -653,7 +654,7 @@ def runDrilldown(df):
     # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
     num_clusters = math.ceil(len(df)/10)
 
-    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
+    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters) # if want to switch to spectral/hierarchical, switch it in here
     feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
     feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
 

@@ -24,6 +24,108 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
 sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
+
+top_sites = ['google.com',
+'youtube.com',
+'facebook.com',
+'baidu.com',
+'wikipedia.org',
+'yahoo.com',
+'qq.com',
+'tmall.com',
+'taobao.com',
+'twitter.com',
+'amazon.com',
+'google.co.in',
+'instagram.com',
+'vk.com',
+'sohu.com',
+'live.com',
+'jd.com',
+'reddit.com',
+'yandex.ru',
+'weibo.com',
+'sina.com.cn',
+'google.co.jp',
+'login.tmall.com',
+'360.cn',
+'blogspot.com',
+'linkedin.com',
+'google.com.hk',
+'netflix.com',
+'google.com.br',
+'pornhub.com',
+'pages.tmall.com',
+'google.co.uk',
+'csdn.net',
+'yahoo.co.jp',
+'twitch.tv',
+'office.com',
+'google.ru',
+'microsoftonline.com',
+'alipay.com',
+'mail.ru',
+'google.fr',
+'google.de',
+'microsoft.com',
+'ebay.com',
+'bing.com',
+'msn.com',
+'aliexpress.com',
+'whatsapp.com',
+'naver.com',
+'google.com.mx',
+'xvideos.com',
+'tribunnews.com',
+'google.it',
+'imdb.com',
+'wordpress.com',
+'stackoverflow.com',
+'amazon.co.jp',
+'google.es',
+'google.ca',
+'github.com',
+'paypal.com',
+'livejasmin.com',
+'tumblr.com',
+'google.com.tr',
+'google.com.tw',
+'imgur.com',
+'google.co.kr',
+'espn.com',
+'xhamster.com',
+'wikia.com',
+'apple.com',
+'pinterest.com',
+'thestartmagazine.com',
+'porn555.com',
+'dropbox.com',
+'xnxx.com',
+'google.com.au',
+'adobe.com',
+'detail.tmall.com',
+'cobalten.com',
+'amazon.in',
+'amazon.co.uk',
+'hao123.com',
+'amazon.de',
+'quora.com',
+'txxx.com',
+'google.co.id',
+'tianya.cn',
+'bilibili.com',
+'booking.com',
+'google.co.th',
+'xinhuanet.com',
+'aparat.com',
+'pixnet.net',
+'salesforce.com',
+'google.pl',
+'rakuten.co.jp',
+'bongacams.com',
+'cnn.com',
+'google.com.ar']
+
 # print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
 # search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
 #                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
@@ -33,7 +135,7 @@ search_df = results_df
 for index, row in search_df.iterrows():
     if pd.isnull(row['Sites']):
         search_df.at[index, 'Sites'] = 'None Found'
-df = pd.read_csv('./data/output_countries.csv')
+df_geo = pd.read_csv('./data/output_countries.csv')
 df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
@@ -47,61 +149,91 @@ siteCloseCount=0
 compCloseCount=0
 issueCloseCount=0
 
+# GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
+reference = datetime(2016, 12, 30)
+results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+
+global_sentiment_average = results2_df['compound'].mean()
+print(global_sentiment_average)
+
+one_week_compound_df = results2_df[results2_df['Day Difference'] <= 7][['Country', 'compound']]
+one_week_compound_df.columns = ['Country', 'Sentiment_Week']
+full_compound_df = results2_df[['Country', 'compound']]
+full_compound_df.columns = ['Country', 'Sentiment_Full']
+
+combined_compound_df = pd.merge(one_week_compound_df, full_compound_df, on='Country', how='inner')
+combined_compound_df['Sentiment_Norm'] = combined_compound_df['Sentiment_Week'] - combined_compound_df['Sentiment_Full']
+combined_compound_df['Sentiment_Norm_Global'] = combined_compound_df['Sentiment_Week']/global_sentiment_average
+
+df_geo = df_geo.drop('Sentiment', axis=1)
+df_geo.columns = ['Country', 'Code']
+df_geo.set_index('Country')
+
+df_review_compound =  combined_compound_df.groupby('Country', as_index=False).mean()
+df_review_compound = df_review_compound[['Country', 'Sentiment_Norm', 'Sentiment_Norm_Global', 'Sentiment_Week']]
+df_review_compound.set_index('Country')
+
+df_geo_sentiment = pd.merge(df_review_compound, df_geo, on='Country', how='inner')
+
+def updateGeoGraph(df, type): 
+    if type=='norm':
+        sentiment = df['Sentiment_Norm']
+    elif type=='globalNorm':
+        sentiment = df['Sentiment_Norm_Global']
+    else:
+        sentiment = df['Sentiment_Week']
+    fig_geo = dict(data=[
+            dict(
+                type = 'choropleth',
+                locations = df['Code'],
+                z = sentiment,
+                text = df['Country'],
+                colorscale = [ [1,'rgb(153,0,13)'], [0.95, 'rgb(203,24,29)'], [0.85, 'rgb(239,59,44)'], [0.75, 'rgb(251,106,74)'], [0.65, 'rgb(252,146,114)'], \
+                             [0.55, 'rgb(252,187,161)'],[0.5, 'rgb(199,233,192)'],[0.4, 'rgb(161,217,155)'], [0.3, 'rgb(116,196,118)'], [0.2, 'rgb(65,171,93)'],[0.1, 'rgb(35,139,69)'], [0.0, 'rgb(0,109,44)']],
+                autocolorscale = False,
+                reversescale = True,
+                marker = dict(
+                    line = dict (
+                        color = 'rgb(180,180,180)',
+                        width = 0.7
+                    ) ),
+                colorbar = dict(
+                    autotick = False,
+                    tickprefix = '',
+                    title = 'Global Sentiment Score'),
+                    # color = '#D3D3D3'   
+        )], 
+        layout=dict(
+            title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+            titlefont=dict(
+                family='Helvetica Neue, Helvetica, sans-serif',
+                color='#BCBCBC'
+            ),
+            geo = dict(
+                showframe = False,
+                showcoastlines = False,
+                projection = dict(
+                    type = 'Mercator'
+                ),
+                bgcolor='rgba(0,0,0,0)',
+            ),
+            font=dict(
+                family='Helvetica Neue, Helvetica, sans-serif',
+                size=12,
+                color='#BCBCBC',
+            ),
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
+        )
+    )
+    return fig_geo
+
+fig_geo = updateGeoGraph(df_geo_sentiment, 'week')
+
 
 # Getting components and issues in string:
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
 WORDS_TO_ISSUE = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
-
-
-# Setting data and layout for world map:
-data = [ dict(
-        type = 'choropleth',
-        locations = df['CODE'],
-        z = df['Sentiment'],
-        text = df['COUNTRY'],
-        colorscale = [ [1,'rgb(153,0,13)'], [0.95, 'rgb(203,24,29)'], [0.85, 'rgb(239,59,44)'], [0.75, 'rgb(251,106,74)'], [0.65, 'rgb(252,146,114)'], \
-                     [0.55, 'rgb(252,187,161)'],[0.5, 'rgb(199,233,192)'],[0.4, 'rgb(161,217,155)'], [0.3, 'rgb(116,196,118)'], [0.2, 'rgb(65,171,93)'],[0.1, 'rgb(35,139,69)'], [0.0, 'rgb(0,109,44)']],
-        autocolorscale = False,
-        reversescale = True,
-        marker = dict(
-            line = dict (
-                color = 'rgb(180,180,180)',
-                width = 0.7
-            ) ),
-        colorbar = dict(
-            autotick = False,
-            tickprefix = '',
-            title = 'Global Sentiment Score'),
-            # color = '#D3D3D3'
-      )]
-
-
-layout = dict(
-    title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
-    titlefont=dict(
-        family='Helvetica Neue, Helvetica, sans-serif',
-        color='#BCBCBC'
-    ),
-    geo = dict(
-        showframe = False,
-        showcoastlines = False,
-        projection = dict(
-            type = 'Mercator'
-        ),
-        bgcolor='rgba(0,0,0,0)',
-    ),
-    font=dict(
-        family='Helvetica Neue, Helvetica, sans-serif',
-        size=12,
-        color='#BCBCBC',
-    ),
-    paper_bgcolor='rgba(0,0,0,0)',
-    plot_bgcolor='rgba(0,0,0,0)'
-)
-
-
-fig_geo = dict(data=data, layout=layout)
-
 
 # Hardcoded Fake Data
 arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
@@ -145,11 +277,8 @@ toggle_time_params = {
         14: '2 Weeks'
     }
 }
-# GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
-reference = datetime(2016, 12, 30)
-# reference = datetime.now()
-results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
+# reference = datetime.now()
 
 def initCompDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
@@ -418,6 +547,8 @@ unique_dates = results_df["Date Submitted"].map(pd.Timestamp.date).unique()
 
 
 #compacted list of all sites mentioned in the comments
+results_df['Sites'] = results_df['Sites'].apply(lambda s: s.replace("https://", "").replace("http://", "").replace("www.", ""))
+results_df['Sites'] = results_df['Sites'].str.strip()
 sites_list = results_df['Sites'].apply(pd.Series).stack().reset_index(drop=True)
 sites_list = ','.join(sites_list).split(',')
 sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
@@ -425,6 +556,14 @@ sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
 sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
 sites_df = sites_df.sort_values(by=['Count'])
 sites_df = sites_df[sites_df['Site'] != 'None Found']
+
+top_sites_list = [item for item in sites_list if item in top_sites]
+top_sites_df = pd.DataFrame.from_dict(Counter(top_sites_list), orient='index').reset_index()
+top_sites_df = top_sites_df.rename(columns={'index': 'Site', 0: 'Count'})
+top_sites_df['Formatted'] = top_sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
+top_sites_df = top_sites_df.sort_values(by=['Count'])
+
+
 init_count = len(sites_df.index)
 
 
@@ -537,10 +676,10 @@ sites_layout = html.Div(className='sites-layout', children=[
             id='mentioned-site-graph',
             figure={
                 'data': [{
-                    'x': sites_df['Count'],
-                    'y': sites_df['Formatted'],
+                    'x': top_sites_df['Count'],
+                    'y': top_sites_df['Site'],
                     'orientation': 'h',
-                    'customdata': sites_df['Site'],
+                    'customdata': top_sites_df['Site'],
                     'type': 'bar',
                     'marker': {
                         'color': '#E3D0FF'
@@ -695,9 +834,19 @@ sentiment_layout = html.Div([
 
 geoview_layout = html.Div([
     html.H3('Global Happiness Index', className='page-title'),
-    dcc.Graph(id='country-graph', figure=fig_geo),
-    # html.Div(id="bitch-div"),
-    # html.Div(id="bitch-div2")
+    dcc.RadioItems(
+        id='geoview-radio',
+        style={'text-align': 'center'},
+        options=[
+            {'label': 'Past two weeks', 'value': 'week'},
+            {'label': 'Normalized by country', 'value': 'norm'},
+            {'label': 'Normalized globally', 'value': 'globalNorm'},
+        ],
+        value='week'
+    ),
+    dcc.Graph(
+        id='country-graph', 
+        figure=fig_geo),
 ])
 
 
@@ -824,6 +973,9 @@ def display_page(pathname):
     global list_component_df
     global list_issue_df
     global global_selected_sites
+
+    if pathname is None:
+        return main_layout
 
     ids = []
     if 'sites' in pathname:
@@ -1312,6 +1464,14 @@ def update_list_issue_graph_slider(value):
 
 
 @app.callback(
+    Output('country-graph', 'figure'),
+    [Input('geoview-radio', 'value')])
+def update_geoview_graph(value):
+    print(value)
+    fig_geo = updateGeoGraph(df_geo_sentiment, value)
+    return fig_geo
+
+@app.callback(
     dash.dependencies.Output('slider-container', 'children'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
      dash.dependencies.Input('sites-date-range', 'end_date')])
@@ -1384,7 +1544,6 @@ def update_site_graph(start_date, end_date, max):    #update graph with values t
     global results_df
 
     if(start_date is None or end_date is None):
-        print('herherherherheh')
         filtered_results = results_df
     else:
         filtered_results = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
@@ -1399,10 +1558,10 @@ def update_site_graph(start_date, end_date, max):    #update graph with values t
     sites_df = sites_df.head(max).sort_values(by='Count')
 
     data = [go.Bar(
-        x=sites_df['Count'],
-        y=sites_df['Formatted'],
+        x=top_sites_df['Count'],
+        y=top_sites_df['Site'],
         orientation='h',
-        customdata=sites_df['Site'],
+        customdata=top_sites_df['Site'],
         marker=dict(
             color='#E3D0FF'
         ),
