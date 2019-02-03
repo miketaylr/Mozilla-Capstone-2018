@@ -75,6 +75,16 @@ body {
     color: white;
 }
 
+.sites-table-container{
+    display: flex;
+    justify-content: space-around;
+}
+
+.sites-table {
+    width: 40%;
+    color: #afb1b3;
+}
+
 .page-title {
     text-align: center;
     color: white;
