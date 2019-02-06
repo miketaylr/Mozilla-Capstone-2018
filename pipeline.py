@@ -43,9 +43,8 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # lwrFilter = LowercaseFilter()
 
     # read in raw survey data from CSV files. Only want certain columns
-    survey_cols = ["Response ID", "Time Started", "Date Submitted", "Status", "Language", "Referer", "Extended Referer",
-                   "User Agent", "Extended User Agent", "Longitude", "Latitude", "Country", "City", "State/Region",
-                   "Postal", "How does Firefox make you feel?", "OS",
+    survey_cols = ["Response ID", "Date Submitted", "Status", "Language", "Country",
+                    "How does Firefox make you feel?",
                    "To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "If your feedback is related to a website, you can include it here:"]
@@ -57,10 +56,9 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # some data cleaning and selection
     print("Loading %d feedback records from %s " % (num_records, raw_data_location))
     # rename some long column names
-    df.rename(columns={survey_cols[15]: 'Binary Sentiment', survey_cols[17]: 'Positive Feedback',
-                       survey_cols[18]: 'Negative Feedback', survey_cols[19]: 'Relevant Site'}, inplace=True)
+    df.rename(columns={survey_cols[4]: 'Binary Sentiment', survey_cols[5]: 'Positive Feedback',
+                       survey_cols[6]: 'Negative Feedback', survey_cols[7]: 'Relevant Site'}, inplace=True)
     df = df.fillna('');  # repalce NaNs with blanks
-    df = df.loc[df['Status'] == 'Complete']  # Only want completed surveys
     df = df.loc[df['Language'] == 'English']  # Only want english rows
     df = df.loc[~df['Negative Feedback'].str.contains('[À-ÿ]')]  # Only want rows without accented characters
 
@@ -75,25 +73,13 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     print("After basic spam filtering only %d records remain" % len(df.index))
     # Convert to df friendly date-times
     df["Date Submitted"] = pd.to_datetime(df["Date Submitted"])
-    df["Time Started"] = pd.to_datetime(df["Time Started"])  # probably don't need this anymore
-    #another spam filter, if they took less than 4s to fill a survey it's probably useless
-    #so only keep surveys w/ longer completion times
-    #df = df.loc[df['Date Submitted'] - df['Time Started'] > 4]
-    print(((df['Date Submitted'] - df['Time Started']).dtype))
-    df['temp'] = df['Date Submitted'].sub(df['Time Started'], axis=0)
-    df['temp'] = df['temp'] / np.timedelta64(1, 's')
 
-    #filtered_out = df = df.loc[df['Date Submitted'].astype('timedelta64[s]') - df['Time Started'].astype('timedelta64[s]') <= 4]
     #filtered_out.to_csv(rf.filePath("data/filtered_out.csv"), encoding='ISO-8859-1')
     if df.empty:  # need to handle empty case later
         print('DataFrame is empty!')
     else:
         print('Not empty!', df.shape)
 
-    def apply_nlp(row):
-        combined = row['Positive Feedback'] + row['Negative Feedback']
-        filtered = [token.text for token in stmLwrFilter(combined)]
-        return ','.join(set(filtered))  # turn to set temporarily to get unique values
 
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_site(row):
@@ -165,8 +151,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # Delete columns we don't need anymore
     df.drop('Positive Feedback', axis=1, inplace=True)
     df.drop('Negative Feedback', axis=1, inplace=True)
-    df.drop('Postal', axis=1, inplace=True)
-    df.drop('OS', axis=1, inplace=True)
 
     # finally output the cleaned data to a CSV
     df.to_csv(rf.filePath(rf.OUTPUT_PIPELINE), encoding='ISO-8859-1')
