@@ -86,9 +86,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         #sites = [site.lower() for site in siteList if site.lower() in combined]
         urls = re.findall(siteListRegex, combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
-
-        sites = urls
-        return ','.join(set(sites))
+        return ','.join(set(urls))
 
         # Find a mentioned issue based on our issues dictionary
 
