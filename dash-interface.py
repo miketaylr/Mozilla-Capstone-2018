@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State, Event
 import ast
 import json
-from clustering import runDrilldown
+#from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
@@ -883,7 +883,18 @@ sentiment_layout = html.Div([
     html.H3('Sentiment', className='page-title'),
     html.Div([
         html.Div(
-            children=dcc.Graph(
+            children=[
+            dcc.RadioItems(
+                id='sentiment-frequency',
+                options=[
+                    {'label': 'Daily', 'value': 'D'},
+                    {'label': 'Weekly', 'value': 'W'},
+                    {'label': 'Monthly', 'value': 'M'}
+                ],
+                value='D',
+                labelStyle={'display': 'inline-block'}
+            ),
+            dcc.Graph(
                id='binary-sentiment-ts',
                figure={
                     'data': [
@@ -891,18 +902,18 @@ sentiment_layout = html.Div([
                             'x': unique_dates,
                             'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
                                 [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                            'type': 'bar',
+                            'type': 'scatter',
                             'name': "Sad"
                         },
                         {
                             'x': unique_dates,
                             'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                            'type': 'bar',
+                            'type': 'scatter',
                             'name': "Happy"
                         }
                     ],
                     'layout': {
-                        'title': "Sentiment Breakdown",
+                        'title': "Happy/Sad Breakdown",
                         'titlefont': {
                             'family': 'Helvetica Neue, Helvetica, sans-serif',
                             'color': '#BCBCBC',
@@ -919,11 +930,10 @@ sentiment_layout = html.Div([
                             'color': '#BCBCBC',
                         },
                         'paper_bgcolor': 'rgba(0,0,0,0)',
-                        'plot_bgcolor': 'rgba(0,0,0,0)',
-                        'barmode': 'stack',
+                        'plot_bgcolor': 'rgba(0,0,0,0)'
                     }
                 }
-            )
+            )]
         ),
     ]),
     html.Div([
@@ -1280,6 +1290,64 @@ def render_content(tab):
         return search_layout
     else:
         return sites_layout
+
+@app.callback(Output('binary-sentiment-ts', 'figure'),
+              [Input('sentiment-frequency', 'value')])
+def update_sentiment_graph(frequency):
+
+    sad_df = (
+        results_df[results_df["Binary Sentiment"] == "Sad"].groupby([pd.Grouper(key="Date Submitted", freq=frequency)]).count()
+        .reset_index()
+        .sort_values("Date Submitted")
+    )
+
+    happy_df = (
+        results_df[results_df["Binary Sentiment"] == "Happy"].groupby([pd.Grouper(key="Date Submitted", freq=frequency)]).count()
+        .reset_index()
+        .sort_values("Date Submitted")
+    )
+
+    fig = {
+        'data': [
+            {
+                'x': sad_df['Date Submitted'],
+                'y': sad_df['Binary Sentiment'],
+                'type': 'scatter',
+                'name': "Sad"
+            },
+            {
+                'x': happy_df['Date Submitted'],
+                'y': happy_df['Binary Sentiment'],
+                'type': 'scatter',
+                'name': "Happy"
+            }
+        ],
+        'layout': {
+            'title': "Happy/Sad Breakdown",
+            'titlefont': {
+                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'color': '#BCBCBC',
+            },
+            'xaxis': {
+                'title': 'Time'
+            },
+            'yaxis': {
+                'title': 'Number of Feedback'
+            },
+            'font': {
+                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'size': 12,
+                'color': '#BCBCBC',
+            },
+            'paper_bgcolor': 'rgba(0,0,0,0)',
+            'plot_bgcolor': 'rgba(0,0,0,0)'#,
+            #'barmode': 'stack',
+        }
+    }
+
+
+    return fig
+
 
 
 @app.callback(
