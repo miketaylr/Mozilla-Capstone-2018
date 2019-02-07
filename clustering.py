@@ -24,6 +24,9 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.feature_extraction.text import CountVectorizer
 from scipy.cluster import hierarchy
+from scipy.cluster.hierarchy import dendrogram, linkage
+from scipy.cluster.hierarchy import cophenet
+from scipy.spatial.distance import pdist
 import random
 import seaborn as sns; sns.set()
 import pprint
@@ -111,12 +114,14 @@ def createNormalizedMatrix(file): #not the most efficient. we index everything i
     # 1000 most distinctive terms according by TF-IDF score
     # play with below, see which one does better, myReader auto assesses performance for you, they have done both but there's not difference
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
-                            myReader.most_distinctive_terms("sf_output", 1000) if term not in ENGLISH_STOP_WORDS]
+                            myReader.most_distinctive_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
-                         myReader.most_frequent_terms("sf_output", 1000) if term not in ENGLISH_STOP_WORDS]
+                         myReader.most_frequent_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
 
-    wordVectorList = mostDistinctiveWords
+    # change to take 500 instead of 1000 above, and use a combination of distinct and frequent words
+    wordVectorList = mostDistinctiveWords + mostFrequentWords
+    
     # wordVectorList = [x for x in wordVectorList if x not in siteList]
     if 'mozilla' in wordVectorList:
         wordVectorList.remove('mozilla')
@@ -166,7 +171,10 @@ def createNormalizedMatrix(file): #not the most efficient. we index everything i
         time_feature_norm = preprocessing.normalize(time_feature.values, norm='l1')
         # TODO: fix the normalization of the length feature and time feature
         X_and_length_norm = np.append(X_norm_raw, length_feature_norm, axis=1)
+        # X_norm = np.append(X_and_length_norm, time_feature_norm, axis=1)
         X_norm = np.append(X_and_length_norm, time_feature_norm, axis=1)
+        # ignore time and length 
+        X_norm = X_raw
         rcOfX = X_norm.shape
     return X_norm, rcOfX[0], myReader
 
@@ -640,6 +648,59 @@ def run(): # don't delete this, but we're not using it, use run drilldown()
     print('We done.')
     return
 
+def doKMeans(X_norm, numOfFB, readerForFullFB, num_clusters, df):
+    labels, clusters, X = kMeansClustering(X_norm, numOfFB, num_clusters) # if want to switch to spectral/hierarchical, switch it in here
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    
+    unique, counts = np.unique(labels, return_counts = True)
+    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
+    counts.name = 'Count'
+
+    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
+    ids.name = 'Response IDs'
+
+    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
+    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
+    return final
+
+def doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df):
+    clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X_norm)
+    labels = clusters.labels_    
+
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    
+    unique, counts = np.unique(labels, return_counts = True)
+    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
+    counts.name = 'Count'
+
+    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
+    ids.name = 'Response IDs'
+
+    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
+    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
+    return final
+
+def doAgglomerative(X_norm, numOfFB, readerForFullFB, num_clusters, df):
+    # clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='single').fit(X_norm)
+    labels = clusters.labels_
+
+    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
+    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    
+    unique, counts = np.unique(labels, return_counts = True)
+    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
+    counts.name = 'Count'
+
+    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
+    ids.name = 'Response IDs'
+
+    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
+    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
+    return final
+
+
 def runDrilldown(df): #this is integrated into dash interface, everything that isn't called here we don't use START HERE, but if we swap to hierarchical/spectral, uncomment the functions related to those DONT DELETE ANYTHING
     # Create temp csv using timestamp as name
     filename = 'data/' + str(round(time.time())) + '.csv' #the file that nicole is passing through, she names them based on time (in the data folder you see the seconds.csv)
@@ -654,21 +715,31 @@ def runDrilldown(df): #this is integrated into dash interface, everything that i
     # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
     num_clusters = math.ceil(len(df)/10)
 
-    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters) # if want to switch to spectral/hierarchical, switch it in here
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
+    num_clusters = 30
+    
+    
+    final_KMeans = doKMeans(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
-    unique, counts = np.unique(labels, return_counts = True)
-    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
-    counts.name = 'Count'
+    final_Spectral = doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
-    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
-    ids.name = 'Response IDs'
+    # final_Agg = doAgglomerative(X_norm, numOfFB, readerForFullFB, num_clusters, df)
+    Z = linkage(X_norm, 'ward')
+    coph_dists = cophenet(Z, pdist(X_norm))
+    #coph_dists
 
-    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
-    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
+
+    plt.figure(figsize=(25, 13))
+    plt.title('HCA Dendrogram')
+    plt.xlabel('sample index')
+    plt.ylabel('distance')
+    dendrogram(Z,leaf_rotation=90,leaf_font_size=12,)
+    plt.show()
+
+    print(final_KMeans, final_Spectral)
+    
+    final = final_KMeans
     return final
 
 
-# runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
+runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
 # run()
