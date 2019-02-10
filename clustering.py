@@ -121,7 +121,7 @@ def createNormalizedMatrix(file): #not the most efficient. we index everything i
 
     # change to take 500 instead of 1000 above, and use a combination of distinct and frequent words
     wordVectorList = mostDistinctiveWords + mostFrequentWords
-    
+
     # wordVectorList = [x for x in wordVectorList if x not in siteList]
     if 'mozilla' in wordVectorList:
         wordVectorList.remove('mozilla')
@@ -711,35 +711,28 @@ def runDrilldown(df): #this is integrated into dash interface, everything that i
 
     # Delete temp csv FIX
     os.remove(filename)
-
+    print(len(df))
     # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
-    num_clusters = math.ceil(len(df)/10)
-
-    num_clusters = 30
-    
+    num_clusters = math.ceil(len(df)/5)    
     
     final_KMeans = doKMeans(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
     final_Spectral = doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
     # final_Agg = doAgglomerative(X_norm, numOfFB, readerForFullFB, num_clusters, df)
-    Z = linkage(X_norm, 'ward')
-    coph_dists = cophenet(Z, pdist(X_norm))
+    # Z = linkage(X_norm, 'ward')
+    # coph_dists = cophenet(Z, pdist(X_norm))
     #coph_dists
 
 
-    plt.figure(figsize=(25, 13))
-    plt.title('HCA Dendrogram')
-    plt.xlabel('sample index')
-    plt.ylabel('distance')
-    dendrogram(Z,leaf_rotation=90,leaf_font_size=12,)
-    plt.show()
-
-    print(final_KMeans, final_Spectral)
-    
-    final = final_KMeans
+    # plt.figure(figsize=(25, 13))
+    # plt.title('HCA Dendrogram')
+    # plt.xlabel('sample index')
+    # plt.ylabel('distance')
+    # dendrogram(Z,leaf_rotation=90,leaf_font_size=12,)    
+    final = final_Spectral
     return final
 
 
-runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
+# runDrilldown(pd.read_csv("./data/output_spam_removed.csv", encoding ="ISO-8859-1"))
 # run()
