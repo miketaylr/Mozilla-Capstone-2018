@@ -13,6 +13,10 @@ import pickle as pickle
 import referenceFiles as rf
 from pattern.en import *
 from gensim.utils import lemmatize
+from nltk.tag import PerceptronTagger
+import nltk as nltk
+from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
+import json
 
 # SETTINGS
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
@@ -23,6 +27,10 @@ TOP_WORDS = rf.filePath(rf.TOP_WORDS)
 
 overlap_corpus = []  # For overlap, yes, I know global variables are bad
 
+
+tagger = PerceptronTagger()
+pos_tag = tagger.tag
+stop = ENGLISH_STOP_WORDS
 
 # 1 Text Preparation
 def text_preparation(filename):
@@ -66,8 +74,60 @@ def text_preparation_unlabelled(filename):
     global overlap_corpus
     overlap_corpus = get_overlap_corpus(df)
     df['sf_output'] = df.apply(apply_stem_overlap, axis=1)
+    df['sf_output_vbnn'] = df.apply(getNounsAndVerbs, axis = 1)
+    df['sf_output_vbnn_phrases'] = df.apply(getNnVbPhrases, axis = 1)
     return df
 
+def getNounsAndVerbs(row):
+    text = row['Feedback']
+    vbsNns = [tag[0] for tag in pos_tag(re.findall(r'\w+', text)) if ('VB' in tag[1] or 'NN' in tag[1]) and (tag[0] not in stop)]
+    return ' '.join(set(vbsNns))
+
+def getNnVbPhrases(row):
+    text = row['Feedback']
+    grammar = r"""
+    NP: {<DT|JJ|NN.*>+}          # Chunk sequences of DT, JJ, NN
+    PP: {<IN><NP>}               # Chunk prepositions followed by NP
+    VP: {<VB.*><NP|PP|CLAUSE>+$} # Chunk verbs and their arguments
+    CLAUSE: {<NP><VP>}           # Chunk NP, VP
+    """
+    # Create phrase tree
+    chunker = nltk.RegexpParser(grammar)
+
+    lemmatizer = nltk.WordNetLemmatizer()
+    stemmer = nltk.stem.porter.PorterStemmer()
+
+    # generator, generate leaves one by one
+    def leaves(tree):
+        """Finds NP (nounphrase) leaf nodes of a chunk tree."""
+        for subtree in tree.subtrees(filter=lambda t: t.label() == 'NP' or t.label() == 'JJ' or t.label() == 'RB'):
+            yield subtree.leaves()
+
+    # stemming, lematizing, lower case...
+    def normalise(word):
+        """Normalises words to lowercase and stems and lemmatizes it."""
+        word = word.lower()
+        word = stemmer.stem(word)
+        word = lemmatizer.lemmatize(word)
+        return word
+
+    # stop-words and length control
+    def acceptable_word(word):
+        """Checks conditions for acceptable word: length, stopword."""
+        accepted = bool(2 <= len(word) <= 40
+                        and word.lower() not in stop)
+        return accepted
+
+    # generator, create item once a time
+    def get_terms(tree):
+        for leaf in leaves(tree):
+            term = [normalise(w) for w, t in leaf if acceptable_word(w)]
+            # Phrase only
+            if len(term) > 1:
+                yield term
+
+    phrases = [word for word in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', text))))]
+    return json.dumps(phrases)
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
