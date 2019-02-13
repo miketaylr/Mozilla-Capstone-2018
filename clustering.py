@@ -50,6 +50,9 @@ SITES = rf.filePath(rf.SITES)
 pd.set_option('display.max_columns',10)
 
 
+g_custom_stop_words = ['mozilla','firefox']
+
+
 def createIndex(schema):
     # Generate a temporary directory for the index
     indexDir = tempfile.mkdtemp()
@@ -91,7 +94,7 @@ def getSitesList():
     return siteList
 
 
-def createNormalizedMatrix(file): #not the most efficient. we index everything in feedback column and pull out all unique words and put it into a corpus
+def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not the most efficient. we index everything in feedback column and pull out all unique words and put it into a corpus
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -123,10 +126,13 @@ def createNormalizedMatrix(file): #not the most efficient. we index everything i
     wordVectorList = mostDistinctiveWords + mostFrequentWords
 
     # wordVectorList = [x for x in wordVectorList if x not in siteList]
-    if 'mozilla' in wordVectorList:
-        wordVectorList.remove('mozilla')
-    if 'firefox' in wordVectorList:
-        wordVectorList.remove('firefox')
+    for word in custom_stop_words:
+        if word in wordVectorList:
+            wordVectorList.remove(word)
+    # if 'mozilla' in wordVectorList:
+    #     wordVectorList.remove('mozilla')
+    # if 'firefox' in wordVectorList:
+    #     wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)

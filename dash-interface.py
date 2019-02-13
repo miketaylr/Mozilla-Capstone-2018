@@ -5,7 +5,7 @@ import dash_table as dt
 import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
-from dash.dependencies import Input, Output, State, Event
+from dash.dependencies import Input, Output, State
 import ast
 import json
 from clustering import runDrilldown
@@ -16,6 +16,7 @@ import numpy as np
 import urllib.parse
 import os
 import ast
+import re
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
@@ -2236,8 +2237,10 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     [State('searchrequest', 'value')])
 def update_table(ns, request_value):
     df = search_df
+    # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+    #           'Feedback', 'Components', 'Issues', 'Sites']
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites']
+              'Feedback', 'Components', 'Issues', 'Sites', 'Version']
     r_df = pd.DataFrame()
     # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
@@ -2247,8 +2250,18 @@ def update_table(ns, request_value):
         rv = str(request_value).lower()
         isit = rv in fb
         if isit:
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            vers = re.search(r'Firefox/\s*([\d.]+)', str(row['User Agent']))
+            # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+            #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            # print(vers.group())
+            table_vers=''
+            if vers is None:
+                table_vers=''
+            else:
+                table_vers = str(vers.group())
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']),
+                    str(row['Sites']), table_vers]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
     return r_df.to_dict('rows')
@@ -2260,8 +2273,10 @@ def update_table(ns, request_value):
     [State('searchrequest', 'value')])
 def update_table(ns, request_value):
     df = search_df
+    # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
+    #           'Feedback', 'Components', 'Issues', 'Sites']
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites']
+              'Feedback', 'Components', 'Issues', 'Sites', 'Version']
     r_df = pd.DataFrame()
     # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
@@ -2271,15 +2286,18 @@ def update_table(ns, request_value):
         rv = str(request_value).lower()
         isit = rv in fb
         if isit:
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str(row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+            #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites']),
+                    str(row['User Agent'])]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
     csv_string = r_df.to_csv(index=False, encoding='utf-8')
     csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
     return csv_string
 
-# NEED TO FIX THIS
+
 @app.callback(
     Output('search-count-reveal','children'),
     [Input('searchtable', 'rows')])
