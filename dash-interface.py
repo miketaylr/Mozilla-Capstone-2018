@@ -161,6 +161,13 @@ results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Su
 global_sentiment_average = results2_df['compound'].mean()
 print(global_sentiment_average)
 
+geo_2week_df = df_geo[['Country']]
+# Calculate daily average sentiment scores over the past 2 weeks
+for num_days in range(14):
+    past_x_days_df = results2_df[results2_df['Day Difference'] <= num_days + 1][['Country', 'compound']].groupby('Country', as_index=False).mean()
+    past_x_days_df.columns = ['Country', num_days+1]
+    geo_2week_df = pd.merge(geo_2week_df, past_x_days_df, on='Country', how='left')
+
 one_week_compound_df = results2_df[results2_df['Day Difference'] <= 7][['Country', 'compound']]
 one_week_compound_df.columns = ['Country', 'Sentiment_Week']
 full_compound_df = results2_df[['Country', 'compound']]
@@ -179,6 +186,8 @@ df_review_compound = df_review_compound[['Country', 'Sentiment_Norm', 'Sentiment
 df_review_compound.set_index('Country')
 
 df_geo_sentiment = pd.merge(df_review_compound, df_geo, on='Country', how='inner')
+df_geo_sentiment = pd.merge(df_geo_sentiment, geo_2week_df, on='Country', how='inner')
+df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
 def updateGeoGraph(df, type): 
     if type=='norm':
@@ -186,7 +195,7 @@ def updateGeoGraph(df, type):
     elif type=='globalNorm':
         sentiment = df['Sentiment_Norm_Global']
     else:
-        sentiment = df['Sentiment_Week']
+        sentiment = df[type]
     fig_geo = dict(data=[
             dict(
                 type = 'choropleth',
@@ -233,7 +242,7 @@ def updateGeoGraph(df, type):
     )
     return fig_geo
 
-fig_geo = updateGeoGraph(df_geo_sentiment, 'week')
+fig_geo = updateGeoGraph(df_geo_sentiment, 7)
 
 
 # Getting components and issues in string:
@@ -979,6 +988,17 @@ sentiment_layout = html.Div([
 
 geoview_layout = html.Div([
     html.H3('Global Happiness Index', className='page-title'),
+    html.Div(id='geo_container', className='slider-container', children=[
+        html.Div(id='geo_slider_output'),
+        dcc.Slider(
+            id='geo_time_slider',
+            min=toggle_time_params['min'],
+            max=toggle_time_params['max'],
+            step=toggle_time_params['step'],
+            value=toggle_time_params['default'],
+            marks=toggle_time_params['marks']
+        ),
+    ]),
     dcc.RadioItems(
         id='geoview-radio',
         style={'text-align': 'center'},
@@ -1930,9 +1950,14 @@ def update_comp_download_link(clickData):
 
 @app.callback(
     Output('country-graph', 'figure'),
-    [Input('geoview-radio', 'value')])
-def update_geoview_graph(value):
-    print(value)
+    [Input('geoview-radio', 'value'),
+     Input('geo_time_slider', 'value')])
+def update_geoview_graph(radio_value, slider_value):
+    if radio_value == 'week':
+        value = slider_value
+    else:
+        value = radio_value
+    print(radio_value)
     fig_geo = updateGeoGraph(df_geo_sentiment, value)
     return fig_geo
 
@@ -2138,5 +2163,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
