@@ -38,6 +38,7 @@ from sklearn.cluster import SpectralClustering
 from numpy import array
 from datetime import datetime as datetime
 from sklearn.cluster import AgglomerativeClustering
+import sklearn.metrics as metrics
 import os
 import time
 import math
@@ -48,6 +49,9 @@ OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
 SITES = rf.filePath(rf.SITES)
 
 pd.set_option('display.max_columns',10)
+
+
+g_custom_stop_words = ['mozilla','firefox']
 
 
 def createIndex(schema):
@@ -91,7 +95,7 @@ def getSitesList():
     return siteList
 
 
-def createNormalizedMatrix(file): #not the most efficient. we index everything in feedback column and pull out all unique words and put it into a corpus
+def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not the most efficient. we index everything in feedback column and pull out all unique words and put it into a corpus
     # Create Reader to read in csv file after spam removal, read in the column from:
     schema = Schema(index=ID(stored=True),
                     response_id=ID(stored=True),
@@ -119,14 +123,45 @@ def createNormalizedMatrix(file): #not the most efficient. we index everything i
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
                          myReader.most_frequent_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
 
+    # ATTEMPT AT MUTUAL INFORMATION
+    mi_corpus = [term.decode("ISO-8859-1") for (frequency, term) in
+                 myReader.most_frequent_terms("sf_output", 2000) if term not in ENGLISH_STOP_WORDS]
+    freq = []
+    fb_df = pd.read_csv(OUTPUT_SPAM_REMOVAL)
+    fb_df.columns = ['Unnamed: 0', 'Response ID', 'Time Started', 'Date Submitted', 'Status', 'Language', 'Referer',
+                     'Extended Referer', 'User Agent', 'Extended User Agent', 'Longitude', 'Latitude', 'Country',
+                     'City', 'State/Region', 'Binary Sentiment', 'Relevant Site', 'Feedback', 'Sites', 'Issues',
+                     'Components', 'compound', 'sf_output_raw', 'sf_output']
+    for index, row in fb_df.iterrows():
+        sf_output = str(row['sf_output'])
+        temp = Counter([word.lower() for word in re.findall(r'\w+', sf_output)])
+        corpus_in_review = [1 if temp[word] > 0 else 0 for word in mi_corpus]
+        freq.append(corpus_in_review)
+    freq_df = pd.DataFrame(freq)
+    freq_df.columns = mi_corpus
+    miDF = fb_df[['Response ID', 'Binary Sentiment']].join(freq_df)
+    miScore = []
+    for word in mi_corpus:
+        miScore.append([word] + [metrics.mutual_info_score(miDF['Binary Sentiment'], miDF[word])])
+    miSort = pd.DataFrame(miScore).sort_values(1, ascending=0)
+    miSort.columns = ['Word', 'MI_Score']
+    topMIWords = []
+    for index, row in miSort.iterrows():
+        topMIWords.append(row['Word'])
+    top1000MIWords = topMIWords[:1000]
+
     # change to take 500 instead of 1000 above, and use a combination of distinct and frequent words
     wordVectorList = mostDistinctiveWords + mostFrequentWords
+    # wordVectorList = top1000MIWords
 
     # wordVectorList = [x for x in wordVectorList if x not in siteList]
-    if 'mozilla' in wordVectorList:
-        wordVectorList.remove('mozilla')
-    if 'firefox' in wordVectorList:
-        wordVectorList.remove('firefox')
+    for word in custom_stop_words:
+        if word in wordVectorList:
+            wordVectorList.remove(word)
+    # if 'mozilla' in wordVectorList:
+    #     wordVectorList.remove('mozilla')
+    # if 'firefox' in wordVectorList:
+    #     wordVectorList.remove('firefox')
     print('Word List Length', len(wordVectorList))
 
     # Create a binary encoding of dataset based on the selected features (X)
