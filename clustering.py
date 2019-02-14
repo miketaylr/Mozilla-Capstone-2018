@@ -123,32 +123,32 @@ def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not 
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
                          myReader.most_frequent_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
 
-    # ATTEMPT AT MUTUAL INFORMATION
-    mi_corpus = [term.decode("ISO-8859-1") for (frequency, term) in
-                 myReader.most_frequent_terms("sf_output", 2000) if term not in ENGLISH_STOP_WORDS]
-    freq = []
-    fb_df = pd.read_csv(OUTPUT_SPAM_REMOVAL)
-    fb_df.columns = ['Unnamed: 0', 'Response ID', 'Time Started', 'Date Submitted', 'Status', 'Language', 'Referer',
-                     'Extended Referer', 'User Agent', 'Extended User Agent', 'Longitude', 'Latitude', 'Country',
-                     'City', 'State/Region', 'Binary Sentiment', 'Relevant Site', 'Feedback', 'Sites', 'Issues',
-                     'Components', 'compound', 'sf_output_raw', 'sf_output']
-    for index, row in fb_df.iterrows():
-        sf_output = str(row['sf_output'])
-        temp = Counter([word.lower() for word in re.findall(r'\w+', sf_output)])
-        corpus_in_review = [1 if temp[word] > 0 else 0 for word in mi_corpus]
-        freq.append(corpus_in_review)
-    freq_df = pd.DataFrame(freq)
-    freq_df.columns = mi_corpus
-    miDF = fb_df[['Response ID', 'Binary Sentiment']].join(freq_df)
-    miScore = []
-    for word in mi_corpus:
-        miScore.append([word] + [metrics.mutual_info_score(miDF['Binary Sentiment'], miDF[word])])
-    miSort = pd.DataFrame(miScore).sort_values(1, ascending=0)
-    miSort.columns = ['Word', 'MI_Score']
-    topMIWords = []
-    for index, row in miSort.iterrows():
-        topMIWords.append(row['Word'])
-    top1000MIWords = topMIWords[:1000]
+    # # ATTEMPT AT MUTUAL INFORMATION
+    # mi_corpus = [term.decode("ISO-8859-1") for (frequency, term) in
+    #              myReader.most_frequent_terms("sf_output", 2000) if term not in ENGLISH_STOP_WORDS]
+    # freq = []
+    # fb_df = pd.read_csv(OUTPUT_SPAM_REMOVAL)
+    # fb_df.columns = ['Unnamed: 0', 'Response ID', 'Time Started', 'Date Submitted', 'Status', 'Language', 'Referer',
+    #                  'Extended Referer', 'User Agent', 'Extended User Agent', 'Longitude', 'Latitude', 'Country',
+    #                  'City', 'State/Region', 'Binary Sentiment', 'Relevant Site', 'Feedback', 'Sites', 'Issues',
+    #                  'Components', 'compound', 'sf_output_raw', 'sf_output']
+    # for index, row in fb_df.iterrows():
+    #     sf_output = str(row['sf_output'])
+    #     temp = Counter([word.lower() for word in re.findall(r'\w+', sf_output)])
+    #     corpus_in_review = [1 if temp[word] > 0 else 0 for word in mi_corpus]
+    #     freq.append(corpus_in_review)
+    # freq_df = pd.DataFrame(freq)
+    # freq_df.columns = mi_corpus
+    # miDF = fb_df[['Response ID', 'Binary Sentiment']].join(freq_df)
+    # miScore = []
+    # for word in mi_corpus:
+    #     miScore.append([word] + [metrics.mutual_info_score(miDF['Binary Sentiment'], miDF[word])])
+    # miSort = pd.DataFrame(miScore).sort_values(1, ascending=0)
+    # miSort.columns = ['Word', 'MI_Score']
+    # topMIWords = []
+    # for index, row in miSort.iterrows():
+    #     topMIWords.append(row['Word'])
+    # top1000MIWords = topMIWords[:1000]
 
     # change to take 500 instead of 1000 above, and use a combination of distinct and frequent words
     wordVectorList = mostDistinctiveWords + mostFrequentWords
