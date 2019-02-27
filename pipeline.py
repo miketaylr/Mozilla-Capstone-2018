@@ -6,6 +6,9 @@ from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
 import referenceFiles as rf
 from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
+import nltk
+nltk.downloader.download('vader_lexicon')
+
 #Progress bar
 from tqdm import tqdm
 
@@ -43,7 +46,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # lwrFilter = LowercaseFilter()
 
     # read in raw survey data from CSV files. Only want certain columns
-    survey_cols = ["Response ID", "Date Submitted", "Status", "Language", "Country",
+    survey_cols = ["Response ID", "Date Submitted", "Language", "Country",
                     "How does Firefox make you feel?",
                    "To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
