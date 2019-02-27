@@ -59,7 +59,7 @@ body {
     font-size: 1.75em;
     font-weight: 350;
     letter-spacing: 0.03em;
-    margin: 1em 0;
+    margin: 1em;
     display: inline-block;
     vertical-align: middle;
 }
@@ -104,4 +104,30 @@ body {
 .list-page-slider{
     width: 75% !important;
     margin: auto;
+}
+
+.clustering-page {
+    padding: 20px;
+}
+
+.clustering-group {
+    border-bottom: 1px solid #afb1b3;
+}
+
+.clustering-top-text {
+    margin-top: 5px;
+    font-weight: bold;
+}
+
+.clustering-feedback {
+    padding: 0 20px;
+}
+
+.tab-content {
+    padding: 20px;
+}
+
+.search-download-link {
+    float: right;
+    margin-bottom: 10px;
 }
