@@ -163,7 +163,7 @@ results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Su
 
 global_sentiment_average = results2_df['compound'].mean()
 print(global_sentiment_average)
-
+df_geo = df_geo.rename(columns={'COUNTRY': 'Country'})
 geo_2week_df = df_geo[['Country']]
 # Calculate daily average sentiment scores over the past 2 weeks
 for num_days in range(14):
@@ -336,7 +336,7 @@ def initCompDF(results2_df, num_days_range = 14):
             if len(row['Components']) == 0 and 'No Label' in comps:
                 comp_response_id_map[date]['No Label'].append(row['Response ID'])
 
-    component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
+    component_df = component_df.fillna(0).astype(int).rename_axis('Components')
     return component_df, comp_response_id_map, comp_day_response_id_map
 
 
@@ -378,7 +378,7 @@ def initIssueDF(results2_df, num_days_range = 14):
             if len(row['Issues']) == 0 and 'No Label' in issues:
                 issue_response_id_map[date]['No Label'].append(row['Response ID'])
     # Fill in component and issue df with 0 for Nan (?)
-    issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+    issue_df = issue_df.fillna(0).astype(int).rename_axis('Issues')
     return issue_df, issue_response_id_map, issue_day_response_id_map
 
 
@@ -426,8 +426,8 @@ component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(result
 list_component_df = component_df
 issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
 list_issue_df = issue_df
-fig_component = updateGraph(component_df, 'Components Over Time', 7)
-fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
+#fig_component = updateGraph(component_df, 'Components Over Time', 7)
+#fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
 
 # def mergedGraph():
@@ -1058,11 +1058,11 @@ components_layout = html.Div(className='sites-layout', children=[
             marks=toggle_time_params['marks']
         ),
     ]),
-    html.Div([
-        html.Div(children=[
-            dcc.Graph(id='comp-graph', figure=fig_component),
-        ]),
-    ]),
+    # html.Div([
+    #     html.Div(children=[
+    #         dcc.Graph(id='comp-graph', figure=fig_component),
+    #     ]),
+    # ]),
     html.Div([  # entire modal
         # modal content
         html.Div([
@@ -1103,11 +1103,11 @@ issues_layout = html.Div(className='sites-layout', children=[
             marks=toggle_time_params['marks']
         ),
     ]),
-    html.Div([
-        html.Div(children=[
-            dcc.Graph(id='issue-graph', figure=fig_issue),
-        ])
-    ]),
+    # html.Div([
+    #     html.Div(children=[
+    #         dcc.Graph(id='issue-graph', figure=fig_issue),
+    #     ])
+    # ]),
     html.Div([  # entire modal
         # modal content
         html.Div([
@@ -1198,7 +1198,7 @@ def display_page(pathname):
         return html.Div([
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compat Analytics',
+                    children='Mozilla Web Compatability Analytics',
                     id="title",
                 ),
             ]),
