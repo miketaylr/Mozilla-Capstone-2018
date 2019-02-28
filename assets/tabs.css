@@ -19,6 +19,10 @@
     width: initial !important;
 }
 
+.tab_style:hover {
+    color: white;
+}
+
 .tab_selected_style {
     border: none !important;
     border-bottom: 1px solid white !important;

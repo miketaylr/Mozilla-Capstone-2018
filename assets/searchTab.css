@@ -1,6 +1,16 @@
 #searchrequest {
     background-color: transparent;
     color: #afb1b3;
+    -webkit-transition: width 1s;
+    transition: width 1s;
+    width: 200px;
+}
+
+#searchrequest:focus {
+    width: 400px;
+    border-color: white;
+    color: white;
+    transition: all ease-in-out 1s;
 }
 
 #search-loading {

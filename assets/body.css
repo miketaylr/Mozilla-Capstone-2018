@@ -43,7 +43,7 @@ body {
 }
 
 #logo:hover {
-    cursor: default;
+    cursor: pointer;
     transform: rotate(360deg);
     transition: all 0.5s ease-in-out 0s;
 }
