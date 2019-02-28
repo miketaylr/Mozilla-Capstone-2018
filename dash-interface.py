@@ -657,7 +657,7 @@ main_layout = html.Div(children=[
                      children=[
                          html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
                          html.H1(
-                             children='MOZILLA ANALYTICS',
+                             children='MOZILLA',
                              id="title",
                          ),
                          html.H6(
