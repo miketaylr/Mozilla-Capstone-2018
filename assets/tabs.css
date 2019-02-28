@@ -1,0 +1,30 @@
+.tab-parent {
+    display:inline-block;
+    float: right;
+    padding-bottom: 3px;
+}
+
+.tabs_styles {
+    height: 44px;
+    width: 600px;
+    justify-content: flex-end;
+    padding-right: 20px;
+}
+
+.tab_style  {
+    margin: 5px 0px 5px 0px;
+    padding: 11px 11px 35px 11px !important;
+    background-color: transparent !important;
+    border: none !important;
+    width: initial !important;
+}
+
+.tab_selected_style {
+    border: none !important;
+    border-bottom: 1px solid white !important;
+    color: white !important;
+}
+
+#tabs-content-inline {
+    padding-bottom: 20px;
+}
