@@ -8,7 +8,7 @@ import plotly.graph_objs as go
 from dash.dependencies import Input, Output, State
 import ast
 import json
-#from clustering import runDrilldown
+from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
@@ -19,7 +19,8 @@ import ast
 import re
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
+                        'https://fonts.googleapis.com/css?family=Montserrat:300,100']
 external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 
 
@@ -610,38 +611,39 @@ app.title = 'Mozilla Analytics'
 Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
-tabs_styles = {
-    'height': '44px',
-    'width': '600px',
-    'display': 'inline-block'
-}
-tab_style = {
-    # 'borderBottom': '1px solid #d6d6d6',
-    'margin': '5px 0px 5px 0px',
-    'padding': '11px',
-    'backgroundColor': 'rgb(30,30,30)',
-    'border': 'none',
-}
-sites_tab_style = {
-    # 'borderBottom': '1px solid #d6d6d6',
-    'margin': '5px 0px 5px 0px',
-    'padding': '11px 14px 11px 14px',
-    'backgroundColor': 'rgb(30,30,30)',
-    'font-weight': 'bold',
-    'border-style': 'solid',
-    'border-width': '1px',
-}
-tab_selected_style = {
-    'border': 'none',
-    # 'borderBottom': '1px solid #d6d6d6',
-    'backgroundColor': 'rgb(30,30,30)',
-    'color': 'white',
-    'padding': '11px'
-}
-colors = {
-    'background': '#111111',
-    'text': '#7FDBFF'
-}
+# tabs_styles = {
+#     'height': '44px',
+#     'width': '600px',
+#     'display': 'inline-block'
+# }
+# tab_style = {
+#     # 'borderBottom': '1px solid #d6d6d6',
+#     'margin': '5px 0px 5px 0px',
+#     'padding': '11px',
+#     # 'backgroundColor': 'rgb(30,30,30)',
+#     'backgroundColor': 'transparent',
+#     'border': 'none',
+# }
+# # sites_tab_style = {
+# #     # 'borderBottom': '1px solid #d6d6d6',
+# #     'margin': '5px 0px 5px 0px',
+# #     'padding': '11px 14px 11px 14px',
+# #     'backgroundColor': 'transparent',
+# #     'font-weight': 'bold',
+# #     'border-style': 'solid',
+# #     'border-width': '1px',
+# # }
+# tab_selected_style = {
+#     # 'border': 'none',
+#     'borderTop': 'none',
+#     'borderRight': 'none',
+#     'borderLeft': 'none',
+#     'borderBottom': '1px solid #white !important',
+#     'backgroundColor': 'transparent',
+#     'color': 'white',
+#     'padding': '11px'
+# }
+
 app.config.suppress_callback_exceptions = True
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -650,20 +652,30 @@ app.layout = html.Div([
 main_layout = html.Div(children=[
     html.Div(id="header",
              children=[
-        html.H1(
-            children='Mozilla Web Compat Analytics',
-            id="title",
-        ),
-        dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
-            dcc.Tab(label='Sentiment', value='sentiment', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Geo-View', value='geoview', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Components', value='components', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Issues', value='issues', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='SITES', value='sites', style=sites_tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Search', value='search', style=tab_style, selected_style=tab_selected_style),
-        ], style=tabs_styles),
+                 html.Div(
+                     id="left-header",
+                     children=[
+                         html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
+                         html.H1(
+                             children='MOZILLA',
+                             id="title",
+                         ),
+                         html.H6(
+                             children='web compat analytics',
+                             id="subtitle"
+                         )
+                     ],
+                 ),
+                dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
+                    dcc.Tab(label='Sentiment', value='sentiment', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Geo-View', value='geoview', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Components', value='components', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Issues', value='issues', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Sites', value='sites', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Search', value='search', className='tab_style', selected_className='tab_selected_style'),
+                ], className='tabs_styles'),
     ]),
-    html.Div(id='tabs-content-inline', className='tab-content')
+    html.Div(id='tabs-content-inline') # , className='tab-content'
 ])
 
 
@@ -1136,10 +1148,10 @@ issues_layout = html.Div(className='sites-layout', children=[
 
 
 search_layout = html.Div([
-    html.Img(src='https://i.ibb.co/yXR1ttT/loading.gif', id = 'search-loading', style={'display': 'none'}),
+    html.Img(src='https://loading.io/assets/img/loader/msg.gif', id = 'search-loading', style={'display': 'none'}),
     html.H3('Search Feedback', className='page-title'),
     # html.Label('Enter Search Request:'),
-    dcc.Input(id='searchrequest', type='text', placeholder='Search'),
+    dcc.Input(id='searchrequest', type='text', placeholder='Type Here'),
     html.Div(id='search-count-reveal'),
     html.A("Download CSV", id='search-download-link', className='download-link search-download-link', href='', target="_blank", style={'display': 'none'}),
     html.Div(id='search-table-container',
@@ -1153,9 +1165,9 @@ search_layout = html.Div([
                      selected_row_indices=[],
                  ),
              ],
-             style={'display': 'none'})
-],
-style={'text-align': 'center'})
+             style={'visibility': 'hidden'})
+    ],
+    style={'text-align': 'center'})
 
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
