@@ -19,7 +19,8 @@ import ast
 import re
 
 
-external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
+                        'https://fonts.googleapis.com/css?family=Montserrat:300,100']
 external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
 
 
@@ -163,7 +164,7 @@ results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Su
 
 global_sentiment_average = results2_df['compound'].mean()
 print(global_sentiment_average)
-
+df_geo = df_geo.rename(columns={'COUNTRY': 'Country'})
 geo_2week_df = df_geo[['Country']]
 # Calculate daily average sentiment scores over the past 2 weeks
 for num_days in range(14):
@@ -327,7 +328,6 @@ def initCompDF(results2_df, num_days_range = 14):
         comps = new_comp_info.index.values
         for comp in comps:
             comp_response_id_map[date][comp] = []
-
         for index, row in day_df.iterrows():
             comp_day_response_id_map[date].append(row['Response ID'])
             for comp in row['Components']:
@@ -336,7 +336,8 @@ def initCompDF(results2_df, num_days_range = 14):
             if len(row['Components']) == 0 and 'No Label' in comps:
                 comp_response_id_map[date]['No Label'].append(row['Response ID'])
 
-    component_df = component_df.fillna(0).astype(int).drop(0, 1).rename_axis('Components')
+    component_df = component_df.fillna(0).astype(int).rename_axis('Components')
+    component_df.drop([0], axis = 1, inplace = True)
     return component_df, comp_response_id_map, comp_day_response_id_map
 
 
@@ -378,7 +379,8 @@ def initIssueDF(results2_df, num_days_range = 14):
             if len(row['Issues']) == 0 and 'No Label' in issues:
                 issue_response_id_map[date]['No Label'].append(row['Response ID'])
     # Fill in component and issue df with 0 for Nan (?)
-    issue_df = issue_df.fillna(0).astype(int).drop(0, 1).rename_axis('Issues')
+    issue_df = issue_df.fillna(0).astype(int).rename_axis('Issues')
+    issue_df.drop([0], axis = 1, inplace = True)
     return issue_df, issue_response_id_map, issue_day_response_id_map
 
 
@@ -387,7 +389,7 @@ def updateGraph(df, title, num_days_range = 7):
     traces = []
     # Checking df for values:
     for index, row in filtered_df.iterrows():
-        # print(list(row.keys()))
+        print(list(row.keys()))
         traces.append(go.Bar(
             x=list(row.keys()),
             y=row.values,
@@ -422,6 +424,7 @@ def updateGraph(df, title, num_days_range = 7):
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
+print(day_range)
 component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(results2_df, day_range)
 list_component_df = component_df
 issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
@@ -610,38 +613,39 @@ app.title = 'Mozilla Analytics'
 Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
-tabs_styles = {
-    'height': '44px',
-    'width': '600px',
-    'display': 'inline-block'
-}
-tab_style = {
-    # 'borderBottom': '1px solid #d6d6d6',
-    'margin': '5px 0px 5px 0px',
-    'padding': '11px',
-    'backgroundColor': 'rgb(30,30,30)',
-    'border': 'none',
-}
-sites_tab_style = {
-    # 'borderBottom': '1px solid #d6d6d6',
-    'margin': '5px 0px 5px 0px',
-    'padding': '11px 14px 11px 14px',
-    'backgroundColor': 'rgb(30,30,30)',
-    'font-weight': 'bold',
-    'border-style': 'solid',
-    'border-width': '1px',
-}
-tab_selected_style = {
-    'border': 'none',
-    # 'borderBottom': '1px solid #d6d6d6',
-    'backgroundColor': 'rgb(30,30,30)',
-    'color': 'white',
-    'padding': '11px'
-}
-colors = {
-    'background': '#111111',
-    'text': '#7FDBFF'
-}
+# tabs_styles = {
+#     'height': '44px',
+#     'width': '600px',
+#     'display': 'inline-block'
+# }
+# tab_style = {
+#     # 'borderBottom': '1px solid #d6d6d6',
+#     'margin': '5px 0px 5px 0px',
+#     'padding': '11px',
+#     # 'backgroundColor': 'rgb(30,30,30)',
+#     'backgroundColor': 'transparent',
+#     'border': 'none',
+# }
+# # sites_tab_style = {
+# #     # 'borderBottom': '1px solid #d6d6d6',
+# #     'margin': '5px 0px 5px 0px',
+# #     'padding': '11px 14px 11px 14px',
+# #     'backgroundColor': 'transparent',
+# #     'font-weight': 'bold',
+# #     'border-style': 'solid',
+# #     'border-width': '1px',
+# # }
+# tab_selected_style = {
+#     # 'border': 'none',
+#     'borderTop': 'none',
+#     'borderRight': 'none',
+#     'borderLeft': 'none',
+#     'borderBottom': '1px solid #white !important',
+#     'backgroundColor': 'transparent',
+#     'color': 'white',
+#     'padding': '11px'
+# }
+
 app.config.suppress_callback_exceptions = True
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -650,20 +654,30 @@ app.layout = html.Div([
 main_layout = html.Div(children=[
     html.Div(id="header",
              children=[
-        html.H1(
-            children='Mozilla Web Compat Analytics',
-            id="title",
-        ),
-        dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
-            dcc.Tab(label='Sentiment', value='sentiment', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Geo-View', value='geoview', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Components', value='components', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Issues', value='issues', style=tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='SITES', value='sites', style=sites_tab_style, selected_style=tab_selected_style),
-            dcc.Tab(label='Search', value='search', style=tab_style, selected_style=tab_selected_style),
-        ], style=tabs_styles),
+                 html.Div(
+                     id="left-header",
+                     children=[
+                         html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
+                         html.H1(
+                             children='MOZILLA',
+                             id="title",
+                         ),
+                         html.H6(
+                             children='web compat analytics',
+                             id="subtitle"
+                         )
+                     ],
+                 ),
+                dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
+                    dcc.Tab(label='Sentiment', value='sentiment', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Geo-View', value='geoview', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Components', value='components', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Issues', value='issues', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Sites', value='sites', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='Search', value='search', className='tab_style', selected_className='tab_selected_style'),
+                ], className='tabs_styles'),
     ]),
-    html.Div(id='tabs-content-inline', className='tab-content')
+    html.Div(id='tabs-content-inline') # , className='tab-content'
 ])
 
 
@@ -841,7 +855,7 @@ sites_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/sites-classification', target="_blank"), # close button
+                html.A("Analytics", className='drill-down-link', href='/sites-classification', target="_blank"), # close button
                 html.A("Clustering", className='drill-down-link', href='/sites-clustering', target="_blank"),
                 html.A("Download CSV", id='top-download-sites-link', className='download-link', href='', target="_blank"),
             ]),
@@ -866,7 +880,7 @@ sites_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/sites-classification', target="_blank"), # close button
+                html.A("Analytics", className='drill-down-link', href='/sites-classification', target="_blank"), # close button
                 html.A("Clustering", className='drill-down-link', href='/sites-clustering', target="_blank"),
                 html.A("Download CSV", id='other-download-sites-link', className='download-link', href='', target="_blank"),
             ]),
@@ -889,7 +903,18 @@ sentiment_layout = html.Div([
     html.H3('Sentiment', className='page-title'),
     html.Div([
         html.Div(
-            children=dcc.Graph(
+            children=[
+            dcc.RadioItems(
+                id='sentiment-frequency',
+                options=[
+                    {'label': 'Daily', 'value': 'D'},
+                    {'label': 'Weekly', 'value': 'W'},
+                    {'label': 'Monthly', 'value': 'M'}
+                ],
+                value='D',
+                labelStyle={'display': 'inline-block'}
+            ),
+            dcc.Graph(
                id='binary-sentiment-ts',
                figure={
                     'data': [
@@ -897,18 +922,18 @@ sentiment_layout = html.Div([
                             'x': unique_dates,
                             'y': results_df[results_df["Binary Sentiment"] == "Sad"].groupby(
                                 [results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                            'type': 'bar',
+                            'type': 'scatter',
                             'name': "Sad"
                         },
                         {
                             'x': unique_dates,
                             'y': results_df[results_df["Binary Sentiment"] == "Happy"].groupby([results_df['Date Submitted'].dt.date])['Binary Sentiment'].count().values,
-                            'type': 'bar',
+                            'type': 'scatter',
                             'name': "Happy"
                         }
                     ],
                     'layout': {
-                        'title': "Sentiment Breakdown",
+                        'title': "Happy/Sad Breakdown",
                         'titlefont': {
                             'family': 'Helvetica Neue, Helvetica, sans-serif',
                             'color': '#BCBCBC',
@@ -925,11 +950,10 @@ sentiment_layout = html.Div([
                             'color': '#BCBCBC',
                         },
                         'paper_bgcolor': 'rgba(0,0,0,0)',
-                        'plot_bgcolor': 'rgba(0,0,0,0)',
-                        'barmode': 'stack',
+                        'plot_bgcolor': 'rgba(0,0,0,0)'
                     }
                 }
-            )
+            )]
         ),
     ]),
     html.Div([
@@ -1016,7 +1040,7 @@ geoview_layout = html.Div([
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/geo-classification', target="_blank"), # close button
+                html.A("Analytics", className='drill-down-link', href='/geo-classification', target="_blank"), # close button
                 html.A("Clustering", className='drill-down-link', href='/geo-clustering', target="_blank"),
                 html.A("Download CSV", id='download-geo-link', className='download-link', href='', target="_blank"),
             ]),
@@ -1061,7 +1085,7 @@ components_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/comp-classification', target="_blank"), # close button
+                html.A("Analytics", className='drill-down-link', href='/comp-classification', target="_blank"), # close button
                 html.A("Clustering", className='drill-down-link', href='/comp-clustering', target="_blank"),
                 html.A("Download CSV", id='download-comp-link', className='download-link', href='', target="_blank"),
             ]),
@@ -1106,7 +1130,7 @@ issues_layout = html.Div(className='sites-layout', children=[
             ]),
             html.H2("Selected Feedback Data Points", className='modal-title'),  # Header
             html.Div(className='drill-down-container', children=[
-                html.A("Drill-down", className='drill-down-link', href='/issues-classification', target="_blank"), # close button
+                html.A("Analytics", className='drill-down-link', href='/issues-classification', target="_blank"), # close button
                 html.A("Clustering", className='drill-down-link', href='/issues-clustering', target="_blank"),
                 html.A("Download CSV", id='download-issues-link', className='download-link', href='', target="_blank"),
             ]),
@@ -1126,10 +1150,10 @@ issues_layout = html.Div(className='sites-layout', children=[
 
 
 search_layout = html.Div([
-    html.Img(src='https://i.ibb.co/yXR1ttT/loading.gif', id = 'search-loading', style={'display': 'none'}),
+    html.Img(src='https://loading.io/assets/img/loader/msg.gif', id = 'search-loading', style={'display': 'none'}),
     html.H3('Search Feedback', className='page-title'),
     # html.Label('Enter Search Request:'),
-    dcc.Input(id='searchrequest', type='text', placeholder='Search'),
+    dcc.Input(id='searchrequest', type='text', placeholder='Type Here'),
     html.Div(id='search-count-reveal'),
     html.A("Download CSV", id='search-download-link', className='download-link search-download-link', href='', target="_blank", style={'display': 'none'}),
     html.Div(id='search-table-container',
@@ -1143,9 +1167,9 @@ search_layout = html.Div([
                      selected_row_indices=[],
                  ),
              ],
-             style={'display': 'none'})
-],
-style={'text-align': 'center'})
+             style={'visibility': 'hidden'})
+    ],
+    style={'text-align': 'center'})
 
 
 @app.callback(dash.dependencies.Output('page-content', 'children'),
@@ -1188,7 +1212,7 @@ def display_page(pathname):
         return html.Div([
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compat Analytics',
+                    children='Mozilla Web Compatability Analytics',
                     id="title",
                 ),
             ]),
@@ -1227,7 +1251,8 @@ def display_page(pathname):
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
         results = runDrilldown(results_modal_df)
-        print(results)
+        results = results.sort_values(by='Count', ascending=False)
+        results = results.reset_index()
         pageChildren = []
         for index, cluster in results.iterrows():
             responseIds = cluster['Response IDs']
@@ -1235,14 +1260,19 @@ def display_page(pathname):
             for response in responseIds:
                 feedback = results2_df[results2_df['Response ID'] == response]
                 listArray.append(html.Li(feedback['Feedback']))
-            print(index, cluster)
-            child = html.Div(className='clustering-group', children=[
-                html.H3(index),
-                html.P('Top Words: ' + cluster['Words'], className='clustering-top-text'),
+            child=html.Details([
+                html.Summary(('Cluster ' + str(index+1) + ' - ' + cluster['Words']), className='clustering-summary-text'),
                 html.P('Top Phrases: ' + cluster['Phrases'], className='clustering-top-text'),
                 html.P('Feedback: ', className='clustering-top-text'),
                 html.Ul(children=listArray, className='clustering-feedback'),
             ])
+            # child = html.Div(className='clustering-group', children=[
+            #     html.H3('Cluster ' + str(index+1)),
+            #     html.P('Top Words: ' + cluster['Words'], className='clustering-top-text'),
+            #     html.P('Top Phrases: ' + cluster['Phrases'], className='clustering-top-text'),
+            #     html.P('Feedback: ', className='clustering-top-text'),
+            #     html.Ul(children=listArray, className='clustering-feedback'),
+            # ])
             pageChildren.append(child)
 
         results = results.transpose()
@@ -1318,6 +1348,64 @@ def render_content(tab):
         return search_layout
     else:
         return sites_layout
+
+@app.callback(Output('binary-sentiment-ts', 'figure'),
+              [Input('sentiment-frequency', 'value')])
+def update_sentiment_graph(frequency):
+
+    sad_df = (
+        results_df[results_df["Binary Sentiment"] == "Sad"].groupby([pd.Grouper(key="Date Submitted", freq=frequency)]).count()
+        .reset_index()
+        .sort_values("Date Submitted")
+    )
+
+    happy_df = (
+        results_df[results_df["Binary Sentiment"] == "Happy"].groupby([pd.Grouper(key="Date Submitted", freq=frequency)]).count()
+        .reset_index()
+        .sort_values("Date Submitted")
+    )
+
+    fig = {
+        'data': [
+            {
+                'x': sad_df['Date Submitted'],
+                'y': sad_df['Binary Sentiment'],
+                'type': 'scatter',
+                'name': "Sad"
+            },
+            {
+                'x': happy_df['Date Submitted'],
+                'y': happy_df['Binary Sentiment'],
+                'type': 'scatter',
+                'name': "Happy"
+            }
+        ],
+        'layout': {
+            'title': "Happy/Sad Breakdown",
+            'titlefont': {
+                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'color': '#BCBCBC',
+            },
+            'xaxis': {
+                'title': 'Time'
+            },
+            'yaxis': {
+                'title': 'Number of Feedback'
+            },
+            'font': {
+                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'size': 12,
+                'color': '#BCBCBC',
+            },
+            'paper_bgcolor': 'rgba(0,0,0,0)',
+            'plot_bgcolor': 'rgba(0,0,0,0)'#,
+            #'barmode': 'stack',
+        }
+    }
+
+
+    return fig
+
 
 
 # @app.callback(
@@ -2363,5 +2451,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
 
