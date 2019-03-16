@@ -663,18 +663,18 @@ main_layout = html.Div(children=[
                              id="title",
                          ),
                          html.H6(
-                             children='web compat analytics',
+                             children='user feedback analytics',
                              id="subtitle"
                          )
                      ],
                  ),
                 dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
                     dcc.Tab(label='Sentiment', value='sentiment', className='tab_style', selected_className='tab_selected_style'),
-                    dcc.Tab(label='Geo-View', value='geoview', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(label='World View', value='geoview', className='tab_style', selected_className='tab_selected_style'),
                     dcc.Tab(label='Components', value='components', className='tab_style', selected_className='tab_selected_style'),
                     dcc.Tab(label='Issues', value='issues', className='tab_style', selected_className='tab_selected_style'),
                     dcc.Tab(label='Sites', value='sites', className='tab_style', selected_className='tab_selected_style'),
-                    dcc.Tab(label='Search', value='search', className='tab_style', selected_className='tab_selected_style'),
+                    dcc.Tab(id='search-tab', value='search', className='tab_style', selected_className='tab_selected_style'),
                 ], className='tabs_styles'),
     ]),
     html.Div(id='tabs-content-inline') # , className='tab-content'
@@ -693,9 +693,9 @@ list_page_children = []
 
 
 sites_layout = html.Div(className='sites-layout', children=[
-    html.H3('Sites', className='page-title'),
+    html.H3('Site-Specific Feedback', className='page-title'),
     html.Div([
-        html.Label('Choose Date Range:'),
+        html.Label('Select Date Range:'),
         dcc.DatePickerRange(
             id='sites-date-range',
             min_date_allowed=results_df['Date Submitted'].min(),
@@ -900,7 +900,7 @@ sites_layout = html.Div(className='sites-layout', children=[
 
 
 sentiment_layout = html.Div([
-    html.H3('Sentiment', className='page-title'),
+    html.H3('How Do Users Feel About Mozilla?', className='page-title'),
     html.Div([
         html.Div(
             children=[
@@ -912,7 +912,8 @@ sentiment_layout = html.Div([
                     {'label': 'Monthly', 'value': 'M'}
                 ],
                 value='D',
-                labelStyle={'display': 'inline-block'}
+                labelStyle={'display': 'inline-block'},
+                inputStyle = {'background-color': 'orange'}
             ),
             dcc.Graph(
                id='binary-sentiment-ts',
@@ -933,7 +934,7 @@ sentiment_layout = html.Div([
                         }
                     ],
                     'layout': {
-                        'title': "Happy/Sad Breakdown",
+                        'title': "Happy/Sad Sentiment Breakdown",
                         'titlefont': {
                             'family': 'Helvetica Neue, Helvetica, sans-serif',
                             'color': '#BCBCBC',
@@ -942,7 +943,7 @@ sentiment_layout = html.Div([
                             'title': 'Time'
                         },
                         'yaxis': {
-                            'title': 'Number of Feedback'
+                            'title': 'Amount of Feedback'
                         },
                         'font': {
                             'family': 'Helvetica Neue, Helvetica, sans-serif',
@@ -1006,8 +1007,8 @@ sentiment_layout = html.Div([
 ])
 
 
-geoview_layout = html.Div([
-    html.H3('Global Happiness Index', className='page-title'),
+geoview_layout = html.Div(className='geo-layout', children = [
+    html.H3('How Does The World Feel About Mozilla?', className='page-title'),
     html.Div(id='geo_container', className='slider-container', children=[
         html.Div(id='geo_slider_output'),
         dcc.Slider(
@@ -1023,9 +1024,9 @@ geoview_layout = html.Div([
         id='geoview-radio',
         style={'text-align': 'center'},
         options=[
-            {'label': 'Past two weeks', 'value': 'week'},
-            {'label': 'Normalized by country', 'value': 'norm'},
-            {'label': 'Normalized globally', 'value': 'globalNorm'},
+            {'label': 'For the Time Range Selected Above', 'value': 'week'},
+            {'label': 'Normalized by Country', 'value': 'norm'},
+            {'label': 'Normalized Globally', 'value': 'globalNorm'},
         ],
         value='week'
     ),
@@ -1060,7 +1061,7 @@ geoview_layout = html.Div([
 
 
 components_layout = html.Div(className='sites-layout', children=[
-    html.H3('Components', className='page-title'),
+    html.H3('Where Did Mozilla Break?', className='page-title'),
     html.Div(id='comp_container', className='slider-container', children=[
         html.Div(id='comp_slider_output'),
         dcc.Slider(
@@ -1105,7 +1106,7 @@ components_layout = html.Div(className='sites-layout', children=[
 
 
 issues_layout = html.Div(className='sites-layout', children=[
-    html.H3('Issues', className='page-title'),
+    html.H3('Browser Issues', className='page-title'),
     html.Div(id='issue_container', className='slider-container', children=[
         html.Div(id='issue_slider_output'),
         dcc.Slider(
@@ -2188,6 +2189,21 @@ def update_comp_download_link(clickData):
         return ''
 
 @app.callback(
+    Output('geo_time_slider', 'disabled'),
+    [Input('geoview-radio', 'value')])
+def abling_slider(radio_value):
+    if radio_value == 'week':
+        return False
+    else:
+        return True
+
+@app.callback(
+    dash.dependencies.Output('geo_slider_output', 'children'),
+    [dash.dependencies.Input('geo_time_slider', 'value')])
+def update_comp_output_slider(value):
+    return 'Past {} days of data'.format(value)
+
+@app.callback(
     Output('country-graph', 'figure'),
     [Input('geoview-radio', 'value'),
      Input('geo_time_slider', 'value')])
@@ -2250,8 +2266,8 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     count = len(sites_df.index)
 
     return html.Div([
-        html.P(['Sites were mentioned {} times in the raw feeback. There were {} unique sites mentioned.'.format(sites_df['Count'].sum(), count)]),
-        html.P(['There were {} raw feedback with no mentions of sites.'.format(no_sites_df['Count'].sum())])
+        html.P(['Sites were mentioned {} times in the raw feedback. There were {} unique sites mentioned.'.format(sites_df['Count'].sum(), count)]),
+        html.P(['There were {} pieces of raw feedback that did not mention any sites.'.format(no_sites_df['Count'].sum())])
     ])
 
 # @app.callback(
@@ -2404,7 +2420,8 @@ def set_search_count(dict_of_returned_df):
      Input('searchtable', 'rows')])
 def set_search_count(sentence, dict):
     if (len(dict[0]) > 0):
-        return {'display': 'block'}
+        return {'display': 'block',
+                'animation': 'opac 1s'}
     else:
         return {'display': 'none'}
 
@@ -2451,5 +2468,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 

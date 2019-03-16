@@ -21,4 +21,6 @@
     width: 75px;
 }
 
-/* Testing new loading icon *?
+@keyframes opac{
+    from{opacity:0} to{opacity:1}
+}
