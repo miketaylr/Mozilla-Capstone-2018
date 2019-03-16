@@ -806,7 +806,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     #         marks=toggle_time_params['marks']
                     #     ),
                     # ]),
-                    html.A("View selected data", id="top-view-selected"),
+                    html.Button("View Selected Data", id="top-view-selected", className="view-selected-data"),
                     dte.DataTable(  # Add fixed header row
                         id='top-sites-table',
                         rows=top_sites_df.to_dict('rows'),
@@ -833,7 +833,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     #         marks=toggle_time_params['marks']
                     #     ),
                     # ]),
-                    html.A("View selected data", id="other-view-selected"),
+                    html.Button("View Selected Data", id="other-view-selected", className="view-selected-data"),
                     dte.DataTable(  # Add fixed header row
                         id='other-sites-table',
                         rows=other_sites_df.to_dict('rows'),
