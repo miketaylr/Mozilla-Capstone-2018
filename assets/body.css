@@ -2,7 +2,7 @@ body {
     color: #afb1b3;
     font-family: Montserrat, Helvetica Neue, Helvetica, sans-serif;
     margin: 0;
-    background-image: url(../assets/bg.png);
+    background-image: url(../assets/bg_dark.png);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -48,7 +48,8 @@ body {
 #logo {
     width: 3.5em;
     vertical-align: middle;
-    margin: 0 0.5em;
+    margin: 0;
+    margin-left: 0.5em;
     align-self: center;
 }
 
@@ -81,7 +82,7 @@ body {
     margin-left: 5px;
 }
 
-.sites-layout {
+.geo-layout, .sites-layout {
     text-align: center;
     color: white;
 }
@@ -176,4 +177,18 @@ body {
 
 .center {
     text-align: center;
+}
+
+/* Sliders */
+
+.rc-slider-track {
+    background-color: orange;
+}
+
+.rc-slider-dot-active {
+    border-color: white;
+}
+
+.rc-slider-handle, .rc-slider-handle:hover {
+    border-color: orange;
 }

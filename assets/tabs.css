@@ -31,4 +31,25 @@
 
 #tabs-content-inline {
     padding-bottom: 20px;
+    margin-top: 45px;
+}
+
+#search-tab {
+    background: url(../assets/search-icon-grey.png);
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: center;
+    color: transparent;
+    padding-left: 17px !important;
+    padding-right: 17px !important;
+}
+
+#search-tab.tab_selected_style, #search-tab:hover {
+    background: url(../assets/search-icon.png);
+    background-size: 18px;
+    background-repeat: no-repeat;
+    background-position: center;
+    color: transparent;
+    padding-left: 17px !important;
+    padding-right: 17px !important;
 }
