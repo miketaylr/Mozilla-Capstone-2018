@@ -17,11 +17,12 @@ import urllib.parse
 import os
 import ast
 import re
+import dash_dangerously_set_inner_html
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
                         'https://fonts.googleapis.com/css?family=Montserrat:300,100']
-external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js']
+external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js.org/d3.v4.min.js']
 
 
 # Reading in data:
@@ -179,27 +180,28 @@ full_compound_df.columns = ['Country', 'Sentiment_Full']
 
 combined_compound_df = pd.merge(one_week_compound_df, full_compound_df, on='Country', how='inner')
 combined_compound_df['Sentiment_Norm'] = combined_compound_df['Sentiment_Week'] - combined_compound_df['Sentiment_Full']
-combined_compound_df['Sentiment_Norm_Global'] = combined_compound_df['Sentiment_Week']/global_sentiment_average
+combined_compound_df['Sentiment_Norm_Global'] = combined_compound_df['Sentiment_Full'] - global_sentiment_average
 
 df_geo = df_geo.drop('Sentiment', axis=1)
 df_geo.columns = ['Country', 'Code']
 df_geo.set_index('Country')
 
 df_review_compound =  combined_compound_df.groupby('Country', as_index=False).mean()
-df_review_compound = df_review_compound[['Country', 'Sentiment_Norm', 'Sentiment_Norm_Global', 'Sentiment_Week']]
+df_review_compound = df_review_compound[['Country', 'Sentiment_Norm', 'Sentiment_Norm_Global', 'Sentiment_Week', 'Sentiment_Full']]
 df_review_compound.set_index('Country')
 
 df_geo_sentiment = pd.merge(df_review_compound, df_geo, on='Country', how='inner')
 df_geo_sentiment = pd.merge(df_geo_sentiment, geo_2week_df, on='Country', how='inner')
 df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
-def updateGeoGraph(df, type):
+def updateGeoGraph(df, type, value):
+    print(df)
     if type=='norm':
-        sentiment = df['Sentiment_Norm']
+        sentiment = df[value] - df['Sentiment_Full']
     elif type=='globalNorm':
         sentiment = df['Sentiment_Norm_Global']
     else:
-        sentiment = df[type]
+        sentiment = df[value]
     fig_geo = dict(data=[
             dict(
                 type = 'choropleth',
@@ -246,7 +248,7 @@ def updateGeoGraph(df, type):
     )
     return fig_geo
 
-fig_geo = updateGeoGraph(df_geo_sentiment, 7)
+fig_geo = updateGeoGraph(df_geo_sentiment, '',7)
 
 
 # Getting components and issues in string:
@@ -1254,14 +1256,29 @@ def display_page(pathname):
         results = results.sort_values(by='Count', ascending=False)
         results = results.reset_index()
         pageChildren = []
+        rootDict = dict()
+        rootDict['name'] = ''
+        rootDict['children'] = []
         for index, cluster in results.iterrows():
             responseIds = cluster['Response IDs']
             listArray = []
             for response in responseIds:
                 feedback = results2_df[results2_df['Response ID'] == response]
                 listArray.append(html.Li(feedback['Feedback']))
+            dataDict = dict()
+            wordArr = []
+            topWords = cluster['Words'].split(',')
+            if topWords[0]:
+                wordArr.append(topWords[0])
+            if topWords[1]:
+                wordArr.append(topWords[1])
+            dataDict['name'] = ",".join(wordArr)
+            dataDict['value'] = len(listArray)
+            clusterId = 'cluster_' + str(index+1)
+            dataDict['id'] = clusterId
+            rootDict['children'].append(dataDict)
             child=html.Details([
-                html.Summary(('Cluster ' + str(index+1) + ' - ' + cluster['Words']), className='clustering-summary-text'),
+                html.Summary(('Cluster ' + str(index+1) + ' - ' + cluster['Words']), id=clusterId, className='clustering-summary-text'),
                 html.P('Top Phrases: ' + cluster['Phrases'], className='clustering-top-text'),
                 html.P('Feedback: ', className='clustering-top-text'),
                 html.Ul(children=listArray, className='clustering-feedback'),
@@ -1283,6 +1300,11 @@ def display_page(pathname):
                     children='Mozilla Web Compat Analytics',
                     id="title",
                 ),
+            ]),
+            html.Div(id='div-d3', className="d3-container", **{'data-d3': json.dumps(rootDict)}, children=[
+            dash_dangerously_set_inner_html.DangerouslySetInnerHTML('''
+                <svg width="800" height="800"></svg>
+            '''),
             ]),
             html.Div(children=pageChildren),
             # html.Div([
@@ -2192,12 +2214,7 @@ def update_comp_download_link(clickData):
     [Input('geoview-radio', 'value'),
      Input('geo_time_slider', 'value')])
 def update_geoview_graph(radio_value, slider_value):
-    if radio_value == 'week':
-        value = slider_value
-    else:
-        value = radio_value
-    print(radio_value)
-    fig_geo = updateGeoGraph(df_geo_sentiment, value)
+    fig_geo = updateGeoGraph(df_geo_sentiment, radio_value, slider_value)
     return fig_geo
 
 # @app.callback(

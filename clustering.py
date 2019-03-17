@@ -420,6 +420,7 @@ def visualizeSpectural():
 
 def labelClustersWKeywords(labels, myReader, num_clusters):
     top_features_list = []
+    print(myReader)
 
     for cluster in range(num_clusters):
         indices = [index for index, clusterNum in enumerate(labels) if clusterNum == cluster] # indices of documents in cluster

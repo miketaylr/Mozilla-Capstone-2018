@@ -28,6 +28,14 @@
   animation-duration: 0.4s
 }
 
+.modal-content-fixed-height {
+  width: 70%;
+  height: 80%;
+  top: 10%;
+  display: flex;
+  flex-direction: column; 
+}
+
 /* Add Animation */
 @-webkit-keyframes animatetop {
   from {top:-300px; opacity:0}
@@ -42,6 +50,7 @@
 .close-button-container {
   display: flex; 
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* The Close Button */
@@ -75,6 +84,7 @@
 .modal-title {
   margin: 0;
   color: #7b7b7b;
+  flex-shrink: 0;
 }
 
 .modal-header {
@@ -137,4 +147,21 @@
   border-color: #c4cdd5;
   fill: #637381;
   color: #212b36; 
+}
+
+.modal-text-container {
+  color: #7b7b7b;
+  padding: 10px;
+  font-size: 16px;
+  overflow-y: scroll;
+  border-top: 1px solid #e7eaec;
+  margin-top: 6px;
+}
+
+.modal-text {
+  margin: 5px 0;
+}
+
+.modal-feedback-item {
+  margin-bottom: 0;
 }
