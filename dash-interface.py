@@ -656,20 +656,22 @@ app.layout = html.Div([
 main_layout = html.Div(children=[
     html.Div(id="header",
              children=[
-                 html.Div(
-                     id="left-header",
-                     children=[
-                         html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
-                         html.H1(
-                             children='MOZILLA',
-                             id="title",
-                         ),
-                         html.H6(
-                             children='user feedback analytics',
-                             id="subtitle"
-                         )
-                     ],
-                 ),
+                 html.A(id='home-link', children = [
+                     html.Div(
+                         id="left-header",
+                         children=[
+                             html.Img(id='logo', src='../assets/Mozilla-Firefox-icon.png'),
+                             html.H1(
+                                 children='MOZILLA',
+                                 id="title",
+                             ),
+                             html.H6(
+                                 children='user feedback analytics',
+                                 id="subtitle"
+                             )
+                         ],
+                     ),
+                 ], href='https://wiki.mozilla.org/Compatibility', target='_blank'),
                 dcc.Tabs(id="tabs-styled-with-inline", value='sites', children=[
                     dcc.Tab(label='Sentiment', value='sentiment', className='tab_style', selected_className='tab_selected_style'),
                     dcc.Tab(label='World View', value='geoview', className='tab_style', selected_className='tab_selected_style'),
@@ -808,7 +810,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     #         marks=toggle_time_params['marks']
                     #     ),
                     # ]),
-                    html.Button("View Selected Data", id="top-view-selected", className="view-selected-data"),
+                    html.Button("View Selected Data", id="top-view-selected", className="view-selected-data-disabled"),
                     dte.DataTable(  # Add fixed header row
                         id='top-sites-table',
                         rows=top_sites_df.to_dict('rows'),
@@ -835,7 +837,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     #         marks=toggle_time_params['marks']
                     #     ),
                     # ]),
-                    html.Button("View Selected Data", id="other-view-selected", className="view-selected-data"),
+                    html.Button("View Selected Data", id="other-view-selected", className="view-selected-data-disabled"),
                     dte.DataTable(  # Add fixed header row
                         id='other-sites-table',
                         rows=other_sites_df.to_dict('rows'),
@@ -1413,7 +1415,7 @@ def update_sentiment_graph(frequency):
                 'title': 'Time'
             },
             'yaxis': {
-                'title': 'Number of Feedback'
+                'title': 'Amount of Feedback'
             },
             'font': {
                 'family': 'Helvetica Neue, Helvetica, sans-serif',
@@ -1813,7 +1815,14 @@ def update_issue_download_link(clickData):
 #             'margin': {'l': 40, 'r': 20, 't': 0, 'b': 30}
 #         }
 #     }
-
+@app.callback(
+    Output('top-view-selected', 'className'),
+    [Input('top-sites-table', 'selected_row_indices')])
+def disable_site_modal_button(selected_row_indices):
+    if selected_row_indices:
+        return 'view-selected-data'
+    else:
+        return 'view-selected-data-disabled'
 
 @app.callback(
     Output('top-modal-site-table', 'rows'),
@@ -1904,6 +1913,14 @@ def update_comp_graph_slider(start_date, end_date):
 
     return top_sites_df.to_dict('rows')
 
+@app.callback(
+    Output('other-view-selected', 'className'),
+    [Input('other-sites-table', 'selected_row_indices')])
+def disable_site_modal_button(selected_row_indices):
+    if selected_row_indices:
+        return 'view-selected-data'
+    else:
+        return 'view-selected-data-disabled'
 
 @app.callback(
     Output('other-modal-site-table', 'rows'),

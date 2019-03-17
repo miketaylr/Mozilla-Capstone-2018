@@ -30,6 +30,11 @@ body {
     align-items: center;
 }
 
+#home-link {
+    text-decoration: none;
+    color: transparent;
+}
+
 @-webkit-keyframes shine {
   from {
     -webkit-mask-position: 150%;
