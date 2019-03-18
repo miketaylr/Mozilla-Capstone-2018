@@ -2440,13 +2440,30 @@ def update_table(ns, request_value):
     Output('search-count-reveal','children'),
     [Input('searchtable', 'rows')])
 def set_search_count(dict_of_returned_df):
-    if (len(dict_of_returned_df[0]) > 0):
-        df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
-        count = len(df_to_use.index)
-        return u'Search returned {} results.'.format(count)
+    if (len(dict_of_returned_df) > 0):
+        if (len(dict_of_returned_df[0]) > 0):
+            df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
+            count = len(df_to_use.index)
+            return u'Search returned {} results.'.format(count)
+        else:
+            return ''
     else:
-        return ''
+        return u'Search returned no results.'
 
+@app.callback(
+    Output('search-loading', 'style'),
+    [Input('search-table-container', 'style')],
+    [State('searchrequest', 'value')])
+def hide_loading(style, query):
+    print(query)
+    print(style['display'])
+    if query and style['display'] == 'none':
+        print('block')
+        return {'display': 'block'}
+    else:
+        print('noneeeee')
+        # return {'display': 'none'}
+        return 'display: none'
 
 @app.callback(
     Output('search-table-container','style'),
