@@ -870,8 +870,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     row_selectable=True,
                     filterable=True,
                     sortable=True,
-                    selected_row_indices=[],
-                    column_widths=['30%', '10%', '10%', '10%', '10%', '10%'],
+                    selected_row_indices=[]
                 ),
             ]),
         ], id='top-modal-content-site', className='modal-content')
@@ -2450,7 +2449,7 @@ def set_search_count(dict_of_returned_df):
     else:
         return u'Search returned no results.'
 
-@app.callback(
+@app.callback( # CURRENTLY NOT WORKING BUT DOESN'T IMPACT PERFORMANCE; TODO: FIX
     Output('search-loading', 'style'),
     [Input('search-table-container', 'style')],
     [State('searchrequest', 'value')])
@@ -2462,8 +2461,7 @@ def hide_loading(style, query):
         return {'display': 'block'}
     else:
         print('noneeeee')
-        # return {'display': 'none'}
-        return 'display: none'
+        return {'display': 'none'}
 
 @app.callback(
     Output('search-table-container','style'),
