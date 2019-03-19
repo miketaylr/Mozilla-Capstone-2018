@@ -339,7 +339,7 @@ def initCompDF(results2_df, num_days_range = 14):
                 comp_response_id_map[date]['No Label'].append(row['Response ID'])
 
     component_df = component_df.fillna(0).astype(int).rename_axis('Components')
-    component_df.drop([0], axis = 1, inplace = True)
+    component_df.drop(0, axis=1, inplace = True)
     return component_df, comp_response_id_map, comp_day_response_id_map
 
 
@@ -1068,9 +1068,9 @@ components_layout = html.Div(className='sites-layout', children=[
         html.Div(id='comp_slider_output'),
         dcc.Slider(
             id='comp_time_slider',
-            min=toggle_time_params['min'], 
+            min=toggle_time_params['min'],
             max=toggle_time_params['max'],
-            step=toggle_time_params['step'], 
+            step=toggle_time_params['step'],
             value=toggle_time_params['default'],
             marks=toggle_time_params['marks']
         ),
@@ -1113,9 +1113,9 @@ issues_layout = html.Div(className='sites-layout', children=[
         html.Div(id='issue_slider_output'),
         dcc.Slider(
             id='issue_time_slider',
-            min=toggle_time_params['min'], 
+            min=toggle_time_params['min'],
             max=toggle_time_params['max'],
-            step=toggle_time_params['step'], 
+            step=toggle_time_params['step'],
             value=toggle_time_params['default'],
             marks=toggle_time_params['marks']
         ),
