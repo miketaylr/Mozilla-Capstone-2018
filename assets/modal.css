@@ -17,6 +17,8 @@
 .modal-content {
   position: relative;
   background-color: #fefefe;
+  top: 50%;
+  transform: translateY(-50%);
   margin: auto;
   padding: 0;
   border: 1px solid #888;

@@ -6,6 +6,7 @@ from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
 import referenceFiles as rf
 from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
+import tldextract
 import nltk
 nltk.downloader.download('vader_lexicon')
 
@@ -16,7 +17,16 @@ from tqdm import tqdm
 WTI = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_ISSUE.items()}
 WTC = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_COMPONENT.items()}
 
-
+# Read in the brands-keywords mapping csv
+brands = pd.read_csv(rf.filePath(rf.BRAND_KEYWORDS))
+# Convert to dictionary
+WTB = brands.set_index('Brand').T.to_dict('list')
+print(WTB)
+WTB = {k: v[0] for k, v in WTB.items()}
+print(WTB)
+WTB = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTB.items()}
+print(WTB)
+print(WTC)
 # Clean up the raw dictionaries a bit more eventually, fix typos etc.
 
 
@@ -89,7 +99,17 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         #sites = [site.lower() for site in siteList if site.lower() in combined]
         urls = re.findall(siteListRegex, combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
-        return ','.join(set(urls))
+        return list(set(urls))
+
+    # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
+    def mentioned_brand(row):
+        combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
+        brands = [k for k, v in WTB.items() if v.search(combined)]
+        #look at sites column for any extracted urls if we dont catch any brands on the first pass
+        if (len(brands) == 0):
+            brands = [tldextract.extract(v).domain for v in row['Sites']]
+
+        return list(set(brands))
 
         # Find a mentioned issue based on our issues dictionary
 
@@ -119,6 +139,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
 
         data_frame['Feedback'] = data_frame['Positive Feedback'].map(str) + data_frame['Negative Feedback'].map(str)
         data_frame['Sites'] = data_frame.apply(mentioned_site, axis=1)
+        data_frame['Brands'] = data_frame.apply(mentioned_brand, axis=1)
 
         # data_frame = data_frame.merge(df['Feedback'].apply(lambda s: pd.Series(
         #     {'Sites': re.findall(re.compile(siteList + '|https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'), s)})),
@@ -146,7 +167,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     #     language = [langid.classify(text)[0] for text in combined.lower()]
     #     return language
 
-    # Initialize and derive 4 new columns
+    # Initialize and derive new columns
     df = derive_columns(df)
 
     # Delete columns we don't need anymore
