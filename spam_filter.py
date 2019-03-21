@@ -32,6 +32,7 @@ tagger = PerceptronTagger()
 pos_tag = tagger.tag
 stop = ENGLISH_STOP_WORDS
 
+
 # 1 Text Preparation
 def text_preparation(filename):
     num_records = 5000
@@ -56,12 +57,6 @@ def text_preparation(filename):
 
 def text_preparation_unlabelled(filename):
     num_records = 5000
-    # survey_cols = ["Response ID", "Time Started", "Date Submitted",
-    #                "Status", "Language", "Referer", "Extended Referer", "User Agent",
-    #                "Extended User Agent", "Longitude", "Latitude",
-    #                "Country", "City", "State/Region", "Postal",
-    #                "Binary Sentiment", "OS", "Feedback",
-    #                "Relevant Site", "compound", "Sites", "Issues", "Components"]
     # Read All Columns
     df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records)
     df = df.fillna('')
@@ -78,10 +73,12 @@ def text_preparation_unlabelled(filename):
     df['sf_output_vbnn_phrases'] = df.apply(getNnVbPhrases, axis = 1)
     return df
 
+
 def getNounsAndVerbs(row):
     text = row['Feedback']
     vbsNns = [tag[0] for tag in pos_tag(re.findall(r'\w+', text)) if ('VB' in tag[1] or 'NN' in tag[1]) and (tag[0] not in stop)]
     return ' '.join(set(vbsNns))
+
 
 def getNnVbPhrases(row):
     text = row['Feedback']
@@ -128,6 +125,7 @@ def getNnVbPhrases(row):
 
     phrases = [word for word in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', text))))]
     return json.dumps(phrases)
+
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()

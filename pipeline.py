@@ -39,8 +39,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # then save and check if data contains these values
     print("Loading top sites from %s " % top_sites_location)
     sites = pd.read_csv(top_sites_location, usecols=['Domains', 'Brand'])
-    # , skiprows = 50, nrows = 25
-    # display(sites)
     siteList = list(sites.values.flatten())
 
     # remove commas ('salesforce.com, force.com')
@@ -75,10 +73,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     df = df.loc[df['Language'] == 'English']  # Only want english rows
     df = df.loc[~df['Negative Feedback'].str.contains('[À-ÿ]')]  # Only want rows without accented characters
 
-    # additional english filter
-    # df['Langid Language'] = df.apply(langid_language_filter, axis=1)
-    # df = df.loc[df['Langid Language'] == 'en']
-
     print("After filtering for English, only %d records remain" % len(df.index))
     # really basic spam filtering.  We can look at these separately and make spam more robust
     df = df.loc[(df['Positive Feedback'] + df[
@@ -92,7 +86,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         print('DataFrame is empty!')
     else:
         print('Not empty!', df.shape)
-
 
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_site(row):
@@ -110,7 +103,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
             brands = [tldextract.extract(v).domain for v in row['Sites']]
 
         return list(set(brands))
-
         # Find a mentioned issue based on our issues dictionary
 
     def mentioned_component(row):
@@ -141,10 +133,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         data_frame['Sites'] = data_frame.apply(mentioned_site, axis=1)
         data_frame['Brands'] = data_frame.apply(mentioned_brand, axis=1)
 
-        # data_frame = data_frame.merge(df['Feedback'].apply(lambda s: pd.Series(
-        #     {'Sites': re.findall(re.compile(siteList + '|https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+'), s)})),
-        #
-        #                               left_index=True, right_index=True)
         data_frame = data_frame.merge(
             df['Feedback'].apply(lambda s: pd.Series({'Issues': [k for k, v in WTI.items() if v.search(s)]})),
             left_index=True, right_index=True)
@@ -160,12 +148,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
             left_index=True, right_index=True)
 
         return data_frame
-        # df['Processed Feedback'] = df.apply(apply_nlp, axis=1) not using this NLP anymore.
-
-    # def langid_language_filter(row):
-    #     combined = row['Positive Feedback'] + row['Negative Feedback']
-    #     language = [langid.classify(text)[0] for text in combined.lower()]
-    #     return language
 
     # Initialize and derive new columns
     df = derive_columns(df)
