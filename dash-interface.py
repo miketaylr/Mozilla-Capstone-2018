@@ -224,10 +224,10 @@ def updateGeoGraph(df, type, value):
                     # color = '#D3D3D3'
         )],
         layout=dict(
-            title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
+            title = 'Global Sentiment Scores',
             titlefont=dict(
-                family='Helvetica Neue, Helvetica, sans-serif',
-                color='#BCBCBC'
+                family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                color='white'
             ),
             geo = dict(
                 showframe = False,
@@ -238,9 +238,9 @@ def updateGeoGraph(df, type, value):
                 bgcolor='rgba(0,0,0,0)',
             ),
             font=dict(
-                family='Helvetica Neue, Helvetica, sans-serif',
+                family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
                 size=12,
-                color='#BCBCBC',
+                color='white',
             ),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
@@ -406,9 +406,9 @@ def updateGraph(df, title, num_days_range = 7):
         barmode='stack',
         title=title,
         font=dict(
-            family='Helvetica Neue, Helvetica, sans-serif', 
+            family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
             size=12, 
-            color='#BCBCBC'
+            color='white'
         ),
         xaxis=dict(
             # showticklabels=False,
@@ -546,7 +546,7 @@ def clusteringBarGraph(df, title):
             customdata=ids,
             hoverinfo='text',
         )]
-    layout = go.Layout(
+    layout = go.Layout( #TODO: check
         title=title,
         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
         xaxis=dict(
@@ -870,8 +870,7 @@ sites_layout = html.Div(className='sites-layout', children=[
                     row_selectable=True,
                     filterable=True,
                     sortable=True,
-                    selected_row_indices=[],
-                    column_widths=['30%', '10%', '10%', '10%', '10%', '10%'],
+                    selected_row_indices=[]
                 ),
             ]),
         ], id='top-modal-content-site', className='modal-content')
@@ -904,7 +903,7 @@ sites_layout = html.Div(className='sites-layout', children=[
 
 
 sentiment_layout = html.Div([
-    html.H3('How Do Users Feel About Mozilla?', className='page-title'),
+    html.H3('How Do Users Feel About Firefox?', className='page-title'),
     html.Div([
         html.Div(
             children=[
@@ -940,8 +939,8 @@ sentiment_layout = html.Div([
                     'layout': {
                         'title': "Happy/Sad Sentiment Breakdown",
                         'titlefont': {
-                            'family': 'Helvetica Neue, Helvetica, sans-serif',
-                            'color': '#BCBCBC',
+                            'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                            'color': 'white',
                         },
                         'xaxis': {
                             'title': 'Time'
@@ -950,9 +949,9 @@ sentiment_layout = html.Div([
                             'title': 'Amount of Feedback'
                         },
                         'font': {
-                            'family': 'Helvetica Neue, Helvetica, sans-serif',
+                            'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
                             'size': 12,
-                            'color': '#BCBCBC',
+                            'color': 'white',
                         },
                         'paper_bgcolor': 'rgba(0,0,0,0)',
                         'plot_bgcolor': 'rgba(0,0,0,0)'
@@ -1012,7 +1011,7 @@ sentiment_layout = html.Div([
 
 
 geoview_layout = html.Div(className='geo-layout', children = [
-    html.H3('How Does The World Feel About Mozilla?', className='page-title'),
+    html.H3('How Does The World Feel About Firefox?', className='page-title'),
     html.Div(id='geo_container', className='slider-container', children=[
         html.Div(id='geo_slider_output'),
         dcc.Slider(
@@ -1028,9 +1027,9 @@ geoview_layout = html.Div(className='geo-layout', children = [
         id='geoview-radio',
         style={'text-align': 'center'},
         options=[
-            {'label': 'For the Time Range Selected Above', 'value': 'week'},
-            {'label': 'Normalized by Country', 'value': 'norm'},
-            {'label': 'Normalized Globally', 'value': 'globalNorm'},
+            {'label': 'Average country sentiment over selected time range', 'value': 'week'},
+            {'label': 'How different is the country sentiment now compared to usual?', 'value': 'norm'},
+            {'label': 'In general, how different is the country sentiment from all other countries?', 'value': 'globalNorm'},
         ],
         value='week'
     ),
@@ -1065,7 +1064,7 @@ geoview_layout = html.Div(className='geo-layout', children = [
 
 
 components_layout = html.Div(className='sites-layout', children=[
-    html.H3('Where Did Mozilla Break?', className='page-title'),
+    html.H3('Where Did Firefox Break?', className='page-title'),
     html.Div(id='comp_container', className='slider-container', children=[
         html.Div(id='comp_slider_output'),
         dcc.Slider(
@@ -1217,8 +1216,9 @@ def display_page(pathname):
         return html.Div([
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compatability Analytics',
+                    children='Categorization of Selected Data',
                     id="title",
+                    style={'margin-left': '30px'}
                 ),
             ]),
             html.Div([
@@ -1300,8 +1300,9 @@ def display_page(pathname):
         return html.Div(className='clustering-page', children=[
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compat Analytics',
+                    children='Unsupervised Clustering of Selected Data',
                     id="title",
+                    style={'margin-left': '30px'}
                 ),
             ]),
             html.Div(id='div-d3', className="d3-container", **{'data-d3': json.dumps(rootDict)}, children=[
@@ -1334,6 +1335,12 @@ def display_page(pathname):
         ])
     else:
         return main_layout
+
+
+# @app.callback(dash.dependencies.Output('page-content', 'children'),
+#               [dash.dependencies.Input('url', 'pathname')])
+# def display_loading(pathname):
+#     if 'clustering' in pathname:
 
 
 # @app.callback(Output('url', 'pathname'),
@@ -1408,8 +1415,8 @@ def update_sentiment_graph(frequency):
         'layout': {
             'title': "Happy/Sad Breakdown",
             'titlefont': {
-                'family': 'Helvetica Neue, Helvetica, sans-serif',
-                'color': '#BCBCBC',
+                'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                'color': 'white',
             },
             'xaxis': {
                 'title': 'Time'
@@ -1418,9 +1425,9 @@ def update_sentiment_graph(frequency):
                 'title': 'Amount of Feedback'
             },
             'font': {
-                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
                 'size': 12,
-                'color': '#BCBCBC',
+                'color': 'white',
             },
             'paper_bgcolor': 'rgba(0,0,0,0)',
             'plot_bgcolor': 'rgba(0,0,0,0)'#,
@@ -2300,7 +2307,7 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     count = len(sites_df.index)
 
     return html.Div([
-        html.P(['Sites were mentioned {} times in the raw feedback. There were {} unique sites mentioned.'.format(sites_df['Count'].sum(), count)]),
+        html.P(['Sites were mentioned {} times in the raw feedback. Unique sites were mentioned {} times.'.format(sites_df['Count'].sum(), count)]),
         html.P(['There were {} pieces of raw feedback that did not mention any sites.'.format(no_sites_df['Count'].sum())])
     ])
 
@@ -2368,6 +2375,12 @@ def update_site_count(start_date, end_date):    #update graph with values that a
 #     fig = dict(data=data, layout=layout)
 #     return fig
 
+# @app.callback(
+#     Output('search-download-link', 'style'),
+#     [Input('searchrequest', 'n_submit')])
+# def update_table(ns, request_value):
+#     print('testing')
+#     return {'display': 'none'}
 
 @app.callback(
     Output('searchtable', 'rows'),
@@ -2450,7 +2463,7 @@ def set_search_count(dict_of_returned_df):
     else:
         return u'Search returned no results.'
 
-@app.callback(
+@app.callback( # CURRENTLY NOT WORKING BUT DOESN'T IMPACT PERFORMANCE; TODO: FIX
     Output('search-loading', 'style'),
     [Input('search-table-container', 'style')],
     [State('searchrequest', 'value')])
@@ -2462,8 +2475,7 @@ def hide_loading(style, query):
         return {'display': 'block'}
     else:
         print('noneeeee')
-        # return {'display': 'none'}
-        return 'display: none'
+        return {'display': 'none'}
 
 @app.callback(
     Output('search-table-container','style'),
@@ -2483,6 +2495,7 @@ def set_search_count(sentence, dict):
      Input('searchtable', 'rows')])
 def set_search_count(sentence, dict):
     if (len(dict[0]) > 0):
+        print('reacheeeeeeed')
         return {'display': 'block'}
     else:
         return {'display': 'none'}
