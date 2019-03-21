@@ -33,7 +33,7 @@
 .modal-content-fixed-height {
   width: 70%;
   height: 80%;
-  top: 10%;
+  /* top: 10%; */
   display: flex;
   flex-direction: column; 
 }
@@ -166,4 +166,10 @@
 
 .modal-feedback-item {
   margin-bottom: 0;
+}
+
+/* Analytics page */
+
+#list_comp_slider_output, #list_issue_slider_output {
+    color: white;
 }

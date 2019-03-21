@@ -1,4 +1,4 @@
-#Purpose of this file is to derive columns to be used in the final cleaned dataset
+# Purpose of this file is to derive columns to be used in the final cleaned dataset
 # as part of the pipeline process
 import pandas as pd
 
@@ -20,7 +20,6 @@ def mentioned_site(row):
 
     sites = urls
     return ','.join(set(sites))
-
     # Find a mentioned issue based on our issues dictionary
 
 
@@ -73,12 +72,6 @@ def derive_columns(data_frame, siteList):  # based on cols from data after clean
 
     return data_frame
     # df['Processed Feedback'] = df.apply(apply_nlp, axis=1) not using this NLP anymore.
-
-
-# def langid_language_filter(row):
-#     combined = row['Positive Feedback'] + row['Negative Feedback']
-#     language = [langid.classify(text)[0] for text in combined.lower()]
-#     return language
 
 # Initialize and derive 4 new columns
 df = derive_columns(df)

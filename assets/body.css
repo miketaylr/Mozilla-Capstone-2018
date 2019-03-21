@@ -78,7 +78,6 @@ body {
   -webkit-mask-image: linear-gradient(-75deg, rgba(0,0,0,.6) 30%, #000 50%, rgba(0,0,0,.6) 70%);
   -webkit-mask-size: 200%;
   animation: shine 2s infinite;
-  cursor: pointer;
 }
 
 #subtitle {
@@ -190,10 +189,24 @@ body {
     background-color: orange;
 }
 
+.rc-slider-disabled {
+    background-color: transparent;
+}
+
 .rc-slider-dot-active {
     border-color: white;
 }
 
 .rc-slider-handle, .rc-slider-handle:hover {
     border-color: orange;
+}
+
+.rc-slider-mark-text {
+    color: white;
+}
+
+.rc-slider-disabled .rc-slider-handle, .rc-slider-disabled .rc-slider-dot {
+    border-color: #ccc;
+    background-color: #fff;
+    cursor: not-allowed;
 }

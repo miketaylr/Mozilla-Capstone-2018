@@ -29,7 +29,6 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
 sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
-
 top_sites = ['google.com',
 'youtube.com',
 'facebook.com',
@@ -131,11 +130,7 @@ top_sites = ['google.com',
 'cnn.com',
 'google.com.ar']
 
-# print(results_df.shape) # SHOULD FILL NAN VALS AS WELL WHEN POSSIBLE
-# search_df = results_df[["Response ID", "Date Submitted", "Country","City"\
-#                         , "State/Region", "Binary Sentiment", "Positive Feedback"\
-#                         , "Negative Feedback", "Relevant Site", "compound"\
-#                         , "Sites", "Issues", "Components"]]
+
 search_df = results_df
 for index, row in search_df.iterrows():
     if pd.isnull(row['Sites']):
@@ -158,6 +153,7 @@ otherSiteCloseCount=0
 compCloseCount=0
 issueCloseCount=0
 geoCloseCount=0
+
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
 reference = datetime(2016, 12, 30)
@@ -194,6 +190,7 @@ df_geo_sentiment = pd.merge(df_review_compound, df_geo, on='Country', how='inner
 df_geo_sentiment = pd.merge(df_geo_sentiment, geo_2week_df, on='Country', how='inner')
 df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
+
 def updateGeoGraph(df, type, value):
     print(df)
     if type=='norm':
@@ -224,11 +221,11 @@ def updateGeoGraph(df, type, value):
                     # color = '#D3D3D3'
         )],
         layout=dict(
-            #title = 'This Week in Overall Global Sentiment of Mozilla Web Compat',
-            #titlefont=dict(
-                #family='Helvetica Neue, Helvetica, sans-serif',
-                #color='#BCBCBC'
-            #),
+            title = 'Global Sentiment Scores',
+            titlefont=dict(
+                family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                color='white'
+            ),
             geo = dict(
                 showframe = False,
                 showcoastlines = False,
@@ -238,15 +235,16 @@ def updateGeoGraph(df, type, value):
                 bgcolor='rgba(0,0,0,0)',
             ),
             font=dict(
-                family='Helvetica Neue, Helvetica, sans-serif',
+                family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
                 size=12,
-                color='#BCBCBC',
+                color='white',
             ),
             paper_bgcolor='rgba(0,0,0,0)',
             plot_bgcolor='rgba(0,0,0,0)'
         )
     )
     return fig_geo
+
 
 fig_geo = updateGeoGraph(df_geo_sentiment, '',7)
 
@@ -262,27 +260,13 @@ arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not
 numClusters = 50
 traces = []
 clusterNames = list(df1)
-clusterNames.pop(0)
-# print(clusterNames)
+clusterNames.pop(0)  # print(clusterNames)
 df1 = df1.set_index('Issue')
 docs = df1.drop(arrayOfNamesWords, axis=0)
-words = df1.drop(arrayOfNamesDocs, axis=0)
-# print(words.iloc[0].values[0])
-clusters = df1.drop(['Words', 'Docs'], axis=0)
-# print(clusters)
+words = df1.drop(arrayOfNamesDocs, axis=0)  # print(words.iloc[0].values[0])
+clusters = df1.drop(['Words', 'Docs'], axis=0)  # print(clusters)
 
-
-# Dynamic Data
-# df2 = clustering.runVis(numClusters)
 categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
-# docs = df2.tail(1)
-# df2 = df2[:-1]
-# phrases = df2.tail(1)
-# df2 = df2[:-1]
-# words = df2.tail(1)
-# df2 = df2[:-1]
-# clusters = df2
-# clusters = clusters.rename(index=categoryDict)
 
 
 # TIME CALCULATION
@@ -298,7 +282,6 @@ toggle_time_params = {
     }
 }
 
-# reference = datetime.now()
 
 def initCompDF(results2_df, num_days_range = 14):
     date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
@@ -406,9 +389,9 @@ def updateGraph(df, title, num_days_range = 7):
         barmode='stack',
         title=title,
         font=dict(
-            family='Helvetica Neue, Helvetica, sans-serif', 
+            family='Montserrat, Helvetica Neue, Helvetica, sans-serif',
             size=12, 
-            color='#BCBCBC'
+            color='white'
         ),
         xaxis=dict(
             # showticklabels=False,
@@ -435,102 +418,13 @@ fig_component = updateGraph(component_df, 'Components Over Time', 7)
 fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
 
 
-# def mergedGraph():
-#     # merge output_pipeline with output_clusters_defined
-#     merged = pd.merge(results_df, clusters_df, on='Response ID')
-#     merged = merged[merged['manual_clusters'].notna()]
-#     return merged
-# def updateCompMetricsGraph():
-#     # CATEGORIZATION VISUALIZATION
-#     merged = mergedGraph()
-#     compCountSeries = pd.Series([])
-#     # For components labelled:
-#     for component in WORDS_TO_COMPONENT.keys():
-#         compCounts = merged[merged['Components'].str.contains(component)]['manual_clusters'].value_counts()
-#         compCountSeries = pd.concat([compCountSeries, compCounts.rename(component)], axis=1)
-#     compCountSeries = pd.concat([compCountSeries, merged[merged['Components'].str.match("\[\]")][
-#         'manual_clusters'].value_counts().rename('No Label')], axis=1)
-#     compCountSeries = compCountSeries.drop(0, 1).fillna(0).astype(int)
-#     compCountSeries = compCountSeries.rename(index=categoryDict)
-#     traces_comp_metrics = []
-#     for index, row in compCountSeries.iterrows():
-#         # print(list(row.keys()))
-#         traces_comp_metrics.append(go.Bar(
-#             x=list(row.keys()),
-#             y=row.values,
-#             name=index,
-#             # hoverinfo='none',
-#             # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-#             # customdata=docs.iloc[0].values
-#         ))
-#     def update_point(trace):
-#         # print(trace)
-#         return
-#     # Stacked Bar Graph figure - components labelled against manual labelling:
-#     layout_comp_metrics = go.Layout(
-#         barmode='stack',
-#         title='Components vs Manual Clusters',
-#         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#         xaxis=dict(
-#             # showticklabels=False,
-#             title='Components'
-#         ),
-#         yaxis=dict(
-#             title='Count of Docs'
-#         )
-#     )
-#     fig_comp_metrics = dict(data=traces_comp_metrics, layout=layout_comp_metrics)
-#     return fig_comp_metrics
-
-
-# def updateIssuesMetricsGraph():
-#     # ISSUES VISUALIZATION
-#     merged = mergedGraph()
-#     # For issues labelled:
-#     issueCountSeries = pd.Series([])
-#     for issue in WORDS_TO_ISSUE.keys():
-#         issueCounts = merged[merged['Issues'].str.contains(issue)]['manual_clusters'].value_counts()
-#         issueCountSeries = pd.concat([issueCountSeries, issueCounts.rename(issue)], axis=1)
-#     issueCountSeries = pd.concat([issueCountSeries, merged[merged['Components'].str.match("\[\]")][
-#         'manual_clusters'].value_counts().rename('No Label')], axis=1)
-#     issueCountSeries = issueCountSeries.drop(0, 1).fillna(0).astype(int)
-#     issueCountSeries = issueCountSeries.rename(index=categoryDict)
-#     traces_issue_metrics = []
-#     for index, row in issueCountSeries.iterrows():
-#         # print(list(row.keys()))
-#         traces_issue_metrics.append(go.Bar(
-#             x=list(row.keys()),
-#             y=row.values,
-#             name=index,
-#             # hoverinfo='none',
-#             # customdata=str(phrases.iloc[0].values + '&&' + docs.iloc[0].values)
-#             # customdata=docs.iloc[0].values
-#         ))
-#     # Stacked Bar Graph figure - issues labelled against manual labelling:
-#     layout_issue_metrics = go.Layout(
-#         barmode='stack',
-#         title='Issues vs Manual Clusters',
-#         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
-#         xaxis=dict(
-#             # showticklabels=False,
-#             title='Issues'
-#         ),
-#         yaxis=dict(
-#             title='Count of Docs'
-#         )
-#     )
-#     fig_issue_metrics = dict(data=traces_issue_metrics, layout=layout_issue_metrics)
-#     return fig_issue_metrics
-# fig_comp_metrics = updateCompMetricsGraph()
-# fig_issue_metrics = updateIssuesMetricsGraph()
-
-
 # DRILLDOWN FUNCTIONS
 def drilldownClustering(df):
     results = runDrilldown(df)
     results = results.transpose()
     fig = clusteringBarGraph(results, 'Clustering Analysis')
     return fig
+
 
 def clusteringBarGraph(df, title):
     traces = []
@@ -546,7 +440,7 @@ def clusteringBarGraph(df, title):
             customdata=ids,
             hoverinfo='text',
         )]
-    layout = go.Layout(
+    layout = go.Layout( #TODO: check
         title=title,
         font=dict(family='Arial Bold', size=18, color='#7f7f7f'),
         xaxis=dict(
@@ -605,6 +499,7 @@ other_sites_df = other_sites_df.sort_values(by=['Count'], ascending=False)
 
 init_count = len(sites_df.index)
 
+
 # Page styling - sample:
 PAGE_SIZE = 40
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets, external_scripts=external_scripts)
@@ -615,39 +510,6 @@ app.title = 'Mozilla Analytics'
 Dash apps are composed of 2 parts. 1st part describes the app layout.
 The 2nd part describes the interactivty of the app 
 '''
-# tabs_styles = {
-#     'height': '44px',
-#     'width': '600px',
-#     'display': 'inline-block'
-# }
-# tab_style = {
-#     # 'borderBottom': '1px solid #d6d6d6',
-#     'margin': '5px 0px 5px 0px',
-#     'padding': '11px',
-#     # 'backgroundColor': 'rgb(30,30,30)',
-#     'backgroundColor': 'transparent',
-#     'border': 'none',
-# }
-# # sites_tab_style = {
-# #     # 'borderBottom': '1px solid #d6d6d6',
-# #     'margin': '5px 0px 5px 0px',
-# #     'padding': '11px 14px 11px 14px',
-# #     'backgroundColor': 'transparent',
-# #     'font-weight': 'bold',
-# #     'border-style': 'solid',
-# #     'border-width': '1px',
-# # }
-# tab_selected_style = {
-#     # 'border': 'none',
-#     'borderTop': 'none',
-#     'borderRight': 'none',
-#     'borderLeft': 'none',
-#     'borderBottom': '1px solid #white !important',
-#     'backgroundColor': 'transparent',
-#     'color': 'white',
-#     'padding': '11px'
-# }
-
 app.config.suppress_callback_exceptions = True
 app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
@@ -708,108 +570,13 @@ sites_layout = html.Div(className='sites-layout', children=[
             end_date=results_df['Date Submitted'].max()
         ),
         html.Div(id='unique-site-count'),
-        # html.Div(id='slider-container', className='slider-container', children=[
-        #     html.Div(dcc.Slider(
-        #         id='sites-slider',
-        #         min=0,
-        #         max=init_count,
-        #         value=init_count,
-        #         marks={i: '{} sites'.format(i) for i in range(init_count) if (i % 30 == 0) or (i == init_count)}),
-        #         style={'height': '50px', 'width': '100%', 'display': 'inline-block'}),
-        #     html.Div(id='sites-slider-output')
-        # ]),
     ]),
-    # html.Div([
-    #     dcc.Graph(
-    #         id='top-mentioned-site-graph',
-    #         figure={
-    #             'data': [{
-    #                 'x': top_sites_df['Count'],
-    #                 'y': top_sites_df['Site'],
-    #                 'orientation': 'h',
-    #                 'customdata': top_sites_df['Site'],
-    #                 'type': 'bar',
-    #                 'marker': {
-    #                     'color': '#E3D0FF'
-    #                 },
-    #             }],
-    #             'layout': {
-    #                 'title': "Feedback by Top Mentioned Site(s)",
-    #                 'titlefont': {
-    #                     'family': 'Helvetica Neue, Helvetica, sans-serif',
-    #                     'color': '#BCBCBC',
-    #                 },
-    #                 'xaxis': {
-    #                     'title': 'Number of Feedback'
-    #                 },
-    #                 'yaxis': {
-    #                     'title': 'Website'
-    #                 },
-    #                 'font': {
-    #                     'family': 'Helvetica Neue, Helvetica, sans-serif',
-    #                     'size': 12,
-    #                     'color': '#BCBCBC',
-    #                 },
-    #                 'paper_bgcolor': 'rgba(0,0,0,0)',
-    #                 'plot_bgcolor': 'rgba(0,0,0,0)',
-    #             },
-    #         },
-    #     ),
-    # ]),
-    # html.Div([
-    #     dcc.Graph(
-    #         id='other-mentioned-site-graph',
-    #         figure={
-    #             'data': [{
-    #                 'x': other_sites_df['Count'],
-    #                 'y': other_sites_df['Site'],
-    #                 'orientation': 'h',
-    #                 'customdata': other_sites_df['Site'],
-    #                 'type': 'bar',
-    #                 'marker': {
-    #                     'color': '#E3D0FF'
-    #                 },
-    #             }],
-    #             'layout': {
-    #                 'title': "Feedback by Other Mentioned Site(s)",
-    #                 'titlefont': {
-    #                     'family': 'Helvetica Neue, Helvetica, sans-serif',
-    #                     'color': '#BCBCBC',
-    #                 },
-    #                 'xaxis': {
-    #                     'title': 'Number of Feedback'
-    #                 },
-    #                 'yaxis': {
-    #                     'title': 'Website'
-    #                 },
-    #                 'font': {
-    #                     'family': 'Helvetica Neue, Helvetica, sans-serif',
-    #                     'size': 12,
-    #                     'color': '#BCBCBC',
-    #                 },
-    #                 'paper_bgcolor': 'rgba(0,0,0,0)',
-    #                 'plot_bgcolor': 'rgba(0,0,0,0)',
-    #             },
-    #         },
-    #     ),
-    # ]),
     html.Div(
         className='sites-table-container',
         children=[
             html.Div(id='top-sites-table-container', className='sites-table',
                 children=[
                     html.H4('Alexa Top 100 Sites', className='page-title'),
-                    # html.Div(id='top_sites_container', className='slider-container', children=[
-                    #     html.Div(id='top_sites_slider_output'),
-                    #     dcc.Slider(
-                    #         id='top_sites_time_slider',
-                    #         min=toggle_time_params['min'],
-                    #         max=toggle_time_params['max'],
-                    #         step=toggle_time_params['step'],
-                    #         value=toggle_time_params['default'],
-                    #         marks=toggle_time_params['marks']
-                    #     ),
-                    # ]),
                     html.Button("View Selected Data", id="top-view-selected", className="view-selected-data-disabled"),
                     dte.DataTable(  # Add fixed header row
                         id='top-sites-table',
@@ -826,17 +593,6 @@ sites_layout = html.Div(className='sites-layout', children=[
             html.Div(id='other-sites-table-container', className='sites-table',
                 children=[
                     html.H4('Other Sites', className='page-title'),
-                    # html.Div(id='other_sites_container', className='slider-container', children=[
-                    #     html.Div(id='other_sites_slider_output'),
-                    #     dcc.Slider(
-                    #         id='other_sites_time_slider',
-                    #         min=toggle_time_params['min'],
-                    #         max=toggle_time_params['max'],
-                    #         step=toggle_time_params['step'],
-                    #         value=toggle_time_params['default'],
-                    #         marks=toggle_time_params['marks']
-                    #     ),
-                    # ]),
                     html.Button("View Selected Data", id="other-view-selected", className="view-selected-data-disabled"),
                     dte.DataTable(  # Add fixed header row
                         id='other-sites-table',
@@ -940,8 +696,8 @@ sentiment_layout = html.Div([
                     'layout': {
                         'title': "Happy/Sad Sentiment Breakdown",
                         'titlefont': {
-                            'family': 'Helvetica Neue, Helvetica, sans-serif',
-                            'color': '#BCBCBC',
+                            'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                            'color': 'white',
                         },
                         'xaxis': {
                             'title': 'Time'
@@ -950,9 +706,9 @@ sentiment_layout = html.Div([
                             'title': 'Amount of Feedback'
                         },
                         'font': {
-                            'family': 'Helvetica Neue, Helvetica, sans-serif',
+                            'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
                             'size': 12,
-                            'color': '#BCBCBC',
+                            'color': 'white',
                         },
                         'paper_bgcolor': 'rgba(0,0,0,0)',
                         'plot_bgcolor': 'rgba(0,0,0,0)'
@@ -1217,8 +973,9 @@ def display_page(pathname):
         return html.Div([
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compatibility Analytics',
+                    children='Categorization of Selected Data',
                     id="title",
+                    style={'margin-left': '30px'}
                 ),
             ]),
             html.Div([
@@ -1300,8 +1057,9 @@ def display_page(pathname):
         return html.Div(className='clustering-page', children=[
             html.Div([
                 html.H1(
-                    children='Mozilla Web Compat Analytics',
+                    children='Unsupervised Clustering of Selected Data',
                     id="title",
+                    style={'margin-left': '30px'}
                 ),
             ]),
             html.Div(id='div-d3', className="d3-container", **{'data-d3': json.dumps(rootDict)}, children=[
@@ -1310,37 +1068,10 @@ def display_page(pathname):
             '''),
             ]),
             html.Div(children=pageChildren),
-            # html.Div([
-            #     html.Div(id='list_comp_container',
-            #              className='list-slider-container',
-            #              children=[
-            #                 html.H3('Clustered Data', className='page-title'),
-            #                  dcc.Graph(id='cluster-graph', figure=fig),
-            #              ]
-            #      ),
-            #     ]),
-            # html.Div(id='cluster-table-container',
-            #          children=[
-            #              dte.DataTable(  # Add fixed header row
-            #                  id='cluster-table',
-            #                  rows=[{}],
-            #                  row_selectable=True,
-            #                  filterable=True,
-            #                  sortable=True,
-            #                  selected_row_indices=[],
-            #              ),
-            #          ]),
-            # html.Ul([html.Li(x) for x in global_top_selected_sites])
         ])
     else:
         return main_layout
 
-
-# @app.callback(Output('url', 'pathname'),
-#               [Input('tabs-styled-with-inline', 'value')])
-# def update_url(tab):  # bit of a hacky way of updating URL for now.
-#     print("clicked tab", tab)
-#     return tab
 
 @app.callback(Output('cluster-table', 'rows'),
               [Input('cluster-graph', 'clickData')])
@@ -1373,6 +1104,7 @@ def render_content(tab):
         return search_layout
     else:
         return sites_layout
+
 
 @app.callback(Output('binary-sentiment-ts', 'figure'),
               [Input('sentiment-frequency', 'value')])
@@ -1408,8 +1140,8 @@ def update_sentiment_graph(frequency):
         'layout': {
             'title': "Happy/Sad Breakdown",
             'titlefont': {
-                'family': 'Helvetica Neue, Helvetica, sans-serif',
-                'color': '#BCBCBC',
+                'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
+                'color': 'white',
             },
             'xaxis': {
                 'title': 'Time'
@@ -1418,172 +1150,16 @@ def update_sentiment_graph(frequency):
                 'title': 'Amount of Feedback'
             },
             'font': {
-                'family': 'Helvetica Neue, Helvetica, sans-serif',
+                'family': 'Montserrat, Helvetica Neue, Helvetica, sans-serif',
                 'size': 12,
-                'color': '#BCBCBC',
+                'color': 'white',
             },
             'paper_bgcolor': 'rgba(0,0,0,0)',
             'plot_bgcolor': 'rgba(0,0,0,0)'#,
             #'barmode': 'stack',
         }
     }
-
-
     return fig
-
-
-
-# @app.callback(
-#     Output('modal-sentiment', 'style'),
-#     [Input('close-sentiment-modal', 'n_clicks'),
-#      Input('binary-sentiment-ts', 'clickData')])
-# def display_senti_modal(closeClicks, clickData):
-#     global sentiCloseCount
-#     print('here in sentiment', closeClicks, sentiCloseCount)  # clickData exists, but running into an exception here....
-#     if closeClicks > sentiCloseCount:
-#         sentiCloseCount = closeClicks
-#         return {'display': 'none'}
-#     elif clickData:
-#         return {'display': 'block'}
-#     else:
-#         return {'display': 'none'}
-#
-#
-# @app.callback(
-#     Output('modal-sentiment-table', 'rows'),
-#     [Input('binary-sentiment-ts', 'clickData')])
-# def display_senti_click_data(clickData):
-#     #Set click data to whichever was clicked
-#     print('here in sentiment', clickData)
-#     if (clickData):
-#         global global_senti_modal_ids
-#         if(len(clickData['points']) == 1):
-#             day = clickData['points'][0]['x']
-#             component = clickData['points'][0]['customdata']
-#             global senti_response_id_map
-#             ids = senti_response_id_map[day][component]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#         else:
-#             day = clickData['points'][0]['x']
-#             global senti_day_response_id_map
-#             ids = senti_day_response_id_map[day]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         dff.columns = cnamesnew
-#         global_senti_modal_ids = ids
-#         return dff.to_dict('rows')
-#     else:
-#         return []
-#
-#
-# @app.callback(
-#     Output('download-senti-link', 'href'),
-#     [Input('binary-sentiment-ts', 'clickData')])
-# def update_senti_download_link(clickData):
-#     if clickData:
-#         if(len(clickData['points']) == 1):
-#             day = clickData['points'][0]['x']
-#             comp = clickData['points'][0]['customdata']
-#             global senti_response_id_map
-#             ids = senti_response_id_map[day][comp]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#         else:
-#             day = clickData['points'][0]['x']
-#             global senti_day_response_id_map
-#             ids = senti_day_response_id_map[day]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         csv_string = dff.to_csv(index=False, encoding='utf-8')
-#         csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
-#         return csv_string
-#     else:
-#         return ''
-#
-#
-# @app.callback(
-#     Output('modal-geo', 'style'),
-#     [Input('close-geo-modal', 'n_clicks'),
-#      Input('country-graph', 'clickData')])
-# def display_senti_modal(closeClicks, clickData):
-#     global geoCloseCount
-#     print('here in geo', closeClicks, geoCloseCount)
-#     if closeClicks > geoCloseCount:  # running into exception here...
-#         geoCloseCount = closeClicks
-#         return {'display': 'none'}
-#     elif clickData:
-#         return {'display': 'block'}
-#     else:
-#         return {'display': 'none'}
-#
-#
-# @app.callback(
-#     Output('modal-geo-table', 'rows'),
-#     [Input('country-graph', 'clickData')])
-# def display_senti_click_data(clickData):
-#     #Set click data to whichever was clicked
-#     print('here in geo', clickData)
-#     if (clickData):
-#         global global_geo_modal_ids
-#         if(len(clickData['points']) == 1):
-#             day = clickData['points'][0]['x']
-#             component = clickData['points'][0]['customdata']
-#             global geo_response_id_map
-#             ids = geo_response_id_map[day][component]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#         else:
-#             day = clickData['points'][0]['x']
-#             global geo_day_response_id_map
-#             ids = geo_day_response_id_map[day]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         dff.columns = cnamesnew
-#         global_geo_modal_ids = ids
-#         return dff.to_dict('rows')
-#     else:
-#         return []
-#
-#
-# @app.callback(
-#     Output('download-geo-link', 'href'),
-#     [Input('country-graph', 'clickData')])
-# def update_senti_download_link(clickData):
-#     if clickData:
-#         if(len(clickData['points']) == 1):
-#             day = clickData['points'][0]['x']
-#             comp = clickData['points'][0]['customdata']
-#             global geo_response_id_map
-#             ids = geo_response_id_map[day][comp]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#         else:
-#             day = clickData['points'][0]['x']
-#             global geo_day_response_id_map
-#             ids = geo_day_response_id_map[day]
-#             dff = search_df[search_df['Response ID'].isin(ids)]
-#
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         csv_string = dff.to_csv(index=False, encoding='utf-8')
-#         csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
-#         return csv_string
-#     else:
-#         return ''
 
 
 @app.callback(
@@ -1740,81 +1316,6 @@ def update_issue_download_link(clickData):
         return ''
 
 
-# @app.callback(Output('modal', 'style'), [Input('display_data','n_clicks_timestamp'),
-#                                          Input('close-modal', 'n_clicks_timestamp')])
-# def display_modal(openm, closem):
-#     if closem > openm:
-#         return {'display': 'none'}
-#     elif openm > closem:
-#         return {'display': 'block'}
-#     else:
-#         return {}
-# @app.callback(
-#     Output('modal-table', "data"),
-#     [Input('modal-table', "pagination_settings"),
-#      Input('modal-table', "sorting_settings"),
-#      Input('display_data','n_clicks_timestamp'),
-#      Input('close-modal', 'n_clicks_timestamp'),
-#      Input('trends-scatterplot', 'selectedData')])
-# def update_modal_table(pagination_settings, sorting_settings, openm, closem, selectedData):
-#     if openm > closem: # only update the table if the modal is open
-#         ids = list(d['customdata'] for d in selectedData['points'])
-#         dff = search_df[search_df['Response ID'].isin(ids)]
-
-#         if len(sorting_settings):
-#             dff = dff.sort_values(
-#                 [col['column_id'] for col in sorting_settings],
-#                 ascending=[
-#                     col['direction'] == 'asc'
-#                     for col in sorting_settings
-#                 ],
-#                 inplace=False
-#             )
-
-#         return dff.iloc[
-#                pagination_settings['current_page'] * pagination_settings['page_size']:
-#                (pagination_settings['current_page'] + 1) * pagination_settings['page_size']
-#                ].to_dict('rows')
-#     else:
-#         return {}
-# @app.callback(
-#     Output('current-content', 'children'),
-#     [Input('trends-scatterplot', 'hoverData')])
-# def display_hover_data(hoverData):
-#     # try: # Get the row from the results
-#     #     r = results_df[results_df['Response ID'] == hoverData['points'][0]['customdata']]
-#     #     return html.H4(
-#     #         "The comment from {} is '{}'. The user was {}.".format(
-#     #             r.iloc[0]['Date Submitted'],
-#     #             r.iloc[0]['Feedback'],
-#     #             r.iloc[0]['Binary Sentiment']
-#     #         )
-#     #     )
-#     # except TypeError:
-#     #     print('no hover data selected yet')
-#     # return ''
-#     return
-# @app.callback(
-#     Output('trend-data-histogram', 'figure'),
-#     [Input('trends-scatterplot', 'selectedData')])
-# def display_selected_trend_data(selectedData):
-#     # return table matching the current selection
-#     ids = list(d['customdata'] for d in selectedData['points'])
-#     df = search_df[search_df['Response ID'].isin(ids)]
-#     # print(ids)
-#     return {
-#         'data': [
-#             {
-#                 'x': df['compound'],
-#                 'name': 'Compound Sentiment',
-#                 'type': 'histogram',
-#                 'autobinx': True
-#             }
-#         ],
-#         'layout': {
-#             'margin': {'l': 40, 'r': 20, 't': 0, 'b': 30}
-#         }
-#     }
 @app.callback(
     Output('top-view-selected', 'className'),
     [Input('top-sites-table', 'selected_row_indices')])
@@ -1823,6 +1324,7 @@ def disable_site_modal_button(selected_row_indices):
         return 'view-selected-data'
     else:
         return 'view-selected-data-disabled'
+
 
 @app.callback(
     Output('top-modal-site-table', 'rows'),
@@ -1857,6 +1359,7 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
         return dff.to_dict('rows')
     return []
 
+
 @app.callback(Output('top-modal-site', 'style'),
               [Input('top-close-modal-site', 'n_clicks'),
                Input('top-view-selected', 'n_clicks')],
@@ -1873,11 +1376,13 @@ def display_modal(closeClicks, openClicks, selected_row_indices):
     else:
         return {'display': 'none'}
 
+
 @app.callback(
     dash.dependencies.Output('top_sites_slider_output', 'children'),
     [dash.dependencies.Input('top_sites_time_slider', 'value')])
 def update_comp_output_slider(value):
     return 'Past {} days of data'.format(value)
+
 
 @app.callback(
     dash.dependencies.Output('top-sites-table', 'rows'),
@@ -1897,8 +1402,6 @@ def update_comp_graph_slider(start_date, end_date):
     sites_list = ','.join(sites_list).split(',')
     sites_list = [x for x in sites_list if '.' in x]
 
-
-
     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
     sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
@@ -1909,9 +1412,8 @@ def update_comp_graph_slider(start_date, end_date):
     top_sites_df = pd.DataFrame.from_dict(Counter(top_sites_list), orient='index').reset_index()
     top_sites_df = top_sites_df.rename(columns={'index': 'Site', 0: 'Count'})
     top_sites_df = top_sites_df.sort_values(by=['Count'], ascending=False)
-
-
     return top_sites_df.to_dict('rows')
+
 
 @app.callback(
     Output('other-view-selected', 'className'),
@@ -1921,6 +1423,7 @@ def disable_site_modal_button(selected_row_indices):
         return 'view-selected-data'
     else:
         return 'view-selected-data-disabled'
+
 
 @app.callback(
     Output('other-modal-site-table', 'rows'),
@@ -1956,6 +1459,7 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
         return dff.to_dict('rows')
     return []
 
+
 @app.callback(Output('other-modal-site', 'style'),
               [Input('other-close-modal-site', 'n_clicks'),
                Input('other-view-selected', 'n_clicks')],
@@ -1979,6 +1483,7 @@ def display_modal(closeClicks, openClicks, selected_row_indices):
 def update_comp_output_slider(value):
     return 'Past {} days of data'.format(value)
 
+
 @app.callback(
     dash.dependencies.Output('other-sites-table', 'rows'),
     [dash.dependencies.Input('sites-date-range', 'start_date'),
@@ -1997,8 +1502,6 @@ def update_comp_graph_slider(start_date, end_date):
     sites_list = ','.join(sites_list).split(',')
     sites_list = [x for x in sites_list if '.' in x]
 
-
-
     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
     sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
@@ -2010,47 +1513,7 @@ def update_comp_graph_slider(start_date, end_date):
     other_sites_df = other_sites_df.rename(columns={'index': 'Site', 0: 'Count'})
     other_sites_df = other_sites_df[other_sites_df['Count'] > 1]
     other_sites_df = other_sites_df.sort_values(by=['Count'], ascending=False)
-
-
     return other_sites_df.to_dict('rows')
-
-# @app.callback(
-#     Output('other-modal-site-table', 'rows'),
-#     [Input('other-mentioned-site-graph', 'selectedData')])
-# def update_site_modal_table(selectedData):
-#     print('here', selectedData)
-#     if(selectedData):
-#         # ids = list(d['customdata'] for d in selectedData['points'])
-#         sites = list(d['customdata'] for d in selectedData['points'])
-#         dff = results_df[results_df['Sites'].isin(sites)]
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         dff.columns = cnamesnew
-#         global global_site_modal_ids
-#         global_site_modal_ids = list(dff['Response ID'])
-#         print(global_site_modal_ids)
-#         global global_selected_sites
-#         global_selected_sites = sites
-#         return dff.to_dict('rows')
-#     return []
-
-
-# @app.callback(Output('other-modal-site', 'style'),
-#               [Input('other-close-modal-site', 'n_clicks'),
-#                Input('other-mentioned-site-graph', 'selectedData')])
-# def display_modal(closeClicks, selectedData):
-#     global siteCloseCount
-#     print('herehere', closeClicks, siteCloseCount)
-#     if closeClicks > siteCloseCount:
-#         siteCloseCount = closeClicks
-#         return {'display': 'none'}
-#     elif selectedData:
-#         return {'display': 'block'}
-#     else:
-#         return {'display': 'none'}
 
 
 @app.callback(
@@ -2195,6 +1658,7 @@ def update_site_modal_table(clickData):
         return dff.to_dict('rows')
     return []
 
+
 @app.callback(Output('modal-geo', 'style'),
               [Input('close-geo-modal', 'n_clicks'),
                Input('country-graph', 'clickData')])
@@ -2207,6 +1671,7 @@ def display_modal(closeClicks, openClick):
         return {'display': 'block'}
     else:
         return {'display': 'none'}
+
 
 @app.callback(
     Output('download-geo-link', 'href'),
@@ -2227,6 +1692,7 @@ def update_comp_download_link(clickData):
     else:
         return ''
 
+
 @app.callback(
     Output('geo_time_slider', 'disabled'),
     [Input('geoview-radio', 'value')])
@@ -2236,11 +1702,13 @@ def abling_slider(radio_value):
     else:
         return True
 
+
 @app.callback(
     dash.dependencies.Output('geo_slider_output', 'children'),
     [dash.dependencies.Input('geo_time_slider', 'value')])
 def update_comp_output_slider(value):
     return 'Past {} days of data'.format(value)
+
 
 @app.callback(
     Output('country-graph', 'figure'),
@@ -2249,35 +1717,6 @@ def update_comp_output_slider(value):
 def update_geoview_graph(radio_value, slider_value):
     fig_geo = updateGeoGraph(df_geo_sentiment, radio_value, slider_value)
     return fig_geo
-
-# @app.callback(
-#     dash.dependencies.Output('slider-container', 'children'),
-#     [dash.dependencies.Input('sites-date-range', 'start_date'),
-#      dash.dependencies.Input('sites-date-range', 'end_date')])
-# def update_site_count(start_date, end_date):    #update graph with values that are in the time range
-#     global results_df
-#     if(start_date is None or end_date is None):
-#         filtered_results = results_df
-#     else:
-#         filtered_results = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
-
-#     sites_list = filtered_results['Sites'].apply(pd.Series).stack().reset_index(drop=True)
-#     sites_list = ','.join(sites_list).split(',')
-#     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
-#     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
-#     sites_df = sites_df[sites_df['Site'] != 'None Found']
-#     count = len(sites_df.index)
-
-#     return html.Div([
-#         html.Div(dcc.Slider(
-#             id='sites-slider',
-#             min=0,
-#             max=count,
-#             value=count,
-#             marks={i: '{} sites'.format(i) for i in range(count) if (i % 30 == 0) or (i == count)}),
-#             style={'height': '50px', 'width': '100%', 'display': 'inline-block'}),
-#         html.Div(id='sites-slider-output')
-#     ])
 
 
 @app.callback(
@@ -2300,73 +1739,9 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     count = len(sites_df.index)
 
     return html.Div([
-        html.P(['Sites were mentioned {} times in the raw feedback. There were {} unique sites mentioned.'.format(sites_df['Count'].sum(), count)]),
+        html.P(['Sites were mentioned {} times in the raw feedback. Unique sites were mentioned {} times.'.format(sites_df['Count'].sum(), count)]),
         html.P(['There were {} pieces of raw feedback that did not mention any sites.'.format(no_sites_df['Count'].sum())])
     ])
-
-# @app.callback(
-#     dash.dependencies.Output('sites-slider-output', 'children'),
-#     [dash.dependencies.Input('sites-slider', 'value')])
-# def update_output(value):
-#     return 'Displaying {} most frequent sites.'.format(value)
-
-
-# @app.callback(
-#     dash.dependencies.Output('mentioned-site-graph', 'figure'),
-#     [dash.dependencies.Input('sites-date-range', 'start_date'),
-#      dash.dependencies.Input('sites-date-range', 'end_date'),
-#      dash.dependencies.Input('sites-slider', 'value')])
-# def update_site_graph(start_date, end_date, max):    #update graph with values that are in the time range
-#     global results_df
-
-#     if(start_date is None or end_date is None):
-#         filtered_results = results_df
-#     else:
-#         filtered_results = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
-
-#     sites_list = filtered_results['Sites'].apply(pd.Series).stack().reset_index(drop=True)
-#     sites_list = ','.join(sites_list).split(',')
-#     sites_df = pd.DataFrame.from_dict(Counter(sites_list), orient='index').reset_index()
-#     sites_df = sites_df.rename(columns={'index': 'Site', 0: 'Count'})
-#     sites_df['Formatted'] = sites_df['Site'].apply(lambda s: s.replace("https://", "").replace("http://", ""))
-#     sites_df = sites_df.sort_values(by=['Count'], ascending=False)
-#     sites_df = sites_df[sites_df['Site'] != 'None Found']
-#     sites_df = sites_df.head(max).sort_values(by='Count')
-
-#     data = [go.Bar(
-#         x=top_sites_df['Count'],
-#         y=top_sites_df['Site'],
-#         orientation='h',
-#         customdata=top_sites_df['Site'],
-#         marker=dict(
-#             color='#E3D0FF'
-#         ),
-#     )]
-
-#     layout = go.Layout(
-#         title='Feedback by Mentioned Site(s)',
-#         titlefont=dict(
-#             family='Helvetica Neue, Helvetica, sans-serif',
-#             color='#BCBCBC'
-#         ),
-#         xaxis=dict(
-#             # showticklabels=False,
-#             title='Number of Feedback'
-#         ),
-#         yaxis=dict(
-#             title='Website'
-#         ),
-#         font=dict(
-#             family='Helvetica Neue, Helvetica, sans-serif',
-#             size=12,
-#             color='#BCBCBC'
-#         ),
-#         paper_bgcolor='rgba(0,0,0,0)',
-#         plot_bgcolor='rgba(0,0,0,0)',
-#     )
-
-#     fig = dict(data=data, layout=layout)
-#     return fig
 
 
 @app.callback(
@@ -2465,6 +1840,7 @@ def hide_loading(style, query):
         # return {'display': 'none'}
         return 'display: none'
 
+
 @app.callback(
     Output('search-table-container','style'),
     [Input('search-count-reveal', 'children'),
@@ -2483,39 +1859,10 @@ def set_search_count(sentence, dict):
      Input('searchtable', 'rows')])
 def set_search_count(sentence, dict):
     if (len(dict[0]) > 0):
+        print('reacheeeeeeed')
         return {'display': 'block'}
     else:
         return {'display': 'none'}
-
-
-# @app.callback(
-#     Output('download-search-link', 'href'),
-#     [Input('searchtable', 'rows')])  #  https://github.com/plotly/dash-table/blob/master/dash_table/DataTable.py
-# def update_search_download_link(rows):
-#     dicttouse = dict()
-#     print('we are doing this callback whoo')
-#     print(type(rows))
-#     print(len(rows))
-#     print(rows)
-#     for row in rows:
-#         sampledict = ast.literal_eval(row)
-#         dicttouse.update(sampledict)
-#     print('we are doing this callback whoo')
-#     print(dicttouse)
-#     if rows:
-#         sites = list(d['customdata'] for d in rows['points'])
-#         dff = search_df[search_df['Sites'].isin(sites)]
-#         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
-#                   'Feedback', 'Components', 'Issues', 'Sites']
-#         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-#                      'Feedback', 'Components', 'Issues', 'Sites']
-#         dff = dff[cnames]
-#         csv_string = dff.to_csv(index=False, encoding='utf-8')
-#         csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
-#         print(csv_string)
-#         return csv_string
-#     else:
-#         return ''
 
 
 if __name__ == '__main__':
