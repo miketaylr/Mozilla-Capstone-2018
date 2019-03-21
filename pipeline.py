@@ -21,12 +21,8 @@ WTC = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_COMPONENT.items()
 brands = pd.read_csv(rf.filePath(rf.BRAND_KEYWORDS))
 # Convert to dictionary
 WTB = brands.set_index('Brand').T.to_dict('list')
-print(WTB)
 WTB = {k: v[0] for k, v in WTB.items()}
-print(WTB)
 WTB = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTB.items()}
-print(WTB)
-print(WTC)
 # Clean up the raw dictionaries a bit more eventually, fix typos etc.
 
 
@@ -99,7 +95,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         #sites = [site.lower() for site in siteList if site.lower() in combined]
         urls = re.findall(siteListRegex, combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
-        return list(set(urls))
+        return ','.join(list(set(urls)))
 
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_brand(row):
@@ -107,9 +103,10 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         brands = [k for k, v in WTB.items() if v.search(combined)]
         #look at sites column for any extracted urls if we dont catch any brands on the first pass
         if (len(brands) == 0):
-            brands = [tldextract.extract(v).domain for v in row['Sites']]
+            sites = row['Sites'].split(',')
+            brands = [tldextract.extract(v).domain for v in sites]
 
-        return list(set(brands))
+        return ','.join(list(set(brands)))
 
         # Find a mentioned issue based on our issues dictionary
 
