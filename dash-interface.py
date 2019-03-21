@@ -339,7 +339,7 @@ def initCompDF(results2_df, num_days_range = 14):
                 comp_response_id_map[date]['No Label'].append(row['Response ID'])
 
     component_df = component_df.fillna(0).astype(int).rename_axis('Components')
-    component_df.drop(0, axis=1, inplace = True)
+    component_df.drop([0], axis = 1, inplace = True)
     return component_df, comp_response_id_map, comp_day_response_id_map
 
 
@@ -870,7 +870,8 @@ sites_layout = html.Div(className='sites-layout', children=[
                     row_selectable=True,
                     filterable=True,
                     sortable=True,
-                    selected_row_indices=[]
+                    selected_row_indices=[],
+                    column_widths=['30%', '10%', '10%', '10%', '10%', '10%'],
                 ),
             ]),
         ], id='top-modal-content-site', className='modal-content')
@@ -1011,7 +1012,7 @@ sentiment_layout = html.Div([
 
 
 geoview_layout = html.Div(className='geo-layout', children = [
-    html.H3('How Does The World Feel About Mozilla?', className='page-title'),
+    html.H3('How Does The World Feel About Firefox?', className='page-title'),
     html.Div(id='geo_container', className='slider-container', children=[
         html.Div(id='geo_slider_output'),
         dcc.Slider(
@@ -1069,9 +1070,9 @@ components_layout = html.Div(className='sites-layout', children=[
         html.Div(id='comp_slider_output'),
         dcc.Slider(
             id='comp_time_slider',
-            min=toggle_time_params['min'],
+            min=toggle_time_params['min'], 
             max=toggle_time_params['max'],
-            step=toggle_time_params['step'],
+            step=toggle_time_params['step'], 
             value=toggle_time_params['default'],
             marks=toggle_time_params['marks']
         ),
@@ -1114,9 +1115,9 @@ issues_layout = html.Div(className='sites-layout', children=[
         html.Div(id='issue_slider_output'),
         dcc.Slider(
             id='issue_time_slider',
-            min=toggle_time_params['min'],
+            min=toggle_time_params['min'], 
             max=toggle_time_params['max'],
-            step=toggle_time_params['step'],
+            step=toggle_time_params['step'], 
             value=toggle_time_params['default'],
             marks=toggle_time_params['marks']
         ),
@@ -2449,7 +2450,7 @@ def set_search_count(dict_of_returned_df):
     else:
         return u'Search returned no results.'
 
-@app.callback( # CURRENTLY NOT WORKING BUT DOESN'T IMPACT PERFORMANCE; TODO: FIX
+@app.callback(
     Output('search-loading', 'style'),
     [Input('search-table-container', 'style')],
     [State('searchrequest', 'value')])
@@ -2461,7 +2462,8 @@ def hide_loading(style, query):
         return {'display': 'block'}
     else:
         print('noneeeee')
-        return {'display': 'none'}
+        # return {'display': 'none'}
+        return 'display: none'
 
 @app.callback(
     Output('search-table-container','style'),
