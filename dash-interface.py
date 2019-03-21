@@ -160,7 +160,7 @@ issueCloseCount=0
 geoCloseCount=0
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
-reference = datetime(2016, 12, 30)
+reference = datetime(2018, 8, 23)
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 global_sentiment_average = results2_df['compound'].mean()
