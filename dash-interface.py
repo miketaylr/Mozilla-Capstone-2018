@@ -156,7 +156,7 @@ geoCloseCount=0
 
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
-reference = datetime(2016, 12, 30)
+reference = datetime(2018, 11, 19)
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 global_sentiment_average = results2_df['compound'].mean()
@@ -866,7 +866,7 @@ components_layout = html.Div(className='sites-layout', children=[
 
 
 issues_layout = html.Div(className='sites-layout', children=[
-    html.H3('Browser Issues', className='page-title'),
+    html.H3('What Are The Firefox Browser Issues?', className='page-title'),
     html.Div(id='issue_container', className='slider-container', children=[
         html.Div(id='issue_slider_output'),
         dcc.Slider(
@@ -1753,7 +1753,9 @@ def update_table(ns, request_value):
     # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
     #           'Feedback', 'Components', 'Issues', 'Sites']
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites', 'Version']
+              'Feedback', 'Components', 'Issues', 'Sites'
+              # ,'Version'
+              ]
     r_df = pd.DataFrame()
     # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
@@ -1763,18 +1765,21 @@ def update_table(ns, request_value):
         rv = str(request_value).lower()
         isit = rv in fb
         if isit:
-            vers = re.search(r'Firefox/\s*([\d.]+)', str(row['User Agent']))
+            # vers = re.search(r'Firefox/\s*([\d.]+)', str(row['User Agent']))
             # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
             #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
             # print(vers.group())
-            table_vers=''
-            if vers is None:
-                table_vers=''
-            else:
-                table_vers = str(vers.group())
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+            # table_vers=''
+            # if vers is None:
+            #     table_vers=''
+            # else:
+            #     table_vers = str(vers.group())
+            print(row['compound'])
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str("%.2f"%row['compound']),
                     str(row['Feedback']), str(row['Components']), str(row['Issues']),
-                    str(row['Sites']), table_vers]
+                    str(row['Sites']), 
+                    # table_vers
+                    ]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
     return r_df.to_dict('rows')
@@ -1789,7 +1794,9 @@ def update_table(ns, request_value):
     # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
     #           'Feedback', 'Components', 'Issues', 'Sites']
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites', 'Version']
+              'Feedback', 'Components', 'Issues', 'Sites'
+              # ,'Version'
+              ]
     r_df = pd.DataFrame()
     # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
@@ -1801,9 +1808,10 @@ def update_table(ns, request_value):
         if isit:
             # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
             #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
+            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str("%.2f"%row['compound']),
                     str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites']),
-                    str(row['User Agent'])]
+                    # str(row['User Agent'])
+                    ]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
     csv_string = r_df.to_csv(index=False, encoding='utf-8')
@@ -1837,8 +1845,8 @@ def hide_loading(style, query):
         return {'display': 'block'}
     else:
         print('noneeeee')
-        # return {'display': 'none'}
-        return 'display: none'
+        return {'display': 'none'}
+        # return 'display: none'
 
 
 @app.callback(
@@ -1866,5 +1874,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)
 

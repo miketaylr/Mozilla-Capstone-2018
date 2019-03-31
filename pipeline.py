@@ -62,7 +62,11 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     if (num_records < 0):  # return all records
         df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
     else:
-        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
+        df = df.loc[~df['Country'].isnull()]
+        df = df.tail(num_records)
+
+    print(df['Country'])
 
     # some data cleaning and selection
     print("Loading %d feedback records from %s " % (num_records, raw_data_location))
@@ -92,7 +96,8 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         #sites = [site.lower() for site in siteList if site.lower() in combined]
         urls = re.findall(siteListRegex, combined) #NEED TO IMPROVE REGEX TO PICK UP MORE SITES
-        return list(set(urls))
+        return ','.join(set(urls))
+        # return list(set(urls))
 
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_brand(row):
@@ -161,4 +166,4 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     print("Outputted cleaned data to output_pipeline.csv")
 
 
-run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 10000)
+run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 20000)
