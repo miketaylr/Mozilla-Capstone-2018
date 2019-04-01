@@ -43,13 +43,13 @@ import os
 import time
 import math
 
+
 # SETTINGS - Paths
 DIRECTORY = ""
 OUTPUT_SPAM_REMOVAL = rf.filePath(rf.OUTPUT_SPAM_REMOVAL)
 SITES = rf.filePath(rf.SITES)
 
 pd.set_option('display.max_columns',10)
-
 
 g_custom_stop_words = ['mozilla','firefox']
 
@@ -108,47 +108,11 @@ def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not 
     print("Index is empty?", indexToImport.is_empty())
     print("Number of indexed files:", indexToImport.doc_count())
 
-    # If you want to see top 25 docs, print them below:
-    # [(docnum, doc_dict) for (docnum, doc_dict) in myReader.iter_docs()][0:25]
-
-    # Index all words in feedback from csv
-    all_words = [term for term in myReader.field_terms("sf_output")]
-    # Get term freq for specific term i.e. android
-    # print(myReader.frequency("cell_content", "android"))
-    # 1000 most distinctive terms according by TF-IDF score
-    # play with below, see which one does better, myReader auto assesses performance for you, they have done both but there's not difference
     mostDistinctiveWords = [term.decode("ISO-8859-1") for (score, term) in
                             myReader.most_distinctive_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
     # 1000 most frequent words
     mostFrequentWords = [term.decode("ISO-8859-1") for (frequency, term) in
                          myReader.most_frequent_terms("sf_output", 500) if term not in ENGLISH_STOP_WORDS]
-
-    # # ATTEMPT AT MUTUAL INFORMATION
-    # mi_corpus = [term.decode("ISO-8859-1") for (frequency, term) in
-    #              myReader.most_frequent_terms("sf_output", 2000) if term not in ENGLISH_STOP_WORDS]
-    # freq = []
-    # fb_df = pd.read_csv(OUTPUT_SPAM_REMOVAL)
-    # fb_df.columns = ['Unnamed: 0', 'Response ID', 'Time Started', 'Date Submitted', 'Status', 'Language', 'Referer',
-    #                  'Extended Referer', 'User Agent', 'Extended User Agent', 'Longitude', 'Latitude', 'Country',
-    #                  'City', 'State/Region', 'Binary Sentiment', 'Relevant Site', 'Feedback', 'Sites', 'Issues',
-    #                  'Components', 'compound', 'sf_output_raw', 'sf_output']
-    # for index, row in fb_df.iterrows():
-    #     sf_output = str(row['sf_output'])
-    #     temp = Counter([word.lower() for word in re.findall(r'\w+', sf_output)])
-    #     corpus_in_review = [1 if temp[word] > 0 else 0 for word in mi_corpus]
-    #     freq.append(corpus_in_review)
-    # freq_df = pd.DataFrame(freq)
-    # freq_df.columns = mi_corpus
-    # miDF = fb_df[['Response ID', 'Binary Sentiment']].join(freq_df)
-    # miScore = []
-    # for word in mi_corpus:
-    #     miScore.append([word] + [metrics.mutual_info_score(miDF['Binary Sentiment'], miDF[word])])
-    # miSort = pd.DataFrame(miScore).sort_values(1, ascending=0)
-    # miSort.columns = ['Word', 'MI_Score']
-    # topMIWords = []
-    # for index, row in miSort.iterrows():
-    #     topMIWords.append(row['Word'])
-    # top1000MIWords = topMIWords[:1000]
 
     # change to take 500 instead of 1000 above, and use a combination of distinct and frequent words
     wordVectorList = mostDistinctiveWords + mostFrequentWords
@@ -166,7 +130,6 @@ def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not 
 
     # Create a binary encoding of dataset based on the selected features (X)
     # Go through each document --> tokenize that single document --> compare with total word list
-
     tokenizer = RegexpTokenizer(r'\w+')
     df_rows = []
     feedback_length = []
@@ -217,8 +180,6 @@ def createNormalizedMatrix(file, custom_stop_words = g_custom_stop_words): #not 
 def kMeansClustering(X, numOfRows, num_clusters):
     # Run k-means
     # Setting number of clusters to hopefully split comments into sets of avg(10 FB comments)
-    # num_clusters = numOfRows / 10
-    # num_clusters = 100
     # TODO: make this (^) more robust / logical
     kmeans = KMeans(n_clusters=num_clusters, random_state = 40)
     # Fitting the input data
@@ -231,191 +192,8 @@ def kMeansClustering(X, numOfRows, num_clusters):
     print(centroids)
     print(labelsAsNums)
 
-    # NO NEED TO RUN IN FULL - START
-    # Finding the best k - Elbow Method
-    # k_average_inertia = []
-    # local_inertia = []
-    # random_states = []
-    # num_tests = 5
-    # # Get random nums to change random state, same for each k
-    # for i in range(num_tests):
-    #     state = random.randint(1, 1000)
-    #     random_states.append(state)
-    # # Run for k from 1-100, 5 runs each, then plot
-    # for i in range(100):
-    #     for state in random_states:
-    #         # Number of clusters
-    #         kmeans = KMeans(n_clusters=i + 1, random_state=state)
-    #         # Fitting the input data
-    #         kmeans = kmeans.fit(X_normalized)
-    #         # Calculate inertia (within-cluster sum-of-squares)
-    #         local_inertia.append(kmeans.inertia_)
-    #     k_average_inertia.append(sum(local_inertia) / len(local_inertia))
-    #     local_inertia = []
-    #     print(i + 1, end=" ")
-    # # Find the bend in this plot
-    # plt.close() # To start a new with a fresh graph
-    # plt.plot(k_average_inertia)
-    # NO NEED TO RUN IN FULL - END
-
-    # Hardcoded results for the Elbow Method
-    # hardcoded_k_average_inertia = [996.120161061241,
-    #                                971.7098230964491,
-    #                                952.7861704492907,
-    #                                940.0619752427674,
-    #                                930.3657061792022,
-    #                                918.9592073457455,
-    #                                913.3144481223687,
-    #                                904.4124416003946,
-    #                                899.1722839754657,
-    #                                892.5348899721223,
-    #                                886.2081548665992,
-    #                                882.3200576031841,
-    #                                876.2561460493231,
-    #                                873.3579443954989,
-    #                                872.4941626903143,
-    #                                860.9788965520158,
-    #                                857.7256214194788,
-    #                                858.3513261388655,
-    #                                849.9107789756945,
-    #                                863.6939208114576,
-    #                                849.2037298957055,
-    #                                857.5146014551663,
-    #                                841.618518098966,
-    #                                838.8230763546278,
-    #                                854.3754492848997,
-    #                                838.8054622193555,
-    #                                838.8318530622613,
-    #                                841.0033798673194,
-    #                                833.2005084255725,
-    #                                834.2733973798707,
-    #                                834.1165654175222,
-    #                                827.8246892480283,
-    #                                836.952528229488,
-    #                                825.3197614813049,
-    #                                820.8049740765731,
-    #                                823.9590905268827,
-    #                                828.0031583721487,
-    #                                819.973746683602,
-    #                                816.0232287008629,
-    #                                817.9730221219867,
-    #                                820.4044853040772,
-    #                                814.288086508465,
-    #                                811.6128144203527,
-    #                                813.0555432612409,
-    #                                807.676283599881,
-    #                                805.7903274017217,
-    #                                804.3946283001492,
-    #                                803.1046028442654,
-    #                                799.5363026790563,
-    #                                800.2921945062519,
-    #                                799.9831930769775,
-    #                                795.2297044615738,
-    #                                789.9335978665301,
-    #                                791.234355887476,
-    #                                787.3977369202623,
-    #                                785.6841859244969,
-    #                                783.6128876653244,
-    #                                783.1338156363867,
-    #                                781.3833871560394,
-    #                                779.36039738337,
-    #                                776.1094714925133,
-    #                                777.4673197143093,
-    #                                774.7611853114802,
-    #                                775.4384916877741,
-    #                                774.2833951321915,
-    #                                772.3287205585614,
-    #                                768.3819564072758,
-    #                                767.067666157384,
-    #                                765.1877408787177,
-    #                                766.2524704529731,
-    #                                764.8723960514769,
-    #                                762.2987814004226,
-    #                                763.2951371245215,
-    #                                760.7149203386532,
-    #                                758.0283566804861,
-    #                                759.9373693631244,
-    #                                755.2356418617525,
-    #                                754.9851550722124,
-    #                                755.6487467539771,
-    #                                753.9849972170422,
-    #                                753.2065379394986,
-    #                                752.0247411403313,
-    #                                750.8518415434044,
-    #                                747.5611285933307,
-    #                                746.5314162043006,
-    #                                746.9835885662785,
-    #                                744.1933443536657,
-    #                                744.2392574129924,
-    #                                740.090415931636,
-    #                                740.3859578173405,
-    #                                739.4696035101149,
-    #                                740.4889528631908,
-    #                                734.9103664672026,
-    #                                738.5949419195221,
-    #                                737.2100816822667,
-    #                                733.1439525352407,
-    #                                735.0596370040473,
-    #                                734.0226564464822,
-    #                                730.1183747156763,
-    #                                731.249786453746]
-    # plt.plot(hardcoded_k_average_inertia)
-
-    # Show the num of docs/FB in each cluster, show the docs closest to centroid
-    # unique, counts = np.unique(kmeans.labels_, return_counts=True)
-    # clusterCount = dict(zip(unique, counts))
-    # plt.close() # To start a new with a fresh graph
-    # plt.bar(clusterCount.keys(), clusterCount.values(), color='g')
-    # plt.savefig("clusterCountBarGraph.png")
-
-    # counts
-    # Read in the actual feedback at this time
-    # schema = Schema(index=ID(stored=True),
-    #                 cell_content=TEXT(stored=True))
-    # indexToImport = createIndex(schema)
-    # # TODO: put indexToImport into dataframe instead of going through whoosh
-    # addFilesToIndex(indexToImport, OUTPUT_SPAM_REMOVAL, "Negative Feedback", "Negative Feedback")
-    # myReader = indexToImport.reader()
-    # print("Index is empty?", indexToImport.is_empty())
-    # print("Number of indexed files:", indexToImport.doc_count())
-    # # See top 5 vectors closest to cluster centroid for all clusters
-    # for j in range(num_clusters):
-    #     d = kmeans.transform(X)[:, j]
-    #     ind = np.argsort(d)[::-1][:5]
-    #     print("Cluster", j)
-    #     print("Indices of top 5 documents:", ind)
-    #     print(np.array([doc_dict for doc_dict in myReader.iter_docs()])[ind])
-    # fb = []
-    # for content in myReader.iter_docs():
-    #     fb.append(content)
-
     # TODO: need to decide what to return here for our clustering
     return labelsAsNums, kmeans, X #, fb
-
-
-def visualizeSpectural():
-    # ### FOR SPECTURAL CLUSTERING
-    # def fit_and_plot(algorithm,title):
-    #     col = ['bo','ro','co', 'mo','ko']
-    #     algorithm.fit(X)
-    #     n_clusters = algorithm.n_clusters
-    #     lab = algorithm.labels_
-    #     reds = lab == 0
-    #     blues = lab == 1
-    #     for jj in range(n_clusters):
-    #         plt.plot(X[lab == jj, 0], X[lab == jj, 1], col[jj])
-    #     plt.xlabel("$x_1$")
-    #     plt.ylabel("$x_2$")
-    #     plt.title(title)
-    #     plt.axes().set_aspect('equal')
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(clusters.get_params())
-    # fit_and_plot(clusters,"Spectral clustering on two circles")
-    # y_kmeans = kmeans.predict(X)
-    # plt.scatter(X[:, 0], X[:, 1], c=y_kmeans, s=50, cmap='viridis')
-    # centers = kmeans.cluster_centers_
-    # plt.scatter(centers[:, 0], centers[:, 1], c='black', s=200, alpha=0.5)
-    return
 
 
 def labelClustersWKeywords(labels, myReader, num_clusters):
@@ -563,12 +341,6 @@ def clusterPerformanceMetrics(labels, myReader, num_clusters):
 
 
 def spectralClustering(X, num_clusters):
-    # SPECTURAL CLUSTERING
-    # note: df_rows not imported from first function above (createNormalizedMatrix)
-    from sklearn.metrics.pairwise import pairwise_distances
-
-    # similarity_matrix = 1 - pairwise_distances(X, metric='cosine')
-    # cosineScores = pd.DataFrame(similarity_matrix)
     clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X)
     labelsAsNums = clusters.labels_
     return labelsAsNums, clusters, X
@@ -755,17 +527,6 @@ def runDrilldown(df): #this is integrated into dash interface, everything that i
 
     final_Spectral = doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
-    # final_Agg = doAgglomerative(X_norm, numOfFB, readerForFullFB, num_clusters, df)
-    # Z = linkage(X_norm, 'ward')
-    # coph_dists = cophenet(Z, pdist(X_norm))
-    #coph_dists
-
-
-    # plt.figure(figsize=(25, 13))
-    # plt.title('HCA Dendrogram')
-    # plt.xlabel('sample index')
-    # plt.ylabel('distance')
-    # dendrogram(Z,leaf_rotation=90,leaf_font_size=12,)    
     final = final_Spectral
     return final
 
