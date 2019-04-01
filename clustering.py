@@ -16,7 +16,6 @@ import nltk as nltk
 from nltk.tokenize import RegexpTokenizer
 import numpy as np
 from sklearn import preprocessing
-import transformations as trafo
 import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
