@@ -1012,6 +1012,7 @@ def display_page(pathname):
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
+        print(results_modal_df)
         results = runDrilldown(results_modal_df)
         results = results.sort_values(by='Count', ascending=False)
         results = results.reset_index()
@@ -1347,9 +1348,9 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
         global global_site_modal_ids
         global_site_modal_ids = list(dff['Response ID'])
 
-        cnames = ['Feedback', 'Date Submitted', 'Country',
+        cnames = ['Feedback', 'Date Submitted', 'Country', 'compound',
                     'Components', 'Issues', 'Sites']
-        cnamesnew = ['Feedback', 'Date Submitted', 'Country',
+        cnamesnew = ['Feedback', 'Date Submitted', 'Country', 'Vader Sentiment Score',
                    'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
@@ -1647,9 +1648,9 @@ def update_site_modal_table(clickData):
         global global_geo_modal_ids
         global_geo_modal_ids = list(dff['Response ID'])
 
-        cnames = ['Feedback', 'Date Submitted', 'Country',
+        cnames = ['Feedback', 'Date Submitted', 'Country', 'compound',
                     'Components', 'Issues', 'Sites']
-        cnamesnew = ['Feedback', 'Date Submitted', 'Country',
+        cnamesnew = ['Feedback', 'Date Submitted', 'Country', 'Vader Sentiment Score',
                    'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
