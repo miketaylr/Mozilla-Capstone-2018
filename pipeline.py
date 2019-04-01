@@ -176,4 +176,4 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     print("Outputted cleaned data to output_pipeline.csv")
 
 
-run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 10000)
+run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 20000)
