@@ -149,21 +149,21 @@ geoCloseCount=0
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
 reference = datetime(2018, 11, 19)
-results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
+results_df['Day Difference'] = (reference - pd.to_datetime(results_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
-global_sentiment_average = results2_df['compound'].mean()
+global_sentiment_average = results_df['compound'].mean()
 print(global_sentiment_average)
 df_geo = df_geo.rename(columns={'COUNTRY': 'Country'})
 geo_2week_df = df_geo[['Country']]
 # Calculate daily average sentiment scores over the past 2 weeks
 for num_days in range(14):
-    past_x_days_df = results2_df[results2_df['Day Difference'] <= num_days + 1][['Country', 'compound']].groupby('Country', as_index=False).mean()
+    past_x_days_df = results_df[results_df['Day Difference'] <= num_days + 1][['Country', 'compound']].groupby('Country', as_index=False).mean()
     past_x_days_df.columns = ['Country', num_days+1]
     geo_2week_df = pd.merge(geo_2week_df, past_x_days_df, on='Country', how='left')
 
-one_week_compound_df = results2_df[results2_df['Day Difference'] <= 7][['Country', 'compound']]
+one_week_compound_df = results_df[results_df['Day Difference'] <= 7][['Country', 'compound']]
 one_week_compound_df.columns = ['Country', 'Sentiment_Week']
-full_compound_df = results2_df[['Country', 'compound']]
+full_compound_df = results_df[['Country', 'compound']]
 full_compound_df.columns = ['Country', 'Sentiment_Full']
 
 combined_compound_df = pd.merge(one_week_compound_df, full_compound_df, on='Country', how='inner')
@@ -266,8 +266,8 @@ toggle_time_params = {
 }
 
 
-def initCompDF(results2_df, num_days_range = 14):
-    date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
+def initCompDF(results_df, num_days_range = 14):
+    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
     date_filtered_df['Components'] = date_filtered_df['Components'].apply(
         lambda x: ast.literal_eval(x))  # gives warning but works, fix later
 
@@ -309,8 +309,8 @@ def initCompDF(results2_df, num_days_range = 14):
     return component_df, comp_response_id_map, comp_day_response_id_map
 
 
-def initIssueDF(results2_df, num_days_range = 14):
-    date_filtered_df = results2_df[results2_df['Day Difference'] <= num_days_range]
+def initIssueDF(results_df, num_days_range = 14):
+    date_filtered_df = results_df[results_df['Day Difference'] <= num_days_range]
     date_filtered_df['Issues'] = date_filtered_df['Issues'].apply(lambda x: ast.literal_eval(x))
 
     issue_df = pd.Series([])
@@ -391,11 +391,11 @@ def updateGraph(df, title, num_days_range = 7):
 
 
 # CREATE FIRST TWO GRAPHS
-day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
+day_range = min(results_df['Day Difference'].max(), toggle_time_params['max'])
 print(day_range)
-component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(results2_df, day_range)
+component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(results_df, day_range)
 list_component_df = component_df
-issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
+issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results_df, day_range)
 list_issue_df = issue_df
 fig_component = updateGraph(component_df, 'Components Over Time', 7)
 fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)
@@ -945,8 +945,8 @@ def display_page(pathname):
 
     if 'classification' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
-        # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
-        results_modal_df = results2_df[results2_df['Response ID'].isin(ids)]
+        # ideally this should be fed through the same functions as results_df to create the figures to display on the new page
+        results_modal_df = results_df[results_df['Response ID'].isin(ids)]
         day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
 
         component_df_list, comp_response_id_map_list, comp_day_response_id_map_list = initCompDF(results_modal_df, day_range_site_list)
@@ -994,7 +994,7 @@ def display_page(pathname):
         ])
     elif 'clustering' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
-        # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
+        # ideally this should be fed through the same functions as results_df to create the figures to display on the new page
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
         print('eyyyyyyy', ids, sr_df, results_modal_df)
@@ -1009,7 +1009,7 @@ def display_page(pathname):
             responseIds = cluster['Response IDs']
             listArray = []
             for response in responseIds:
-                feedback = results2_df[results2_df['Response ID'] == response]
+                feedback = results_df[results_df['Response ID'] == response]
                 listArray.append(html.Li(feedback['Feedback']))
             dataDict = dict()
             wordArr = []
