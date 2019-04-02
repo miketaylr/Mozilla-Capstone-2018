@@ -24,9 +24,9 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 
 
 # Reading in data:
-results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
-results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
-sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
+results_df = pd.read_csv("./appData/output_pipeline.csv", encoding ="ISO-8859-1")
+results2_df = pd.read_csv("./appData/output_pipeline.csv", encoding="ISO-8859-1")
+sr_df = pd.read_csv("./appData/output_spam_removed.csv", encoding="ISO-8859-1")
 top_sites = ['google.com',
 'youtube.com',
 'facebook.com',
@@ -133,12 +133,7 @@ search_df = results_df
 for index, row in search_df.iterrows():
     if pd.isnull(row['Sites']):
         search_df.at[index, 'Sites'] = 'None Found'
-df_geo = pd.read_csv('./data/output_countries.csv')
-df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
-component_df = pd.read_csv('./data/component_graph_data.csv')
-issue_df = pd.read_csv('./data/issue_graph_data.csv')
-clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
-clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
+df_geo = pd.read_csv('./appData/output_countries.csv')
 global_site_modal_ids = []
 global_comp_modal_ids = []
 global_issue_modal_ids = []
@@ -257,15 +252,6 @@ arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'No
 arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
 numClusters = 50
 traces = []
-clusterNames = list(df1)
-clusterNames.pop(0)  # print(clusterNames)
-df1 = df1.set_index('Issue')
-docs = df1.drop(arrayOfNamesWords, axis=0)
-words = df1.drop(arrayOfNamesDocs, axis=0)  # print(words.iloc[0].values[0])
-clusters = df1.drop(['Words', 'Docs'], axis=0)  # print(clusters)
-
-categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
-
 
 # TIME CALCULATION
 toggle_time_params = {
@@ -1012,7 +998,7 @@ def display_page(pathname):
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
-        print(results_modal_df)
+        print('eyyyyyyy', ids, sr_df, results_modal_df)
         results = runDrilldown(results_modal_df)
         results = results.sort_values(by='Count', ascending=False)
         results = results.reset_index()
@@ -1029,9 +1015,9 @@ def display_page(pathname):
             dataDict = dict()
             wordArr = []
             topWords = cluster['Words'].split(',')
-            if topWords[0]:
+            if len(topWords) > 0:
                 wordArr.append(topWords[0])
-            if topWords[1]:
+            if len(topWords) > 1:
                 wordArr.append(topWords[1])
             dataDict['name'] = ",".join(wordArr)
             dataDict['value'] = len(listArray)
@@ -1875,5 +1861,5 @@ def set_search_count(sentence, dict):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
