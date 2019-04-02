@@ -25,7 +25,6 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 
 # Reading in data:
 results_df = pd.read_csv("./appData/output_pipeline.csv", encoding ="ISO-8859-1")
-results2_df = pd.read_csv("./appData/output_pipeline.csv", encoding="ISO-8859-1")
 sr_df = pd.read_csv("./appData/output_spam_removed.csv", encoding="ISO-8859-1")
 top_sites = ['google.com',
 'youtube.com',
