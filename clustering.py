@@ -415,7 +415,7 @@ def doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df):
 
 def runDrilldown(df): #this is integrated into dash interface, everything that isn't called here we don't use START HERE, but if we swap to hierarchical/spectral, uncomment the functions related to those DONT DELETE ANYTHING
     # Create temp csv using timestamp as name
-    filename = 'data/' + str(round(time.time())) + '.csv' #the file that nicole is passing through, she names them based on time (in the data folder you see the seconds.csv)
+    filename = 'appData/' + str(round(time.time())) + '.csv' #the file that nicole is passing through, she names them based on time (in the data folder you see the seconds.csv)
     df.to_csv(filename)
 
     # Create index based off of csv -- this takes a long time, so we just pass in the reader
