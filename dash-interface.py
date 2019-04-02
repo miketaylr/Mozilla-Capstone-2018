@@ -1029,9 +1029,9 @@ def display_page(pathname):
             dataDict = dict()
             wordArr = []
             topWords = cluster['Words'].split(',')
-            if topWords[0]:
+            if len(topWords) > 0:
                 wordArr.append(topWords[0])
-            if topWords[1]:
+            if len(topWords) > 1:
                 wordArr.append(topWords[1])
             dataDict['name'] = ",".join(wordArr)
             dataDict['value'] = len(listArray)
