@@ -1,0 +1,103 @@
+Country,Sentiment,Code
+Albania,0,ALB
+Algeria,0.3612,DZA
+Anonymous Proxy,0,
+Argentina,0,ARG
+Asia/Pacific Region,0,
+Australia,0.221336,AUS
+Austria,0.42144,AUT
+Azerbaijan,0,AZE
+Bahrain,0.4404,BHR
+Bangladesh,-0.06472,BGD
+Belarus,0,BLR
+Belgium,-0.181733333,BEL
+Brazil,-0.0626,BRA
+Bulgaria,0.899,BGR
+Burundi,0,BDI
+Canada,0.083035,CAN
+China,0,CHN
+Colombia,0,COL
+Costa Rica,0,CRI
+Croatia,-0.1556,HRV
+Czech Republic,0.4133,CZE
+Denmark,0.270283333,DNK
+Dominican Republic,0,DOM
+Egypt,0.17,EGY
+El Salvador,-0.6114,SLV
+Estonia,-0.296,EST
+Europe,0,
+Falkland Islands (Malvinas),-0.5719,FLK
+Fiji,0,FJI
+Finland,0.499275,FIN
+France,0.1972,FRA
+Georgia,0,GEO
+Germany,0.117657143,DEU
+Ghana,0,GHA
+Greece,-0.059275,GRC
+Guatemala,-0.4561,GTM
+Hong Kong,0,HKG
+Hungary,0.6115,HUN
+Iceland,0,ISL
+India,0.104232877,IND
+Indonesia,-0.1363,IDN
+"Iran, Islamic Republic of",0.2530375,IRN
+Iraq,0,IRQ
+Ireland,0.6464,ISL
+Israel,0.3585,ISR
+Italy,0.03476,ITA
+Jamaica,0.34,JAM
+Japan,0.6696,JPN
+Kenya,0.245675,KEN
+"Korea, Republic of",0,KOR
+Lao People's Democratic Republic,0,LAO
+Lesotho,0.9443,LSO
+Libya,0,LBY
+Lithuania,0,LTU
+Luxembourg,0.4767,LUX
+Malaysia,0.125855556,MYS
+Malta,-0.6694,MLT
+Mexico,0.21075,MEX
+"Moldova, Republic of",0,MDA
+Mongolia,0,MNG
+Morocco,0,MAR
+Mozambique,0,MOZ
+Nepal,0.6486,NPL
+Netherlands,0.090645455,NLD
+New Zealand,0.135566667,NZL
+Nigeria,0.130636,NGA
+Norway,0.1531,NOR
+Pakistan,-0.2501125,PAK
+Papua New Guinea,0,PNG
+Philippines,0.32372,PHL
+Poland,-0.9312,POL
+Portugal,-0.4696,PRT
+Puerto Rico,0,PRI
+Qatar,0.3054,QAT
+Romania,0.4118,ROU
+Russian Federation,0.8779,RUS
+Rwanda,-0.7579,RWA
+Saint Lucia,0.6705,LCA
+Saudi Arabia,0.2086,SAU
+Serbia,0.3954,SRB
+Singapore,-0.01136,SGP
+Sint Maarten (Dutch part),0,MAF
+Slovakia,-0.2602,SVK
+South Africa,0.076241667,ZAF
+Spain,0.12385,ESP
+Sri Lanka,-0.1531,LKA
+Sweden,-0.5908,SWE
+Syrian Arab Republic,0.4767,SYR
+Taiwan,-0.05735,TWN
+Thailand,0.186853846,THA
+Trinidad and Tobago,0.875,TTO
+Turkey,0.3397,TUR
+Uganda,0,UGA
+Ukraine,0.4404,UKR
+United Arab Emirates,0.6516,ARE
+United Kingdom,0.259838961,GBR
+United States,0.193572574,USA
+Uruguay,-0.2263,URY
+Vietnam,0.234325,VNM
+Yemen,0.8625,YEM
+Zambia,-0.1027,ZMB
+Zimbabwe,0.921,ZWE
