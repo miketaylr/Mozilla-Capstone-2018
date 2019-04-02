@@ -16,19 +16,15 @@ import nltk as nltk
 from nltk.tokenize import RegexpTokenizer
 import numpy as np
 from sklearn import preprocessing
-import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from sklearn.feature_extraction.text import CountVectorizer
 from scipy.cluster import hierarchy
-from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.cluster.hierarchy import cophenet
 from scipy.spatial.distance import pdist
 import random
-import seaborn as sns; sns.set()
-import pprint
 import referenceFiles as rf
 import collections
 from sklearn.feature_extraction import text
@@ -36,7 +32,6 @@ from nltk.tag import PerceptronTagger
 from sklearn.cluster import SpectralClustering
 from numpy import array
 from datetime import datetime as datetime
-from sklearn.cluster import AgglomerativeClustering
 import sklearn.metrics as metrics
 import os
 import time
@@ -344,42 +339,6 @@ def spectralClustering(X, num_clusters):
     labelsAsNums = clusters.labels_
     return labelsAsNums, clusters, X
 
-
-def hierarchicalClustering(X, num_clusters, linkage):
-    clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage=linkage).fit(X)
-    labelsAsNums = clusters.labels_
-    return labelsAsNums, clusters, X
-
-
-def purityElbowGraph(X_norm, numOfFB, readerForFullFB):
-    # Purity elbow graph
-    purity = []
-    clusterSize = []
-    for n in range(20, 1000, 40):
-        # labels, kmeans, X = kMeansClustering(X_norm, numOfFB, n)
-        # labels, spectral, X = spectralClustering(X_norm, n)
-        labels, hierarchical, X = hierarchicalClustering(X_norm, n, 'single')
-        clusterPurity, clusterCountSeries, clusterGroupDF = clusterPerformanceMetrics(labels, readerForFullFB, n)
-        # print(clusterPurity)
-        purity.append(clusterPurity)
-        clusterSize.append(n)
-        print(n)
-    plt.plot(clusterSize, purity)
-    plt.title('Purity vs Number of Clusters using Hierarchical: Single')
-    plt.xlabel('Number of Clusters')
-    plt.ylabel('Purity')
-    # DO NOT RUN THIS AGAIN IT TAKES FOREVER
-    plt.savefig("purityElbowMethodHierarchicalSingle1000.png")
-
-def barGraphVisualization(labels, kmeans, X, top_words, top_phrases, clusterCountSeries, clusterGroupDF):
-    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(top_words, top_phrases)
-
-    countsWords = clusterCountSeries.append(top_words_combined, ignore_index=False)
-    countsWordsPhrases = countsWords.append(top_phrases_combined, ignore_index = False)
-    countsWordsPhrasesDocs = countsWordsPhrases.append(clusterGroupDF, ignore_index = False)
-
-    return countsWordsPhrasesDocs
-
 def condenseTopWordsPhrases(top_words, top_phrases):
     top_words_list = top_words.applymap(lambda x: [x] if pd.notnull(x) else []).sum(1).tolist()
 
@@ -393,17 +352,6 @@ def condenseTopWordsPhrases(top_words, top_phrases):
     top_phrases_combined = top_phrases['combined'].rename(lambda x: 'Cluster ' + str(x))
     top_phrases_combined.name = 'Phrases'
     return top_words_combined, top_phrases_combined
-
-def runVis(num_clusters):
-    X_norm, numOfFB, readerForFullFB = createNormalizedMatrix(OUTPUT_SPAM_REMOVAL)
-
-    labels, kmeans, X = kMeansClustering(X_norm, numOfFB, num_clusters)
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    purity, clusterCountSeries, clusterGroupDF = clusterPerformanceMetrics(labels, readerForFullFB, num_clusters)
-
-    visDf = barGraphVisualization(labels, kmeans, X, feature_names_df_kmeans, feature_phrases_df_kmeans, clusterCountSeries, clusterGroupDF)
-    return visDf
 
 
 def run(): # don't delete this, but we're not using it, use run drilldown()
@@ -455,21 +403,6 @@ def run(): # don't delete this, but we're not using it, use run drilldown()
     print('We done.')
     return
 
-def doKMeans(X_norm, numOfFB, readerForFullFB, num_clusters, df):
-    labels, clusters, X = kMeansClustering(X_norm, numOfFB, num_clusters) # if want to switch to spectral/hierarchical, switch it in here
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    
-    unique, counts = np.unique(labels, return_counts = True)
-    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
-    counts.name = 'Count'
-
-    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
-    ids.name = 'Response IDs'
-
-    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
-    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
-    return final
 
 def doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df):
     clusters = SpectralClustering(n_clusters = num_clusters, affinity='cosine', random_state=40).fit(X_norm)
@@ -489,23 +422,6 @@ def doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df):
     final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
     return final
 
-def doAgglomerative(X_norm, numOfFB, readerForFullFB, num_clusters, df):
-    # clusters = AgglomerativeClustering(n_clusters=num_clusters, affinity='cosine', linkage='single').fit(X_norm)
-    labels = clusters.labels_
-
-    feature_names_df_kmeans = labelClustersWKeywords(labels, readerForFullFB, num_clusters)
-    feature_phrases_df_kmeans = labelClustersWithKeyPhrases(labels, readerForFullFB, num_clusters, 5)
-    
-    unique, counts = np.unique(labels, return_counts = True)
-    counts = pd.Series(counts).rename(lambda x: 'Cluster ' + str(x))
-    counts.name = 'Count'
-
-    ids = pd.Series([df.iloc[np.where(labels == n)[0].tolist()]['Response ID'].tolist() for n in range(num_clusters)]).rename(lambda x: 'Cluster ' + str(x))
-    ids.name = 'Response IDs'
-
-    top_words_combined, top_phrases_combined = condenseTopWordsPhrases(feature_names_df_kmeans, feature_phrases_df_kmeans)
-    final = pd.concat([counts, ids, top_words_combined, top_phrases_combined], axis=1)
-    return final
 
 
 def runDrilldown(df): #this is integrated into dash interface, everything that isn't called here we don't use START HERE, but if we swap to hierarchical/spectral, uncomment the functions related to those DONT DELETE ANYTHING
@@ -522,8 +438,6 @@ def runDrilldown(df): #this is integrated into dash interface, everything that i
     # 10 docs per cluster; ceil because if less than 10 docs, then outputs 1 cluster
     num_clusters = math.ceil(len(df)/5)    
     
-    final_KMeans = doKMeans(X_norm, numOfFB, readerForFullFB, num_clusters, df)
-
     final_Spectral = doSpectral(X_norm, numOfFB, readerForFullFB, num_clusters, df)
 
     final = final_Spectral

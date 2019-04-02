@@ -16,7 +16,6 @@ import numpy as np
 import urllib.parse
 import os
 import ast
-import re
 import dash_dangerously_set_inner_html
 
 
