@@ -12,7 +12,6 @@ from clustering import runDrilldown
 from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from collections import Counter
-import numpy as np
 import urllib.parse
 import os
 import ast
