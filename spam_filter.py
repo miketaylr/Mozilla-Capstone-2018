@@ -44,7 +44,7 @@ def text_preparation(filename):
                    "Negative Feedback", "Relevant Site", "compound", "neg",
                    "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback",
                    "IsSpam"]
-    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+    df = pd.read_csv(filename, encoding="ISO-8859-1", usecols=survey_cols)
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
@@ -58,7 +58,7 @@ def text_preparation(filename):
 def text_preparation_unlabelled(filename):
     num_records = 5000
     # Read All Columns
-    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records)
+    df = pd.read_csv(filename, encoding="ISO-8859-1")
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
