@@ -161,7 +161,6 @@ reference = datetime(2018, 9, 5)
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 global_sentiment_average = results2_df['compound'].mean()
-print(global_sentiment_average)
 df_geo = df_geo.rename(columns={'COUNTRY': 'Country'})
 geo_2week_df = df_geo[['Country']]
 # Calculate daily average sentiment scores over the past 2 weeks
@@ -193,7 +192,6 @@ df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
 
 def updateGeoGraph(df, type, value):
-    print(df)
     if type=='norm':
         sentiment = df[value] - df['Sentiment_Full']
     elif type=='globalNorm':
@@ -375,7 +373,6 @@ def updateGraph(df, title, num_days_range = 7):
     traces = []
     # Checking df for values:
     for index, row in filtered_df.iterrows():
-        print(list(row.keys()))
         traces.append(go.Bar(
             x=list(row.keys()),
             y=row.values,
@@ -410,7 +407,6 @@ def updateGraph(df, title, num_days_range = 7):
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
-print(day_range)
 component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(results2_df, day_range)
 list_component_df = component_df
 issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
@@ -1013,7 +1009,6 @@ def display_page(pathname):
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
-        print(results_modal_df)
         results = runDrilldown(results_modal_df)
         results = results.sort_values(by='Count', ascending=False)
         results = results.reset_index()
@@ -1170,7 +1165,6 @@ def update_sentiment_graph(frequency):
      Input('comp-graph', 'clickData')])
 def display_comp_modal(closeClicks, clickData):
     global compCloseCount
-    print('here in comp', closeClicks, compCloseCount)
     if closeClicks > compCloseCount:
         compCloseCount = closeClicks
         return {'display': 'none'}
@@ -1185,7 +1179,6 @@ def display_comp_modal(closeClicks, clickData):
     [Input('comp-graph', 'clickData')])
 def display_comp_click_data(clickData):
     #Set click data to whichever was clicked
-    print('here in comp', clickData)
     if (clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
@@ -1247,7 +1240,6 @@ def update_comp_download_link(clickData):
      Input('issue-graph', 'clickData')])
 def display_issue_modal(closeClicks, clickData):
     global issueCloseCount
-    print('here in issue', closeClicks, issueCloseCount)
     if closeClicks > issueCloseCount:
         issueCloseCount = closeClicks
         return {'display': 'none'}
@@ -1262,7 +1254,6 @@ def display_issue_modal(closeClicks, clickData):
     [Input('issue-graph', 'clickData')])
 def display_issue_click_data(clickData):
     #Set click data to whichever was clicked
-    print('here in issue', clickData)
     if (clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
@@ -1334,7 +1325,6 @@ def disable_site_modal_button(selected_row_indices):
     [State('top-sites-table', 'rows'),
      State('top-sites-table', 'selected_row_indices')])
 def update_site_modal_table(clicks, rows, selected_row_indices):
-    print('here', clicks)
 
     table_df = pd.DataFrame(rows) #convert current rows into df
 
@@ -1355,6 +1345,8 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
                    'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
+        dff['Components']=dff['Components'].apply(lambda s: s.translate({ord(i): None for i in '[\']'}))
+        dff['Issues']=dff['Issues'].apply(lambda s: s.translate({ord(i): None for i in '[\']'}))
         print(global_site_modal_ids)
         global global_top_selected_sites
         global_top_selected_sites = sites
@@ -1784,6 +1776,8 @@ def update_table(ns, request_value):
                     ]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
+            r_df['Components']=r_df['Components'].apply(lambda s: s.translate({ord(i): None for i in '[\']'}))
+            r_df['Issues']=r_df['Issues'].apply(lambda s: s.translate({ord(i): None for i in '[\']'}))
     return r_df.to_dict('rows')
 
 
