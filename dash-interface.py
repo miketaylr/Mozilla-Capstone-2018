@@ -1740,7 +1740,7 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     count = len(sites_df.index)
 
     return html.Div([
-        html.P(['Sites were mentioned {} times in the raw feedback. Unique sites were mentioned {} times.'.format(sites_df['Count'].sum(), count)]),
+        html.P(['Sites were mentioned {} times in the raw feedback. There were {} unique sites mentioned.'.format(sites_df['Count'].sum(), count)]),
         html.P(['There were {} pieces of raw feedback that did not mention any sites.'.format(no_sites_df['Count'].sum())])
     ])
 
