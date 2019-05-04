@@ -186,31 +186,27 @@ body {
 /* Sliders */
 
 .rc-slider-track {
-    background-color: orange !important;
+    background-color: orange;
 }
 
 .rc-slider-disabled {
-    background-color: transparent !important;
+    background-color: transparent;
 }
 
 .rc-slider-dot-active {
-    border-color: white !important;
+    border-color: white;
 }
 
 .rc-slider-handle, .rc-slider-handle:hover {
-    border-color: orange !important;
+    border-color: orange;
 }
 
 .rc-slider-mark-text {
-    color: white !important;
+    color: white;
 }
 
 .rc-slider-disabled .rc-slider-handle, .rc-slider-disabled .rc-slider-dot {
-    border-color: #ccc !important;
-    background-color: #fff !important;
-    cursor: not-allowed !important;
-}
-
-.rc-slider-disabled .rc-slider-track {
-    background-color: #ccc !important;
+    border-color: #ccc;
+    background-color: #fff;
+    cursor: not-allowed;
 }
