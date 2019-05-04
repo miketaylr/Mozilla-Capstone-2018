@@ -10,7 +10,7 @@ import ast
 import json
 from clustering import runDrilldown
 from datetime import datetime as datetime
-from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
+from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE, top_sites
 from collections import Counter
 import numpy as np
 import urllib.parse
@@ -18,6 +18,8 @@ import os
 import ast
 import re
 import dash_dangerously_set_inner_html
+
+import search
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
@@ -29,106 +31,6 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
 sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
-top_sites = ['google.com',
-'youtube.com',
-'facebook.com',
-'baidu.com',
-'wikipedia.org',
-'yahoo.com',
-'qq.com',
-'tmall.com',
-'taobao.com',
-'twitter.com',
-'amazon.com',
-'google.co.in',
-'instagram.com',
-'vk.com',
-'sohu.com',
-'live.com',
-'jd.com',
-'reddit.com',
-'yandex.ru',
-'weibo.com',
-'sina.com.cn',
-'google.co.jp',
-'login.tmall.com',
-'360.cn',
-'blogspot.com',
-'linkedin.com',
-'google.com.hk',
-'netflix.com',
-'google.com.br',
-'pornhub.com',
-'pages.tmall.com',
-'google.co.uk',
-'csdn.net',
-'yahoo.co.jp',
-'twitch.tv',
-'office.com',
-'google.ru',
-'microsoftonline.com',
-'alipay.com',
-'mail.ru',
-'google.fr',
-'google.de',
-'microsoft.com',
-'ebay.com',
-'bing.com',
-'msn.com',
-'aliexpress.com',
-'whatsapp.com',
-'naver.com',
-'google.com.mx',
-'xvideos.com',
-'tribunnews.com',
-'google.it',
-'imdb.com',
-'wordpress.com',
-'stackoverflow.com',
-'amazon.co.jp',
-'google.es',
-'google.ca',
-'github.com',
-'paypal.com',
-'livejasmin.com',
-'tumblr.com',
-'google.com.tr',
-'google.com.tw',
-'imgur.com',
-'google.co.kr',
-'espn.com',
-'xhamster.com',
-'wikia.com',
-'apple.com',
-'pinterest.com',
-'thestartmagazine.com',
-'porn555.com',
-'dropbox.com',
-'xnxx.com',
-'google.com.au',
-'adobe.com',
-'detail.tmall.com',
-'cobalten.com',
-'amazon.in',
-'amazon.co.uk',
-'hao123.com',
-'amazon.de',
-'quora.com',
-'txxx.com',
-'google.co.id',
-'tianya.cn',
-'bilibili.com',
-'booking.com',
-'google.co.th',
-'xinhuanet.com',
-'aparat.com',
-'pixnet.net',
-'salesforce.com',
-'google.pl',
-'rakuten.co.jp',
-'bongacams.com',
-'cnn.com',
-'google.com.ar']
 
 
 search_df = results_df
@@ -1745,135 +1647,9 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     ])
 
 
-@app.callback(
-    Output('searchtable', 'rows'),
-    [Input('searchrequest', 'n_submit')], # [Input('searchrequest', 'n_submit')],
-    [State('searchrequest', 'value')])
-def update_table(ns, request_value):
-    df = search_df
-    # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-    #           'Feedback', 'Components', 'Issues', 'Sites']
-    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites'
-              # ,'Version'
-              ]
-    r_df = pd.DataFrame()
-    # r_df = pd.DataFrame([cnames], columns=cnames)
-    for index, row in df.iterrows():
-        together = [str(row['Feedback']), str(row['Country']),
-                    str(row['Components']), str(row['Issues']), str(row['Sites'])]
-        fb = ''.join(together).lower()
-        rv = str(request_value).lower()
-        isit = rv in fb
-        if isit:
-            # vers = re.search(r'Firefox/\s*([\d.]+)', str(row['User Agent']))
-            # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
-            #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
-            # print(vers.group())
-            # table_vers=''
-            # if vers is None:
-            #     table_vers=''
-            # else:
-            #     table_vers = str(vers.group())
-            print(row['compound'])
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str("%.2f"%row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']),
-                    str(row['Sites']), 
-                    # table_vers
-                    ]
-            temp_df = pd.DataFrame([temp], columns=cnames)
-            r_df = r_df.append(temp_df, ignore_index=True)
-    return r_df.to_dict('rows')
 
-
-@app.callback(
-    Output('search-download-link', 'href'),
-    [Input('searchrequest', 'n_submit')], # [Input('searchrequest', 'n_submit')],
-    [State('searchrequest', 'value')])
-def update_table(ns, request_value):
-    df = search_df
-    # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-    #           'Feedback', 'Components', 'Issues', 'Sites']
-    cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites'
-              # ,'Version'
-              ]
-    r_df = pd.DataFrame()
-    # r_df = pd.DataFrame([cnames], columns=cnames)
-    for index, row in df.iterrows():
-        together = [str(row['Feedback']), str(row['Country']),
-                    str(row['Components']), str(row['Issues']), str(row['Sites'])]
-        fb = ''.join(together).lower()
-        rv = str(request_value).lower()
-        isit = rv in fb
-        if isit:
-            # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
-            #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
-            temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str("%.2f"%row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites']),
-                    # str(row['User Agent'])
-                    ]
-            temp_df = pd.DataFrame([temp], columns=cnames)
-            r_df = r_df.append(temp_df, ignore_index=True)
-    csv_string = r_df.to_csv(index=False, encoding='utf-8')
-    csv_string = "data:text/csv;charset=utf-8," + urllib.parse.quote(csv_string)
-    return csv_string
-
-
-@app.callback(
-    Output('search-count-reveal','children'),
-    [Input('searchtable', 'rows')])
-def set_search_count(dict_of_returned_df):
-    if (len(dict_of_returned_df) > 0):
-        if (len(dict_of_returned_df[0]) > 0):
-            df_to_use = pd.DataFrame.from_dict(dict_of_returned_df)
-            count = len(df_to_use.index)
-            return u'Search returned {} results.'.format(count)
-        else:
-            return ''
-    else:
-        return u'Search returned no results.'
-
-@app.callback(
-    Output('search-loading', 'style'),
-    [Input('search-table-container', 'style')],
-    [State('searchrequest', 'value')])
-def hide_loading(style, query):
-    print(query)
-    print(style['display'])
-    if query and style['display'] == 'none':
-        print('block')
-        return {'display': 'block'}
-    else:
-        print('noneeeee')
-        return {'display': 'none'}
-        # return 'display: none'
-
-
-@app.callback(
-    Output('search-table-container','style'),
-    [Input('search-count-reveal', 'children'),
-     Input('searchtable', 'rows')])
-def set_search_count(sentence, dict):
-    if (len(dict[0]) > 0):
-        return {'display': 'block',
-                'animation': 'opac 1s'}
-    else:
-        return {'display': 'none'}
-
-
-@app.callback(
-    Output('search-download-link','style'),
-    [Input('search-count-reveal', 'children'),
-     Input('searchtable', 'rows')])
-def set_search_count(sentence, dict):
-    if (len(dict[0]) > 0):
-        print('reacheeeeeeed')
-        return {'display': 'block'}
-    else:
-        return {'display': 'none'}
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)
 
