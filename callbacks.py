@@ -95,7 +95,6 @@ def display_page(pathname):
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
         results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
-        # day_range_site_list = min(results_modal_df['Day Difference'].max(), toggle_time_params['max'])
         print(results_modal_df)
         results = runDrilldown(results_modal_df)
         results = results.sort_values(by='Count', ascending=False)
@@ -128,13 +127,6 @@ def display_page(pathname):
                 html.P('Feedback: ', className='clustering-top-text'),
                 html.Ul(children=listArray, className='clustering-feedback'),
             ])
-            # child = html.Div(className='clustering-group', children=[
-            #     html.H3('Cluster ' + str(index+1)),
-            #     html.P('Top Words: ' + cluster['Words'], className='clustering-top-text'),
-            #     html.P('Top Phrases: ' + cluster['Phrases'], className='clustering-top-text'),
-            #     html.P('Feedback: ', className='clustering-top-text'),
-            #     html.Ul(children=listArray, className='clustering-feedback'),
-            # ])
             pageChildren.append(child)
 
         results = results.transpose()
@@ -241,8 +233,7 @@ def update_sentiment_graph(frequency):
                 'color': 'white',
             },
             'paper_bgcolor': 'rgba(0,0,0,0)',
-            'plot_bgcolor': 'rgba(0,0,0,0)'#,
-            #'barmode': 'stack',
+            'plot_bgcolor': 'rgba(0,0,0,0)'
         }
     }
     return fig
@@ -454,7 +445,6 @@ def update_issue_graph_slider(value):
     Output('list_issue_slider_output', 'children'),
     [Input('list_issue_time_slider', 'value')])
 def update_list_issue_output_slider(value):
-    print('he')
     return 'Past {} days of data'.format(value)
 
 
@@ -483,8 +473,6 @@ def disable_site_modal_button(selected_row_indices):
     [State('top-sites-table', 'rows'),
      State('top-sites-table', 'selected_row_indices')])
 def update_site_modal_table(clicks, rows, selected_row_indices):
-    print('here', clicks)
-
     table_df = pd.DataFrame(rows) #convert current rows into df
 
     if selected_row_indices:
@@ -492,7 +480,6 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
 
     sites = table_df['Site'].values
     if(clicks):
-        # ids = list(d['customdata'] for d in selectedData['points'])
         global global_filtered_top_sites_df
         dff = global_filtered_top_sites_df[global_filtered_top_sites_df['Sites'].isin(sites)]
         global global_site_modal_ids
@@ -591,7 +578,6 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
     sites = table_df['Site'].values
     print(sites)
     if(clicks):
-        # ids = list(d['customdata'] for d in selectedData['points'])
         global global_filtered_other_sites_df
 
         dff = global_filtered_other_sites_df[global_filtered_other_sites_df['Sites'].isin(sites)]
@@ -680,7 +666,6 @@ def update_sites_download_link(clicks, rows, selected_row_indices):
     sites = table_df['Site'].values
     print(sites)
     if(clicks):
-        # ids = list(d['customdata'] for d in selectedData['points'])
         global global_filtered_top_sites_df
 
         dff = global_filtered_top_sites_df[global_filtered_top_sites_df['Sites'].isin(sites)]
@@ -756,7 +741,6 @@ def update_site_count(start_date, end_date):    #update graph with values that a
     [Input('country-graph', 'clickData')])
 def update_site_modal_table(clickData):
     if(clickData):
-        # ids = list(d['customdata'] for d in selectedData['points'])
         selected_geo = clickData['points'][0]['text']
         dff = results_df[results_df['Country'] == selected_geo]
         global global_geo_modal_ids
@@ -878,18 +862,13 @@ def update_table(ns, request_value):
 
 @app.callback(
     Output('search-download-link', 'href'),
-    [Input('searchrequest', 'n_submit')], # [Input('searchrequest', 'n_submit')],
+    [Input('searchrequest', 'n_submit')],
     [State('searchrequest', 'value')])
 def update_table(ns, request_value):
     df = search_df
-    # cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-    #           'Feedback', 'Components', 'Issues', 'Sites']
     cnames = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
-              'Feedback', 'Components', 'Issues', 'Sites'
-              # ,'Version'
-              ]
+              'Feedback', 'Components', 'Issues', 'Sites']
     r_df = pd.DataFrame()
-    # r_df = pd.DataFrame([cnames], columns=cnames)
     for index, row in df.iterrows():
         together = [str(row['Feedback']), str(row['Country']),
                     str(row['Components']), str(row['Issues']), str(row['Sites'])]
@@ -897,11 +876,8 @@ def update_table(ns, request_value):
         rv = str(request_value).lower()
         isit = rv in fb
         if isit:
-            # temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), int(row['compound']),
-            #         str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])]
             temp = [str(row['Response ID']), str(row['Date Submitted']), str(row['Country']), str("%.2f"%row['compound']),
-                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites']),
-                    # str(row['User Agent'])
+                    str(row['Feedback']), str(row['Components']), str(row['Issues']), str(row['Sites'])
                     ]
             temp_df = pd.DataFrame([temp], columns=cnames)
             r_df = r_df.append(temp_df, ignore_index=True)
@@ -937,7 +913,6 @@ def hide_loading(style, query):
     else:
         print('noneeeee')
         return {'display': 'none'}
-        # return 'display: none'
 
 
 @app.callback(
@@ -958,7 +933,6 @@ def set_search_count(sentence, dict):
      Input('searchtable', 'rows')])
 def set_search_count(sentence, dict):
     if (len(dict[0]) > 0):
-        print('reacheeeeeeed')
         return {'display': 'block'}
     else:
         return {'display': 'none'}
