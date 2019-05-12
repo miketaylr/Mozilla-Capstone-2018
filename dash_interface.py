@@ -299,9 +299,9 @@ def updateGraph(df, title, num_days_range = 7):
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
-component_df, comp_response_id_map, global_vars.comp_day_response_id_map = initCompDF(results2_df, day_range)
+component_df, global_vars.comp_response_id_map, global_vars.comp_day_response_id_map = initCompDF(results2_df, day_range)
 list_component_df = component_df
-issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
+issue_df, global_vars.issue_response_id_map, global_vars.issue_day_response_id_map = initIssueDF(results2_df, day_range)
 list_issue_df = issue_df
 fig_component = updateGraph(component_df, 'Components Over Time', 7)
 fig_issue = updateGraph(issue_df, 'Issues Over Time', 7)

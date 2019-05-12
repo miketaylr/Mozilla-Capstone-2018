@@ -1,3 +1,5 @@
+# Variables that are labeled 'global' in local functions in callback.py
+
 global geoCloseCount
 global issueCloseCount
 global topSiteCloseCount

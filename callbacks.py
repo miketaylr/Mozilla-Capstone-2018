@@ -10,7 +10,7 @@ import urllib.parse
 import dash_dangerously_set_inner_html
 
 from constants import top_sites
-from dash_interface import app, results_df, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
+from dash_interface import app, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
     updateGraph, updateGeoGraph, initCompDF, initIssueDF, component_df, issue_df, \
     runDrilldown, clusteringBarGraph
 from layouts import main_layout, sites_layout, sentiment_layout, geoview_layout, components_layout, issues_layout, search_layout
@@ -259,8 +259,7 @@ def display_comp_click_data(clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             component = clickData['points'][0]['customdata']
-            global comp_response_id_map
-            ids = comp_response_id_map[day][component]
+            ids = global_vars.comp_response_id_map[day][component]
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
@@ -287,8 +286,7 @@ def update_comp_download_link(clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             comp = clickData['points'][0]['customdata']
-            global comp_response_id_map
-            ids = comp_response_id_map[day][comp]
+            ids = global_vars.comp_response_id_map[day][comp]
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
@@ -363,13 +361,11 @@ def display_issue_click_data(clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             issue = clickData['points'][0]['customdata']
-            global issue_response_id_map
-            ids = issue_response_id_map[day][issue]
+            ids = global_vars.issue_response_id_map[day][issue]
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
-            global issue_day_response_id_map
-            ids = issue_day_response_id_map[day]
+            ids = global_vars.issue_day_response_id_map[day]
             dff = search_df[search_df['Response ID'].isin(ids)]
 
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
@@ -392,13 +388,11 @@ def update_issue_download_link(clickData):
         if(len(clickData['points']) == 1):
             day = clickData['points'][0]['x']
             issue = clickData['points'][0]['customdata']
-            global issue_response_id_map
-            ids = issue_response_id_map[day][issue]
+            ids = global_vars.issue_response_id_map[day][issue]
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
-            global issue_day_response_id_map
-            ids = issue_day_response_id_map[day]
+            ids = global_vars.issue_day_response_id_map[day]
             dff = search_df[search_df['Response ID'].isin(ids)]
 
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
