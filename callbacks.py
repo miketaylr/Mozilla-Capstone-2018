@@ -461,10 +461,8 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
 
     sites = table_df['Site'].values
     if(clicks):
-        global global_filtered_top_sites_df
-        dff = global_filtered_top_sites_df[global_filtered_top_sites_df['Sites'].isin(sites)]
-        global global_site_modal_ids
-        global_site_modal_ids = list(dff['Response ID'])
+        dff = global_vars.global_filtered_top_sites_df[global_vars.global_filtered_top_sites_df['Sites'].isin(sites)]
+        global_vars.global_site_modal_ids = list(dff['Response ID'])
 
         cnames = ['Feedback', 'Date Submitted', 'Country', 'compound',
                     'Components', 'Issues', 'Sites']
@@ -472,7 +470,6 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
                    'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        print(global_site_modal_ids)
         global_vars.global_top_selected_sites = sites
         return dff.to_dict('rows')
     return []
@@ -511,8 +508,7 @@ def update_comp_graph_slider(start_date, end_date):
     else:
         filtered_df = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
 
-    global global_filtered_top_sites_df
-    global_filtered_top_sites_df = filtered_df
+    global_vars.global_filtered_top_sites_df = filtered_df
 
     sites_list = filtered_df['Sites'].apply(pd.Series).stack().reset_index(drop=True)
     sites_list = ','.join(sites_list).split(',')
@@ -557,9 +553,7 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
     sites = table_df['Site'].values
     print(sites)
     if(clicks):
-        global global_filtered_other_sites_df
-
-        dff = global_filtered_other_sites_df[global_filtered_other_sites_df['Sites'].isin(sites)]
+        dff = global_vars.global_filtered_other_sites_df[global_vars.global_filtered_other_sites_df['Sites'].isin(sites)]
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
                   'Feedback', 'Components', 'Issues', 'Sites']
         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
@@ -606,8 +600,7 @@ def update_comp_graph_slider(start_date, end_date):
     else:
         filtered_df = results_df[(results_df['Date Submitted'] > start_date) & (results_df['Date Submitted'] < end_date)]
 
-    global global_filtered_other_sites_df
-    global_filtered_other_sites_df = filtered_df
+    global_vars.global_filtered_other_sites_df = filtered_df
 
     sites_list = filtered_df['Sites'].apply(pd.Series).stack().reset_index(drop=True)
     sites_list = ','.join(sites_list).split(',')
@@ -641,9 +634,8 @@ def update_sites_download_link(clicks, rows, selected_row_indices):
     sites = table_df['Site'].values
     print(sites)
     if(clicks):
-        global global_filtered_top_sites_df
 
-        dff = global_filtered_top_sites_df[global_filtered_top_sites_df['Sites'].isin(sites)]
+        dff = global_vars.global_filtered_top_sites_df[global_vars.global_filtered_top_sites_df['Sites'].isin(sites)]
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
                   'Feedback', 'Components', 'Issues', 'Sites']
         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',
@@ -670,9 +662,8 @@ def update_sites_download_link(clicks, rows, selected_row_indices):
     sites = table_df['Site'].values
     if(clicks):
         # ids = list(d['customdata'] for d in selectedData['points'])
-        global global_filtered_other_sites_df
 
-        dff = global_filtered_other_sites_df[global_filtered_other_sites_df['Sites'].isin(sites)]
+        dff = global_vars.global_filtered_other_sites_df[global_vars.global_filtered_other_sites_df['Sites'].isin(sites)]
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
                   'Feedback', 'Components', 'Issues', 'Sites']
         cnamesnew = ['Response ID', 'Date Submitted', 'Country', 'Vader Sentiment Score',

@@ -20,8 +20,6 @@ global comp_response_id_map
 global issue_response_id_map
 global issue_day_response_id_map
 
-global global_filtered_top_sites_df
-global global_site_modal_ids
-global results_df
+#global results_df
 global global_filtered_top_sites_df
 global global_filtered_other_sites_df
