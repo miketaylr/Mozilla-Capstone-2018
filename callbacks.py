@@ -10,7 +10,7 @@ import urllib.parse
 import dash_dangerously_set_inner_html
 
 from constants import top_sites
-from dash_interface import app, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
+from dash_interface import app, results_df, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
     updateGraph, updateGeoGraph, initCompDF, initIssueDF, component_df, issue_df, \
     runDrilldown, clusteringBarGraph
 from layouts import main_layout, sites_layout, sentiment_layout, geoview_layout, components_layout, issues_layout, search_layout
@@ -331,7 +331,7 @@ def update_list_comp_output_slider(value):
     Output('list-comp-graph', 'figure'),
     [Input('list_comp_time_slider', 'value')])
 def update_list_comp_graph_slider(value):
-    fig_component = updateGraph(list_component_df, 'Components Over Time', value)
+    fig_component = updateGraph(global_vars.list_component_df, 'Components Over Time', value)
     return fig_component
 
 
@@ -433,7 +433,7 @@ def update_list_issue_output_slider(value):
     Output('list-issue-graph', 'figure'),
     [Input('list_issue_time_slider', 'value')])
 def update_list_issue_graph_slider(value):
-    fig_issue = updateGraph(list_issue_df, 'Issues Over Time', value)
+    fig_issue = updateGraph(global_vars.list_issue_df, 'Issues Over Time', value)
     return fig_issue
 
 ### Sites Page Callbacks ###
