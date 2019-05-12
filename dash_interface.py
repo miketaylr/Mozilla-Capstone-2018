@@ -181,7 +181,7 @@ def initCompDF(results2_df, num_days_range = 14):
 
     component_df = pd.Series([])
     comp_response_id_map = dict()
-    global_vars.comp_day_response_id_map = dict()
+    comp_day_response_id_map = dict()
 
     for day in range(num_days_range):
         day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
@@ -200,12 +200,12 @@ def initCompDF(results2_df, num_days_range = 14):
 
         component_df = pd.concat([component_df, new_comp_info.rename(date)], axis=1)
         comp_response_id_map[date] = dict()
-        global_vars.comp_day_response_id_map[date] = []
+        comp_day_response_id_map[date] = []
         comps = new_comp_info.index.values
         for comp in comps:
             comp_response_id_map[date][comp] = []
         for index, row in day_df.iterrows():
-            global_vars.comp_day_response_id_map[date].append(row['Response ID'])
+            comp_day_response_id_map[date].append(row['Response ID'])
             for comp in row['Components']:
                 comp_response_id_map[date][comp].append(
                     row['Response ID'])  # TODO: can use map functions to make this faster
@@ -214,7 +214,7 @@ def initCompDF(results2_df, num_days_range = 14):
 
     component_df = component_df.fillna(0).astype(int).rename_axis('Components')
     component_df.drop([0], axis = 1, inplace = True)
-    return component_df, comp_response_id_map, global_vars.comp_day_response_id_map
+    return component_df, comp_response_id_map, comp_day_response_id_map
 
 
 def initIssueDF(results2_df, num_days_range = 14):
