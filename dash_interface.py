@@ -1,8 +1,6 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table as dt
-import dash_table_experiments as dte
 import pandas as pd
 import plotly.graph_objs as go
 from clustering import runDrilldown
@@ -10,6 +8,7 @@ from datetime import datetime as datetime
 from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE, top_sites
 from collections import Counter
 import ast
+import global_vars
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css',
@@ -33,18 +32,20 @@ component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
 clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
-global_site_modal_ids = []
-global_comp_modal_ids = []
-global_issue_modal_ids = []
-global_top_selected_sites = []
-global_other_selected_sites = []
-global_geo_modal_ids = []
-global_selected_geo = []
-topSiteCloseCount=0
-otherSiteCloseCount=0
-compCloseCount=0
-issueCloseCount=0
-geoCloseCount=0
+
+# Initialize Global Variables
+global_vars.global_site_modal_ids = []
+global_vars.global_comp_modal_ids = []
+global_vars.global_issue_modal_ids = []
+global_vars.global_top_selected_sites = []
+global_vars.global_other_selected_sites = []
+global_vars.global_geo_modal_ids = []
+global_vars.global_selected_geo = []
+global_vars.topSiteCloseCount=0
+global_vars.otherSiteCloseCount=0
+global_vars.compCloseCount=0
+global_vars.issueCloseCount=0
+global_vars.geoCloseCount = 0
 
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
@@ -52,7 +53,6 @@ reference = datetime(2018, 11, 19)
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 global_sentiment_average = results2_df['compound'].mean()
-print(global_sentiment_average)
 df_geo = df_geo.rename(columns={'COUNTRY': 'Country'})
 geo_2week_df = df_geo[['Country']]
 # Calculate daily average sentiment scores over the past 2 weeks
@@ -74,7 +74,7 @@ df_geo = df_geo.drop('Sentiment', axis=1)
 df_geo.columns = ['Country', 'Code']
 df_geo.set_index('Country')
 
-df_review_compound =  combined_compound_df.groupby('Country', as_index=False).mean()
+df_review_compound = combined_compound_df.groupby('Country', as_index=False).mean()
 df_review_compound = df_review_compound[['Country', 'Sentiment_Norm', 'Sentiment_Norm_Global', 'Sentiment_Week', 'Sentiment_Full']]
 df_review_compound.set_index('Country')
 
@@ -84,7 +84,6 @@ df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
 
 def updateGeoGraph(df, type, value):
-    print(df)
     if type=='norm':
         sentiment = df[value] - df['Sentiment_Full']
     elif type=='globalNorm':
@@ -182,7 +181,7 @@ def initCompDF(results2_df, num_days_range = 14):
 
     component_df = pd.Series([])
     comp_response_id_map = dict()
-    comp_day_response_id_map = dict()
+    global_vars.comp_day_response_id_map = dict()
 
     for day in range(num_days_range):
         day_df = date_filtered_df[date_filtered_df['Day Difference'] == day + 1]
@@ -201,12 +200,12 @@ def initCompDF(results2_df, num_days_range = 14):
 
         component_df = pd.concat([component_df, new_comp_info.rename(date)], axis=1)
         comp_response_id_map[date] = dict()
-        comp_day_response_id_map[date] = []
+        global_vars.comp_day_response_id_map[date] = []
         comps = new_comp_info.index.values
         for comp in comps:
             comp_response_id_map[date][comp] = []
         for index, row in day_df.iterrows():
-            comp_day_response_id_map[date].append(row['Response ID'])
+            global_vars.comp_day_response_id_map[date].append(row['Response ID'])
             for comp in row['Components']:
                 comp_response_id_map[date][comp].append(
                     row['Response ID'])  # TODO: can use map functions to make this faster
@@ -215,7 +214,7 @@ def initCompDF(results2_df, num_days_range = 14):
 
     component_df = component_df.fillna(0).astype(int).rename_axis('Components')
     component_df.drop([0], axis = 1, inplace = True)
-    return component_df, comp_response_id_map, comp_day_response_id_map
+    return component_df, comp_response_id_map, global_vars.comp_day_response_id_map
 
 
 def initIssueDF(results2_df, num_days_range = 14):
@@ -266,7 +265,6 @@ def updateGraph(df, title, num_days_range = 7):
     traces = []
     # Checking df for values:
     for index, row in filtered_df.iterrows():
-        print(list(row.keys()))
         traces.append(go.Bar(
             x=list(row.keys()),
             y=row.values,
@@ -301,8 +299,7 @@ def updateGraph(df, title, num_days_range = 7):
 
 # CREATE FIRST TWO GRAPHS
 day_range = min(results2_df['Day Difference'].max(), toggle_time_params['max'])
-print(day_range)
-component_df, comp_response_id_map, comp_day_response_id_map = initCompDF(results2_df, day_range)
+component_df, comp_response_id_map, global_vars.comp_day_response_id_map = initCompDF(results2_df, day_range)
 list_component_df = component_df
 issue_df, issue_response_id_map, issue_day_response_id_map = initIssueDF(results2_df, day_range)
 list_issue_df = issue_df

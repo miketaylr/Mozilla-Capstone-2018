@@ -392,7 +392,6 @@ issues_layout = html.Div(className='sites-layout', children=[
 search_layout = html.Div([
     html.Img(src='https://loading.io/assets/img/loader/msg.gif', id = 'search-loading', style={'display': 'none'}),
     html.H3('Search Feedback', className='page-title'),
-    # html.Label('Enter Search Request:'),
     dcc.Input(id='searchrequest', type='text', placeholder='Type Here'),
     html.Div(id='search-count-reveal'),
     html.A("Download CSV", id='search-download-link', className='download-link search-download-link', href='', target="_blank", style={'display': 'none'}),

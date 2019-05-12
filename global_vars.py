@@ -1,0 +1,16 @@
+global geoCloseCount
+global issueCloseCount
+global topSiteCloseCount
+global otherSiteCloseCount
+global compCloseCount
+
+global global_site_modal_ids
+global global_comp_modal_ids
+global global_issue_modal_ids
+global global_geo_modal_ids
+
+global global_top_selected_sites
+global global_other_selected_sites
+global global_selected_geo
+
+global comp_day_response_id_map

@@ -10,10 +10,11 @@ import urllib.parse
 import dash_dangerously_set_inner_html
 
 from constants import top_sites
-from dash_interface import app, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
+from dash_interface import app, results_df, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
     updateGraph, updateGeoGraph, initCompDF, initIssueDF, component_df, issue_df, \
     runDrilldown, clusteringBarGraph
 from layouts import main_layout, sites_layout, sentiment_layout, geoview_layout, components_layout, issues_layout, search_layout
+import global_vars
 
 ### Note: the order the callbacks are placed in matters ###
 
@@ -23,24 +24,18 @@ from layouts import main_layout, sites_layout, sentiment_layout, geoview_layout,
 @app.callback(Output('page-content', 'children'),
               [Input('url', 'pathname')])
 def display_page(pathname):
-    global global_site_modal_ids
-    global global_comp_issue_modal_ids
-    global list_component_df
-    global list_issue_df
-    global global_top_selected_sites
-
     if pathname is None:
         return main_layout
 
     ids = []
     if 'sites' in pathname:
-        ids = global_site_modal_ids
+        ids = global_vars.global_site_modal_ids
     elif 'comp' in pathname:
-        ids = global_comp_modal_ids
+        ids = global_vars.global_comp_modal_ids
     elif 'issues' in pathname:
-        ids = global_issue_modal_ids
+        ids = global_vars.global_issue_modal_ids
     elif 'geo' in pathname:
-        ids = global_geo_modal_ids
+        ids = global_vars.global_geo_modal_ids
 
     if 'classification' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
@@ -245,10 +240,8 @@ def update_sentiment_graph(frequency):
     [Input('close-comp-site', 'n_clicks'),
      Input('comp-graph', 'clickData')])
 def display_comp_modal(closeClicks, clickData):
-    global compCloseCount
-    print('here in comp', closeClicks, compCloseCount)
-    if closeClicks > compCloseCount:
-        compCloseCount = closeClicks
+    if closeClicks > global_vars.compCloseCount:
+        global_vars.compCloseCount = closeClicks
         return {'display': 'none'}
     elif clickData:
         return {'display': 'block'}
@@ -271,8 +264,7 @@ def display_comp_click_data(clickData):
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
-            global comp_day_response_id_map
-            ids = comp_day_response_id_map[day]
+            ids = global_vars.comp_day_response_id_map[day]
             dff = search_df[search_df['Response ID'].isin(ids)]
 
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
@@ -281,8 +273,7 @@ def display_comp_click_data(clickData):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global global_comp_modal_ids
-        global_comp_modal_ids = list(dff['Response ID'])
+        global_vars.global_comp_modal_ids = list(dff['Response ID'])
         return dff.to_dict('rows')
     else:
         return []
@@ -301,8 +292,7 @@ def update_comp_download_link(clickData):
             dff = search_df[search_df['Response ID'].isin(ids)]
         else:
             day = clickData['points'][0]['x']
-            global comp_day_response_id_map
-            ids = comp_day_response_id_map[day]
+            ids = global_vars.comp_day_response_id_map[day]
             dff = search_df[search_df['Response ID'].isin(ids)]
 
         cnames = ['Response ID', 'Date Submitted', 'Country', 'compound',
@@ -354,10 +344,8 @@ def update_list_comp_graph_slider(value):
     [Input('close-issue-site', 'n_clicks'),
      Input('issue-graph', 'clickData')])
 def display_issue_modal(closeClicks, clickData):
-    global issueCloseCount
-    print('here in issue', closeClicks, issueCloseCount)
-    if closeClicks > issueCloseCount:
-        issueCloseCount = closeClicks
+    if closeClicks > global_vars.issueCloseCount:
+        global_vars.issueCloseCount = closeClicks
         return {'display': 'none'}
     elif clickData:
         return {'display': 'block'}
@@ -390,8 +378,7 @@ def display_issue_click_data(clickData):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global global_issue_modal_ids
-        global_issue_modal_ids = list(dff['Response ID'])
+        global_vars.global_issue_modal_ids = list(dff['Response ID'])
         return dff.to_dict('rows')
     else:
         return []
@@ -492,8 +479,7 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
         dff = dff[cnames]
         dff.columns = cnamesnew
         print(global_site_modal_ids)
-        global global_top_selected_sites
-        global_top_selected_sites = sites
+        global_vars.global_top_selected_sites = sites
         return dff.to_dict('rows')
     return []
 
@@ -503,11 +489,10 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
                Input('top-view-selected', 'n_clicks')],
               [State('top-sites-table', 'selected_row_indices')])
 def display_modal(closeClicks, openClicks, selected_row_indices):
-    global topSiteCloseCount
     if len(selected_row_indices) == 0:
         return {'display': 'none'}
-    elif closeClicks > topSiteCloseCount:
-        topSiteCloseCount = closeClicks
+    elif closeClicks > global_vars.topSiteCloseCount:
+        global_vars.topSiteCloseCount = closeClicks
         return {'display': 'none'}
     elif openClicks:
         return {'display': 'block'}
@@ -587,11 +572,8 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
                   'Feedback', 'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global global_site_modal_ids
-        global_site_modal_ids = list(dff['Response ID'])
-        print(global_site_modal_ids)
-        global global_other_selected_sites
-        global_other_selected_sites = sites
+        global_vars.global_site_modal_ids = list(dff['Response ID'])
+        global_vars.global_other_selected_sites = sites
         return dff.to_dict('rows')
     return []
 
@@ -601,11 +583,10 @@ def update_site_modal_table(clicks, rows, selected_row_indices):
                Input('other-view-selected', 'n_clicks')],
               [State('other-sites-table', 'selected_row_indices')])
 def display_modal(closeClicks, openClicks, selected_row_indices):
-    global otherSiteCloseCount
     if len(selected_row_indices) == 0:
         return {'display': 'none'}
-    elif closeClicks > otherSiteCloseCount:
-        otherSiteCloseCount = closeClicks
+    elif closeClicks > global_vars.otherSiteCloseCount:
+        global_vars.otherSiteCloseCount = closeClicks
         return {'display': 'none'}
     elif openClicks:
         return {'display': 'block'}
@@ -743,8 +724,7 @@ def update_site_modal_table(clickData):
     if(clickData):
         selected_geo = clickData['points'][0]['text']
         dff = results_df[results_df['Country'] == selected_geo]
-        global global_geo_modal_ids
-        global_geo_modal_ids = list(dff['Response ID'])
+        global_vars.global_geo_modal_ids = list(dff['Response ID'])
 
         cnames = ['Feedback', 'Date Submitted', 'Country', 'compound',
                     'Components', 'Issues', 'Sites']
@@ -752,8 +732,7 @@ def update_site_modal_table(clickData):
                    'Components', 'Issues', 'Sites']
         dff = dff[cnames]
         dff.columns = cnamesnew
-        global global_selected_geo
-        global_selected_geo = selected_geo
+        global_vars.global_selected_geo = selected_geo
         return dff.to_dict('rows')
     return []
 
@@ -762,9 +741,8 @@ def update_site_modal_table(clickData):
               [Input('close-geo-modal', 'n_clicks'),
                Input('country-graph', 'clickData')])
 def display_modal(closeClicks, openClick):
-    global geoCloseCount
-    if closeClicks > geoCloseCount:
-        geoCloseCount = closeClicks
+    if closeClicks > global_vars.geoCloseCount:
+        global_vars.geoCloseCount= closeClicks
         return {'display': 'none'}
     elif openClick:
         return {'display': 'block'}
