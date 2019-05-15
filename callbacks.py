@@ -331,7 +331,7 @@ def update_list_comp_output_slider(value):
     Output('list-comp-graph', 'figure'),
     [Input('list_comp_time_slider', 'value')])
 def update_list_comp_graph_slider(value):
-    fig_component = updateGraph(list_component_df, 'Components Over Time', value)
+    fig_component = updateGraph(global_vars.list_component_df, 'Components Over Time', value)
     return fig_component
 
 
@@ -433,7 +433,7 @@ def update_list_issue_output_slider(value):
     Output('list-issue-graph', 'figure'),
     [Input('list_issue_time_slider', 'value')])
 def update_list_issue_graph_slider(value):
-    fig_issue = updateGraph(list_issue_df, 'Issues Over Time', value)
+    fig_issue = updateGraph(global_vars.list_issue_df, 'Issues Over Time', value)
     return fig_issue
 
 ### Sites Page Callbacks ###

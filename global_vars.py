@@ -23,3 +23,6 @@ global issue_day_response_id_map
 #global results_df
 global global_filtered_top_sites_df
 global global_filtered_other_sites_df
+
+global list_component_df
+global list_issue_df
