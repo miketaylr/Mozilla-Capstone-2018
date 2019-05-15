@@ -1,5 +1,4 @@
 # IMPORTS
-import os as os
 import pandas as pd
 from scipy import stats
 from whoosh.analysis import *

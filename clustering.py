@@ -1,12 +1,8 @@
 # IMPORTS
-from whoosh import index, writing, scoring
-from whoosh.fields import Schema, TEXT, KEYWORD, ID, STORED
-from whoosh.analysis import *
-from whoosh.qparser import QueryParser
+from whoosh import index
+from whoosh.fields import Schema, TEXT, ID
 import os.path
-from pathlib import Path
 import tempfile
-import subprocess
 import csv
 import codecs
 import pandas as pd
@@ -16,29 +12,17 @@ import nltk as nltk
 from nltk.tokenize import RegexpTokenizer
 import numpy as np
 from sklearn import preprocessing
-import transformations as trafo
 import matplotlib.pyplot as plt
 from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer, ENGLISH_STOP_WORDS
 from sklearn.cluster import KMeans
-from sklearn.metrics import adjusted_rand_score
-from sklearn.feature_extraction.text import CountVectorizer
-from scipy.cluster import hierarchy
-from scipy.cluster.hierarchy import dendrogram, linkage
-from scipy.cluster.hierarchy import cophenet
-from scipy.spatial.distance import pdist
-import random
 import seaborn as sns; sns.set()
-import pprint
 import referenceFiles as rf
 import collections
-from sklearn.feature_extraction import text
 from nltk.tag import PerceptronTagger
 from sklearn.cluster import SpectralClustering
-from numpy import array
 from datetime import datetime as datetime
 from sklearn.cluster import AgglomerativeClustering
-import sklearn.metrics as metrics
 import os
 import time
 import math
