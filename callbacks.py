@@ -10,7 +10,7 @@ import urllib.parse
 import dash_dangerously_set_inner_html
 
 from constants import top_sites
-from dash_interface import app, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
+from dash_interface import app, results_df, results2_df, search_df, toggle_time_params, sr_df, df_geo_sentiment, \
     updateGraph, updateGeoGraph, initCompDF, initIssueDF, component_df, issue_df, \
     runDrilldown, clusteringBarGraph
 from layouts import main_layout, sites_layout, sentiment_layout, geoview_layout, components_layout, issues_layout, search_layout
