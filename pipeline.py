@@ -10,16 +10,24 @@ import tldextract
 import nltk
 nltk.downloader.download('vader_lexicon')
 
+# Read in the 3 keywords mapping csvs
+brands = pd.read_csv(rf.filePath(rf.BRAND_KEYWORDS))
+issues = pd.read_csv(rf.filePath(rf.ISSUE_KEYWORDS))
+components = pd.read_csv(rf.filePath(rf.COMPONENT_KEYWORDS))
+# Convert to dictionary
+WTB = brands.set_index('Brand').T.to_dict('list')
+WTI = issues.set_index('Issue').T.to_dict('list')
+WTC = components.set_index('Component').T.to_dict('list')
+WTB = {k: v[0] for k, v in WTB.items()}
+WTI = {k: v[0] for k, v in WTI.items()}
+WTC = {k: v[0] for k, v in WTC.items()}
+
+
+WTB = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTB.items()}
 # FOR NOW just lower the terms in the dicts. Need to see how stemming and more can play into this
 WTI = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_ISSUE.items()}
 WTC = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_COMPONENT.items()}
 
-# Read in the brands-keywords mapping csv
-brands = pd.read_csv(rf.filePath(rf.BRAND_KEYWORDS))
-# Convert to dictionary
-WTB = brands.set_index('Brand').T.to_dict('list')
-WTB = {k: v[0] for k, v in WTB.items()}
-WTB = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTB.items()}
 # Clean up the raw dictionaries a bit more eventually, fix typos etc.
 
 
