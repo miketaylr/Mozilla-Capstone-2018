@@ -2,7 +2,6 @@
 import pandas as pd
 import numpy as np
 import re
-from constants import WORDS_TO_COMPONENT, WORDS_TO_ISSUE
 from whoosh.analysis import *
 import referenceFiles as rf
 from nltk.sentiment.vader import SentimentIntensityAnalyzer as SIA
@@ -18,15 +17,16 @@ components = pd.read_csv(rf.filePath(rf.COMPONENT_KEYWORDS))
 WTB = brands.set_index('Brand').T.to_dict('list')
 WTI = issues.set_index('Issue').T.to_dict('list')
 WTC = components.set_index('Component').T.to_dict('list')
+
 WTB = {k: v[0] for k, v in WTB.items()}
-WTI = {k: v[0] for k, v in WTI.items()}
-WTC = {k: v[0] for k, v in WTC.items()}
+WTI = {k: v[0].strip() for k, v in WTI.items()}
+WTC = {k: v[0].strip() for k, v in WTC.items()}
 
 
 WTB = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTB.items()}
 # FOR NOW just lower the terms in the dicts. Need to see how stemming and more can play into this
-WTI = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_ISSUE.items()}
-WTC = {k: re.compile('|'.join(v).lower()) for k, v in WORDS_TO_COMPONENT.items()}
+WTI = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTI.items()}
+WTC = {k: re.compile('|'.join(v.split(',')).lower()) for k, v in WTC.items()}
 
 # Clean up the raw dictionaries a bit more eventually, fix typos etc.
 
@@ -60,14 +60,13 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
                    "To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "If your feedback is related to a website, you can include it here:"]
-    print("Loading %d feedback records from %s " % (num_records, raw_data_location))
+    print("Processing %d feedback records from %s " % (num_records, raw_data_location))
     if (num_records < 0):  # return all records
         df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
     else:
         df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
         df = df.loc[~df['Country'].isnull()]
         df = df.tail(num_records)
-    print(df.dtypes)
 
     # some data cleaning and selection
 
@@ -113,19 +112,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
 
         return list(set(brands))
         # Find a mentioned issue based on our issues dictionary
-
-    def mentioned_component(row):
-        combined = row['Feedback'].lower()
-        components = [k for k, v in WORDS_TO_COMPONENT.items() if any(map(lambda term: term in combined, v))]
-
-        return ','.join(set(components))
-
-    def apply_and_concat(dataframe, field, func, column_names):
-        return pd.concat((
-            dataframe,
-            dataframe[field].apply(
-                lambda cell: pd.Series(func(cell), index=column_names))), axis=1)
-        # example usage: apply_and_concat(df, 'A', func, ['x^2', 'x^3'])
 
     # basic sentiment analysis
     # Use vader to evaluated sentiment of reviews
@@ -173,4 +159,5 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     print("Outputted cleaned data to output_pipeline.csv")
 
 
-run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), 100)
+print("Loading raw feedback from %s " % (rf.ORIGINAL_INPUT_DATA))
+run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), -1)
