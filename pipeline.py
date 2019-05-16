@@ -92,13 +92,16 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         return ','.join(set(urls))
         # return list(set(urls))
 
+    def convert_to_list(row):
+        return row['Sites'].split(',')
+
     # crude way of looking for mentioned site using the top 100 list. Need to add the regex to pick up wildcard sites
     def mentioned_brand(row):
         combined = row['Feedback'].lower() + ' ' + row['Relevant Site'].lower()
         brands = [k for k, v in WTB.items() if v.search(combined)]
         #look at sites column for any extracted urls if we dont catch any brands on the first pass
         if (len(brands) == 0):
-            brands = [tldextract.extract(v).domain for v in row['Sites']]
+            brands = [tldextract.extract(v).domain for v in row['Sites2']]
 
         return list(set(brands))
         # Find a mentioned issue based on our issues dictionary
@@ -128,8 +131,11 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     def derive_columns(data_frame):  # based on cols from data after cleaning
 
         data_frame['Feedback'] = data_frame['Positive Feedback'].map(str) + data_frame['Negative Feedback'].map(str)
+        print('Finding mentioned sites and brands...')
         data_frame['Sites'] = data_frame.apply(mentioned_site, axis=1)
+        data_frame['Sites2'] = data_frame.apply(convert_to_list, axis=1) # TEMPORARY COLUMN
         data_frame['Brands'] = data_frame.apply(mentioned_brand, axis=1)
+        del data_frame['Sites2']
         print('Categorizing feedback into issue types...')
         data_frame = data_frame.merge(
             df['Feedback'].apply(lambda s: pd.Series({'Issues': [k for k, v in WTI.items() if v.search(s)]})),
