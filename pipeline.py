@@ -159,5 +159,5 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     print("Outputted cleaned data to output_pipeline.csv")
 
 
-print("Loading raw feedback from %s " % (rf.ORIGINAL_INPUT_DATA))
-run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.ORIGINAL_INPUT_DATA), -1)
+print("Loading raw feedback from %s " % (rf.INPUT_DATA_1))
+run_pipeline(rf.filePath(rf.SITES), rf.filePath(rf.INPUT_DATA_1), -1)

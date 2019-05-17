@@ -19,10 +19,8 @@ import json
 
 # SETTINGS
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
-ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
 TOP_WORDS = rf.filePath(rf.TOP_WORDS)
-
 
 overlap_corpus = []  # For overlap, yes, I know global variables are bad
 
@@ -70,6 +68,7 @@ def text_preparation_unlabelled(filename):
     df['sf_output'] = df.apply(apply_stem_overlap, axis=1)
     df['sf_output_vbnn'] = df.apply(getNounsAndVerbs, axis = 1)
     df['sf_output_vbnn_phrases'] = df.apply(getNnVbPhrases, axis = 1)
+    print('Text preparation completed.')
     return df
 
 
@@ -210,7 +209,7 @@ def feature_extraction(df, get_new_words=True):
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         binary_appearance_df.append([1 if word in wordList else 0 for word in featureWords])
     X = pd.DataFrame(binary_appearance_df, columns=featureWords)
-    # print(X)
+    print('Feature extraction completed.')
     return X
 
 
@@ -278,17 +277,20 @@ def load_classifier(filename):
 
 
 def score_new_data(clf, X):
+    print('New data scoring completed.')
     return clf.predict(X)
 
 
 def get_nonspam_indices(y):
     npArr = np.array(y)
     x = np.where(npArr == 0)[0]
+    print('Get nonspam indices done.')
     return x
 
 
 def remove_spam(df, nsi):
     new_df = df.iloc[nsi, :]
+    print('Remove spam completed. ')
     return new_df
 
 
