@@ -6,6 +6,7 @@ SITES = 'Top Sites for Report Analysis.csv'
 BRAND_KEYWORDS = 'brand-keywords.csv'
 ISSUE_KEYWORDS = 'issue-keywords.csv'
 COMPONENT_KEYWORDS = 'component-keywords.csv'
+COUNTRY_LIST = 'countries.csv'
 
 SPAM_LABELLED = 'output_spam_labelled.csv'
 ORIGINAL_INPUT_DATA = '20190211135347-SurveyExport.csv'

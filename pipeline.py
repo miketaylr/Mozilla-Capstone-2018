@@ -13,6 +13,8 @@ nltk.downloader.download('vader_lexicon')
 brands = pd.read_csv(rf.filePath(rf.BRAND_KEYWORDS))
 issues = pd.read_csv(rf.filePath(rf.ISSUE_KEYWORDS))
 components = pd.read_csv(rf.filePath(rf.COMPONENT_KEYWORDS))
+countries = pd.read_csv(rf.filePath(rf.COUNTRY_LIST), error_bad_lines=False, header=None, encoding = "ISO-8859-1")
+countries = list(countries.values.flatten())
 # Convert to dictionary
 WTB = brands.set_index('Brand').T.to_dict('list')
 WTI = issues.set_index('Issue').T.to_dict('list')
@@ -61,14 +63,16 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
                    "To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "If your feedback is related to a website, you can include it here:"]
     if (num_records < 0):  # return all records
-        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
+        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols, dtype={"Language": str, "Country": str})
         num_records = len(df.index)
+        df = df.loc[df['Country'].isin(countries)]
     else:
-        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
-        df = df.loc[~df['Country'].isnull()]
+        df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols, dtype={"Language": str, "Country": str})
+        df = df.loc[df['Country'].isin(countries)]
         df = df.tail(num_records)
 
     print("Processing %d feedback records from %s " % (num_records, raw_data_location))
+    print("After filtering out feedback with no country, only %d records remain" % (len(df.index)))
 
     # some data cleaning and selection
 
@@ -131,7 +135,6 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
         data_frame['Sites'] = data_frame.apply(mentioned_site, axis=1)
         data_frame['Sites2'] = data_frame.apply(convert_to_list, axis=1) # TEMPORARY COLUMN
         data_frame['Brands'] = data_frame.apply(mentioned_brand, axis=1)
-        del data_frame['Sites2']
         print('Categorizing feedback into issue types...')
         data_frame = data_frame.merge(
             df['Feedback'].apply(lambda s: pd.Series({'Issues': [k for k, v in WTI.items() if v.search(s)]})),
@@ -155,7 +158,7 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
     # Delete columns we don't need anymore
     df.drop('Positive Feedback', axis=1, inplace=True)
     df.drop('Negative Feedback', axis=1, inplace=True)
-
+    del df['Sites2']
     # finally output the cleaned data to a CSV
     df.to_csv(rf.filePath(rf.OUTPUT_PIPELINE), encoding='ISO-8859-1')
     print("Outputted cleaned data to output_pipeline.csv")
