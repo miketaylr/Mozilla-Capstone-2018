@@ -19,7 +19,7 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 # Reading in data:
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
-sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
+sr_df = results_df#pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
 
 
 search_df = results_df
@@ -27,7 +27,7 @@ for index, row in search_df.iterrows():
     if pd.isnull(row['Sites']):
         search_df.at[index, 'Sites'] = 'None Found'
 df_geo = pd.read_csv('./data/output_countries.csv')
-df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
+#df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
 component_df = pd.read_csv('./data/component_graph_data.csv')
 issue_df = pd.read_csv('./data/issue_graph_data.csv')
 clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')

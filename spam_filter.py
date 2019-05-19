@@ -12,8 +12,9 @@ import pickle as pickle
 import referenceFiles as rf
 from pattern.en import *
 from gensim.utils import lemmatize
-from nltk.tag import PerceptronTagger
 import nltk as nltk
+nltk.download('averaged_perceptron_tagger')
+from nltk.tag import PerceptronTagger
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 import json
 

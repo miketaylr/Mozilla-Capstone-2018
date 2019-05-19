@@ -60,13 +60,15 @@ def run_pipeline(top_sites_location, raw_data_location, num_records=-1):
                    "To help us understand your input, we need more information. Please describe what you like. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "To help us understand your input, we need more information. Please describe your problem below and be as specific as you can. The content of your feedback will be public, so please be sure not to include personal information such as email address, passwords or phone number.",
                    "If your feedback is related to a website, you can include it here:"]
-    print("Processing %d feedback records from %s " % (num_records, raw_data_location))
     if (num_records < 0):  # return all records
         df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
+        num_records = len(df.index)
     else:
         df = pd.read_csv(raw_data_location, encoding="ISO-8859-1", usecols=survey_cols)
         df = df.loc[~df['Country'].isnull()]
         df = df.tail(num_records)
+
+    print("Processing %d feedback records from %s " % (num_records, raw_data_location))
 
     # some data cleaning and selection
 
