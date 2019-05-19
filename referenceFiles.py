@@ -9,7 +9,7 @@ COMPONENT_KEYWORDS = 'component-keywords.csv'
 
 SPAM_LABELLED = 'output_spam_labelled.csv'
 ORIGINAL_INPUT_DATA = '20190211135347-SurveyExport.csv'
-INPUT_DATA_1 = '20181103112740-SurveyExport.csv'
+INPUT_DATA_1 = '20190211135347-SurveyExport.csv'
 
 OUTPUT_PIPELINE = 'output_pipeline.csv'
 OUTPUT_SPAM_REMOVAL = 'output_spam_removed.csv'

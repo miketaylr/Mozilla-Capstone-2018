@@ -27,11 +27,6 @@ for index, row in search_df.iterrows():
     if pd.isnull(row['Sites']):
         search_df.at[index, 'Sites'] = 'None Found'
 df_geo = pd.read_csv('./data/output_countries.csv')
-#df1 = pd.read_csv('./data/Issues_Keywords_Clusters.csv', encoding='latin-1')
-component_df = pd.read_csv('./data/component_graph_data.csv')
-issue_df = pd.read_csv('./data/issue_graph_data.csv')
-clusterDesc = pd.read_csv('./data/manual_cluster_descriptions.csv')
-clusters_df = pd.read_csv('./data/output_clusters_defined.csv', usecols = ['Response ID', 'manual_clusters'])
 
 # Initialize Global Variables
 global_vars.global_site_modal_ids = []
@@ -143,22 +138,6 @@ fig_geo = updateGeoGraph(df_geo_sentiment, '',7)
 # Getting components and issues in string:
 WORDS_TO_COMPONENT = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_COMPONENT.items()}
 WORDS_TO_ISSUE = {k:(map(lambda word: word.lower(), v)) for k, v in WORDS_TO_ISSUE.items()}
-
-# Hardcoded Fake Data
-arrayOfNames = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking']
-arrayOfNamesWords = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Words']
-arrayOfNamesDocs = ['Performance', 'Crashes', 'Layout Bugs', 'Regressions', 'Not Supported', 'Generic Bug', 'Media Playback', 'Security', 'Search Hijacking', 'Docs']
-numClusters = 50
-traces = []
-clusterNames = list(df1)
-clusterNames.pop(0)
-df1 = df1.set_index('Issue')
-docs = df1.drop(arrayOfNamesWords, axis=0)
-words = df1.drop(arrayOfNamesDocs, axis=0)
-clusters = df1.drop(['Words', 'Docs'], axis=0)
-
-categoryDict = pd.Series(clusterDesc.description.values, index=clusterDesc.clusters_types).to_dict()
-
 
 # TIME CALCULATION
 toggle_time_params = {
