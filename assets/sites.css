@@ -1,0 +1,27 @@
+#unique-site-count {
+    margin-top: 15px;
+}
+
+.view-selected-data, .view-selected-data:focus {
+    border: 1px solid orange;
+    color: orange;
+    background-color: white;
+    transition: all ease-in-out 0.2s;
+    margin-bottom: 10px;
+}
+
+.view-selected-data:hover {
+border: 1px solid white;
+    background-color: orange;
+    color: white;
+    transition: all ease-in-out 0.2s;
+    margin-bottom: 10px;
+}
+
+.view-selected-data-disabled, .view-selected-data-disabled:hover, .view-selected-data-disabled:focus {
+    background-color: lightgrey;
+    color: white;
+    border: 1px solid white;
+    cursor: default;
+    margin-bottom: 10px;
+}

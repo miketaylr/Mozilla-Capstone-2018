@@ -1,5 +1,4 @@
 # IMPORTS
-import os as os
 import pandas as pd
 from scipy import stats
 from whoosh.analysis import *
@@ -13,17 +12,16 @@ import pickle as pickle
 import referenceFiles as rf
 from pattern.en import *
 from gensim.utils import lemmatize
-from nltk.tag import PerceptronTagger
 import nltk as nltk
+nltk.download('averaged_perceptron_tagger')
+from nltk.tag import PerceptronTagger
 from sklearn.feature_extraction.text import ENGLISH_STOP_WORDS
 import json
 
 # SETTINGS
 SPAM_LABELLED = rf.filePath(rf.SPAM_LABELLED)
-ORIGINAL_INPUT_DATA = rf.filePath(rf.ORIGINAL_INPUT_DATA)
 OUTPUT_PIPELINE = rf.filePath(rf.OUTPUT_PIPELINE)
 TOP_WORDS = rf.filePath(rf.TOP_WORDS)
-
 
 overlap_corpus = []  # For overlap, yes, I know global variables are bad
 
@@ -31,6 +29,7 @@ overlap_corpus = []  # For overlap, yes, I know global variables are bad
 tagger = PerceptronTagger()
 pos_tag = tagger.tag
 stop = ENGLISH_STOP_WORDS
+
 
 # 1 Text Preparation
 def text_preparation(filename):
@@ -43,7 +42,7 @@ def text_preparation(filename):
                    "Negative Feedback", "Relevant Site", "compound", "neg",
                    "neu", "pos", "Sites", "Issues", "Components", "Processed Feedback",
                    "IsSpam"]
-    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records, usecols=survey_cols)
+    df = pd.read_csv(filename, encoding="ISO-8859-1", usecols=survey_cols)
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
@@ -56,14 +55,8 @@ def text_preparation(filename):
 
 def text_preparation_unlabelled(filename):
     num_records = 5000
-    # survey_cols = ["Response ID", "Time Started", "Date Submitted",
-    #                "Status", "Language", "Referer", "Extended Referer", "User Agent",
-    #                "Extended User Agent", "Longitude", "Latitude",
-    #                "Country", "City", "State/Region", "Postal",
-    #                "Binary Sentiment", "OS", "Feedback",
-    #                "Relevant Site", "compound", "Sites", "Issues", "Components"]
     # Read All Columns
-    df = pd.read_csv(filename, encoding="ISO-8859-1", nrows=num_records)
+    df = pd.read_csv(filename, encoding="ISO-8859-1")
     df = df.fillna('')
     if df.empty:
         print('DataFrame is empty!')
@@ -76,12 +69,15 @@ def text_preparation_unlabelled(filename):
     df['sf_output'] = df.apply(apply_stem_overlap, axis=1)
     df['sf_output_vbnn'] = df.apply(getNounsAndVerbs, axis = 1)
     df['sf_output_vbnn_phrases'] = df.apply(getNnVbPhrases, axis = 1)
+    print('Text preparation completed.')
     return df
+
 
 def getNounsAndVerbs(row):
     text = row['Feedback']
     vbsNns = [tag[0] for tag in pos_tag(re.findall(r'\w+', text)) if ('VB' in tag[1] or 'NN' in tag[1]) and (tag[0] not in stop)]
     return ' '.join(set(vbsNns))
+
 
 def getNnVbPhrases(row):
     text = row['Feedback']
@@ -128,6 +124,7 @@ def getNnVbPhrases(row):
 
     phrases = [word for word in get_terms(chunker.parse(pos_tag(re.findall(r'\w+', text))))]
     return json.dumps(phrases)
+
 
 def clean_feedback(row):
     tokenizer = RegexTokenizer() | LowercaseFilter() | IntraWordFilter() | StopFilter()
@@ -213,7 +210,7 @@ def feature_extraction(df, get_new_words=True):
         wordList = [token.text for token in tokenizer(row['sf_output'])]
         binary_appearance_df.append([1 if word in wordList else 0 for word in featureWords])
     X = pd.DataFrame(binary_appearance_df, columns=featureWords)
-    # print(X)
+    print('Feature extraction completed.')
     return X
 
 
@@ -281,17 +278,20 @@ def load_classifier(filename):
 
 
 def score_new_data(clf, X):
+    print('New data scoring completed.')
     return clf.predict(X)
 
 
 def get_nonspam_indices(y):
     npArr = np.array(y)
     x = np.where(npArr == 0)[0]
+    print('Get nonspam indices done.')
     return x
 
 
 def remove_spam(df, nsi):
     new_df = df.iloc[nsi, :]
+    print('Remove spam completed. ')
     return new_df
 
 

@@ -1,12 +1,26 @@
 #searchrequest {
     background-color: transparent;
     color: #afb1b3;
+    -webkit-transition: width 1s;
+    transition: width 1s;
+    width: 200px;
+}
+
+#searchrequest:focus {
+    width: 400px;
+    border-color: white;
+    color: white;
+    transition: all ease-in-out 1s;
 }
 
 #search-loading {
     position: absolute;
     left: 50%;
-    top: 60%;
+    top: 70%;
     transform: translate(-50%, -50%);
     width: 75px;
+}
+
+@keyframes opac{
+    from{opacity:0} to{opacity:1}
 }
