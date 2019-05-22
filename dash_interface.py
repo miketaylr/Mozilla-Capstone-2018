@@ -19,7 +19,7 @@ external_scripts = ['https://code.jquery.com/jquery-3.2.1.min.js', 'https://d3js
 # Reading in data:
 results_df = pd.read_csv("./data/output_pipeline.csv", encoding ="ISO-8859-1")
 results2_df = pd.read_csv("./data/output_pipeline.csv", encoding="ISO-8859-1")
-sr_df = results_df#pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
+sr_df = pd.read_csv("./data/output_spam_removed.csv", encoding="ISO-8859-1")
 
 
 search_df = results_df
@@ -45,6 +45,7 @@ global_vars.geoCloseCount = 0
 
 # GLOBALLY ADD DAY DIFFERENCE TO RESULTS DATAFRAME
 reference = datetime.strptime(results_df['Date Submitted'].max(), '%Y-%m-%d %H:%M:%S')
+print(reference)
 results2_df['Day Difference'] = (reference - pd.to_datetime(results2_df['Date Submitted'], format='%Y-%m-%d %H:%M:%S')).dt.days + 1
 
 global_sentiment_average = results2_df['compound'].mean()
@@ -77,6 +78,7 @@ df_geo_sentiment = pd.merge(df_review_compound, df_geo, on='Country', how='inner
 df_geo_sentiment = pd.merge(df_geo_sentiment, geo_2week_df, on='Country', how='inner')
 df_geo_sentiment = df_geo_sentiment.drop('Sentiment_Week', axis = 1)
 
+print(df_geo_sentiment)
 
 def updateGeoGraph(df, type, value):
     if type=='norm':

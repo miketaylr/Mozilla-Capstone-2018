@@ -89,7 +89,7 @@ def display_page(pathname):
     elif 'clustering' in pathname:
         # global_sites_list_df is the dataframe that contains the data that appears in the modal
         # ideally this should be fed through the same functions as results2_df to create the figures to display on the new page
-        results_modal_df = results_df[results_df['Response ID'].isin(ids)]
+        results_modal_df = sr_df[sr_df['Response ID'].isin(ids)]
         print(results_modal_df)
         results = runDrilldown(results_modal_df)
         results = results.sort_values(by='Count', ascending=False)
